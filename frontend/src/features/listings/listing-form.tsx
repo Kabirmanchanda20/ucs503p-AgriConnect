@@ -1,0 +1,143 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Alert, Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
+import { createListing, updateListing, uploadListingPhotos } from '@/lib/api/listings';
+import { getErrorMessage } from '@/lib/api/errors';
+import { CROP_CATEGORIES, INDIAN_STATES, UNITS } from '@/lib/constants';
+import type { Listing } from '@/lib/api/types';
+
+export function ListingForm({ listing }: { listing?: Listing }) {
+  const router = useRouter();
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(form: FormData) {
+    setError('');
+    setPending(true);
+    try {
+      const payload = {
+        crop: String(form.get('crop') ?? ''),
+        category: String(form.get('category') ?? ''),
+        variety: String(form.get('variety') || '') || null,
+        quantity: String(form.get('quantity') ?? ''),
+        unit: String(form.get('unit') ?? 'kg') as 'kg' | 'quintal' | 'ton',
+        pricePerUnit: String(form.get('pricePerUnit') ?? ''),
+        harvestDate: String(form.get('harvestDate') ?? ''),
+        state: String(form.get('state') ?? ''),
+        district: String(form.get('district') ?? ''),
+        village: String(form.get('village') || '') || null,
+        description: String(form.get('description') || '') || null,
+        minimumOrderQuantity: String(form.get('minimumOrderQuantity') ?? ''),
+        perishable: form.get('perishable') === 'on',
+        status: 'draft' as const,
+      };
+
+      const saved = listing
+        ? await updateListing(listing.id, payload)
+        : await createListing(payload);
+
+      const files = Array.from((form.getAll('files') as File[]).filter((file) => file.size > 0));
+      if (files.length > 0) {
+        await uploadListingPhotos(saved.data.id, files.slice(0, 5));
+      }
+
+      if (form.get('publish') === 'on') {
+        await updateListing(saved.data.id, { status: 'active' });
+      }
+
+      router.push('/farmer/listings');
+    } catch (cause) {
+      setError(getErrorMessage(cause, 'Could not save listing'));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <Card>
+      <form className="grid gap-4 md:grid-cols-2" action={onSubmit}>
+        {error ? (
+          <div className="md:col-span-2">
+            <Alert>{error}</Alert>
+          </div>
+        ) : null}
+        <Field label="Crop">
+          <Input name="crop" required defaultValue={listing?.crop} />
+        </Field>
+        <Field label="Category">
+          <Select name="category" defaultValue={listing?.category ?? 'grains'}>
+            {CROP_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Variety (optional)">
+          <Input name="variety" defaultValue={listing?.variety ?? ''} />
+        </Field>
+        <Field label="Harvest date">
+          <Input name="harvestDate" type="date" required defaultValue={listing?.harvestDate?.slice(0, 10)} />
+        </Field>
+        <Field label="Quantity">
+          <Input name="quantity" required defaultValue={listing?.quantity} />
+        </Field>
+        <Field label="Unit">
+          <Select name="unit" defaultValue={listing?.unit ?? 'kg'}>
+            {UNITS.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Price per unit (INR)">
+          <Input name="pricePerUnit" required defaultValue={listing?.pricePerUnit} />
+        </Field>
+        <Field label="Minimum order quantity">
+          <Input name="minimumOrderQuantity" required defaultValue={listing?.minimumOrderQuantity} />
+        </Field>
+        <Field label="State">
+          <Select name="state" required defaultValue={listing?.state ?? 'Punjab'}>
+            {INDIAN_STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="District">
+          <Input name="district" required defaultValue={listing?.district} />
+        </Field>
+        <Field label="Village (optional)">
+          <Input name="village" defaultValue={listing?.village ?? ''} />
+        </Field>
+        <label className="flex items-center gap-3 pt-8 text-base font-semibold text-forest">
+          <input type="checkbox" name="perishable" defaultChecked={listing?.perishable} className="h-5 w-5" />
+          This crop is perishable
+        </label>
+        <div className="md:col-span-2">
+          <Field label="Description">
+            <Textarea name="description" defaultValue={listing?.description ?? ''} />
+          </Field>
+        </div>
+        <div className="md:col-span-2">
+          <Field label="Photos (JPEG, PNG, or WebP, max 5)">
+            <Input name="files" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+          </Field>
+        </div>
+        <label className="flex items-center gap-3 text-base font-semibold text-forest md:col-span-2">
+          <input type="checkbox" name="publish" className="h-5 w-5" />
+          Publish now (needs at least one photo)
+        </label>
+        <div className="md:col-span-2">
+          <Button type="submit" disabled={pending}>
+            {pending ? 'Saving…' : listing ? 'Save listing' : 'Create listing'}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}

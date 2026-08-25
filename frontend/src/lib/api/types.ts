@@ -1,0 +1,162 @@
+export type Role = 'FARMER' | 'BUYER' | 'ADMIN';
+export type ListingStatus = 'draft' | 'active' | 'sold_out' | 'expired' | 'removed';
+export type OrderStatus =
+  | 'pending'
+  | 'accepted'
+  | 'confirmed'
+  | 'fulfilled'
+  | 'cancelled';
+export type Unit = 'kg' | 'quintal' | 'ton';
+export type DeliveryMode = 'pickup' | 'delivery';
+export type BuyerType = 'trader' | 'retailer' | 'bulk' | 'horeca';
+
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface FarmerProfile {
+  id: string;
+  farmName: string | null;
+  region: string | null;
+  ratingAvg: string | number | null;
+}
+
+export interface BuyerProfile {
+  id: string;
+  businessName: string | null;
+  buyerType: BuyerType;
+  ratingAvg: string | number | null;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  phone: string | null;
+  languagePref: string;
+  state: string | null;
+  district: string | null;
+  village: string | null;
+  verified: boolean;
+  isSuspended: boolean;
+  createdAt: string;
+  farmerProfile?: FarmerProfile | null;
+  buyerProfile?: BuyerProfile | null;
+}
+
+export interface ListingPhoto {
+  id: string;
+  publicUrl: string;
+  sortOrder: number;
+}
+
+export interface ListingFarmer {
+  userId: string;
+  name: string;
+  state: string | null;
+  district: string | null;
+  verified: boolean;
+  farmName: string | null;
+  ratingAvg: string | number | null;
+}
+
+export interface Listing {
+  id: string;
+  farmerProfileId: string;
+  farmer?: ListingFarmer;
+  crop: string;
+  category: string;
+  variety: string | null;
+  quantity: string;
+  unit: Unit;
+  pricePerUnit: string;
+  harvestDate: string;
+  state: string;
+  district: string;
+  village: string | null;
+  description: string | null;
+  minimumOrderQuantity: string;
+  status: ListingStatus;
+  perishable: boolean;
+  viewCount: number;
+  interestCount: number;
+  expiresAt: string | null;
+  photos: ListingPhoto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Order {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  farmerId: string;
+  quantity: string;
+  unit: Unit;
+  pricePerUnit: string;
+  priceTotal: string;
+  status: OrderStatus;
+  deliveryMode: DeliveryMode;
+  notes: string | null;
+  cancellationReason: string | null;
+  listing?: Pick<Listing, 'id' | 'crop' | 'status' | 'photos'>;
+  buyer?: { id: string; name: string };
+  farmer?: { id: string; name: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface FarmerReport {
+  role: 'FARMER';
+  totalListings: number;
+  totalQuantitySold: string;
+  revenue: string;
+}
+
+export interface BuyerReport {
+  role: 'BUYER';
+  totalOrders: number;
+  totalSpend: string;
+}
+
+export interface AdminAnalytics {
+  totalUsers: number;
+  usersByRole?: Record<string, number>;
+  totalListings: number;
+  activeListings?: number;
+  totalOrders: number;
+  gmv: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  verified: boolean;
+  isSuspended: boolean;
+  createdAt: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  actorId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}

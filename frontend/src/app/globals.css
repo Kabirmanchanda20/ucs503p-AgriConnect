@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --field: #f3ecda;
+  --paper: #fffcf5;
+  --forest: #1f3d2b;
+  --leaf: #3d7a4a;
+  --harvest: #d4a017;
+  --soil: #5c4033;
+  --ink: #1c241e;
+  --clay: #9b2c2c;
+}
+
+@theme inline {
+  --color-field: var(--field);
+  --color-paper: var(--paper);
+  --color-forest: var(--forest);
+  --color-leaf: var(--leaf);
+  --color-harvest: var(--harvest);
+  --color-soil: var(--soil);
+  --color-ink: var(--ink);
+  --color-clay: var(--clay);
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-fraunces);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+}
