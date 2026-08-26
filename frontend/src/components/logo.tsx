@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { cx } from '@/components/ui';
 
-const LOGO_WIDTH = 1024;
-const LOGO_HEIGHT = 682;
+const LOGO_WIDTH = 1536;
+const LOGO_HEIGHT = 1024;
 
 type LogoProps = {
   /** header: nav bar (~52px tall). hero: landing feature (~176px tall). */
