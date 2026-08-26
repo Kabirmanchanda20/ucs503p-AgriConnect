@@ -93,8 +93,25 @@ export function createApp(): express.Express {
     },
   });
 
+  const assistantLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: 20,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    skip: skipInTests,
+    handler: (_request, response) => {
+      sendError(
+        response,
+        429,
+        'RATE_LIMIT_EXCEEDED',
+        'Too many assistant questions. Try again in a minute.',
+      );
+    },
+  });
+
   app.use('/api', globalApiLimiter);
   app.use('/api/v1/auth', authLimiter);
+  app.use('/api/v1/assistant', assistantLimiter);
   app.use('/api/v1', apiV1Router);
 
   app.use(notFoundHandler);

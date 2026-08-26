@@ -14,8 +14,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: 'AgriConnect',
-  description: 'Farmer-to-buyer marketplace for fresh produce.',
+  title: 'AgriConnect — Sell harvest. Buy produce. Direct.',
+  description:
+    'Free farm-to-market marketplace: farmers list crops with photos, buyers filter by crop and district, and both track orders in one place.',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

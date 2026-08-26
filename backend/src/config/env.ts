@@ -56,6 +56,11 @@ const envSchema = z
       (value) => (value === '' ? undefined : value),
       z.url().optional(),
     ),
+    GEMINI_API_KEY: optionalString,
+    GEMINI_MODEL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(1).default('gemini-2.0-flash'),
+    ),
   })
   .superRefine((value, context) => {
     if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) {
