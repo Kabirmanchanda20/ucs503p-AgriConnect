@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { sendSuccess } from '../common/response.js';
 import { adminRouter } from '../modules/admin/admin.routes.js';
+import { assistantRouter } from '../modules/assistant/assistant.routes.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { listingsRouter } from '../modules/listings/listings.routes.js';
 import { notificationsRouter } from '../modules/notifications/notifications.routes.js';
@@ -24,3 +25,4 @@ apiV1Router.use('/orders', ordersRouter);
 apiV1Router.use('/notifications', notificationsRouter);
 apiV1Router.use('/reports', reportsRouter);
 apiV1Router.use('/admin', adminRouter);
+apiV1Router.use('/assistant', assistantRouter);

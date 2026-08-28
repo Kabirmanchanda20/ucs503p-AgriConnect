@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { listNotifications } from '@/lib/api/notifications';
 import { dashboardPath, useAuth } from '@/features/auth/auth-context';
+import { FarmerChatWidget } from '@/features/assistant/FarmerChatWidget';
 import { Logo } from '@/components/logo';
 import { cx } from '@/components/ui';
 
@@ -65,6 +66,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 
+  const isLanding = pathname === '/';
+
   return (
     <div className="min-h-full bg-field">
       <header className="border-b border-forest/20 bg-forest text-paper">
@@ -108,9 +111,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
+      <main
+        className={cx(
+          'mx-auto w-full',
+          isLanding ? 'max-w-none px-0 py-0' : 'max-w-6xl px-4 py-8',
+          user ? 'pb-28' : '',
+        )}
+      >
+        {children}
+      </main>
       {ready && user ? (
-        <p className="sr-only">Signed in as {user.email}, home {dashboardPath(user.role)}</p>
+        <>
+          <p className="sr-only">Signed in as {user.email}, home {dashboardPath(user.role)}</p>
+          <FarmerChatWidget role={user.role} name={user.name} />
+        </>
       ) : null}
     </div>
   );
