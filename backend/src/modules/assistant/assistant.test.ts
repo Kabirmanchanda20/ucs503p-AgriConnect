@@ -35,6 +35,16 @@ describe('assistant query schema', () => {
       queryAssistantBodySchema.safeParse({ message: 'next', history }).success,
     ).toBe(false);
   });
+
+  it('clips oversized history turns instead of rejecting them', () => {
+    const longReply = 'a'.repeat(5000);
+    const parsed = queryAssistantBodySchema.parse({
+      message: 'Thanks',
+      history: [{ role: 'assistant', content: longReply }],
+    });
+    expect(parsed.history[0]?.content.length).toBe(4000);
+    expect(parsed.history[0]?.content.endsWith('…')).toBe(true);
+  });
 });
 
 describe('assistant prompt mapping', () => {

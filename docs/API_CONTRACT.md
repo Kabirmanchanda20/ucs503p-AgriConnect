@@ -1210,6 +1210,8 @@ Notifies both parties (`ORDER_STATUS_CHANGED`).
 }
 ```
 
+`message` max **800** characters. Each `history` turn max **4000** characters (longer turns are clipped); up to **8** prior turns.
+
 #### Response — 200
 
 ```json
