@@ -17,7 +17,7 @@ export function ListingForm({ listing }: { listing?: Listing }) {
     setError('');
     setPending(true);
     try {
-      const payload = {
+      const basePayload = {
         crop: String(form.get('crop') ?? ''),
         category: String(form.get('category') ?? ''),
         variety: String(form.get('variety') || '') || null,
@@ -31,8 +31,19 @@ export function ListingForm({ listing }: { listing?: Listing }) {
         description: String(form.get('description') || '') || null,
         minimumOrderQuantity: String(form.get('minimumOrderQuantity') ?? ''),
         perishable: form.get('perishable') === 'on',
-        status: 'draft' as const,
       };
+
+      const publishNow = form.get('publish') === 'on';
+      const payload =
+        listing
+          ? {
+              ...basePayload,
+              status: publishNow ? ('active' as const) : listing.status,
+            }
+          : {
+              ...basePayload,
+              status: 'draft' as const,
+            };
 
       const saved = listing
         ? await updateListing(listing.id, payload)
@@ -43,7 +54,7 @@ export function ListingForm({ listing }: { listing?: Listing }) {
         await uploadListingPhotos(saved.data.id, files.slice(0, 5));
       }
 
-      if (form.get('publish') === 'on') {
+      if (!listing && publishNow) {
         await updateListing(saved.data.id, { status: 'active' });
       }
 
@@ -129,8 +140,13 @@ export function ListingForm({ listing }: { listing?: Listing }) {
           </Field>
         </div>
         <label className="flex items-center gap-3 text-base font-semibold text-forest md:col-span-2">
-          <input type="checkbox" name="publish" className="h-5 w-5" />
-          Publish now (needs at least one photo)
+          <input
+            type="checkbox"
+            name="publish"
+            className="h-5 w-5"
+            defaultChecked={listing?.status === 'active'}
+          />
+          {listing ? 'Keep published (active)' : 'Publish now (needs at least one photo)'}
         </label>
         <div className="md:col-span-2">
           <Button type="submit" disabled={pending}>

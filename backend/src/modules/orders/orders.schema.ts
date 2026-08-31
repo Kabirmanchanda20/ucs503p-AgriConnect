@@ -9,7 +9,11 @@ const paginationFields = {
 export const createOrderBodySchema = z
   .object({
     listingId: z.uuid(),
-    quantity: z.string().trim().regex(/^\d+(?:\.\d{1,3})?$/),
+    quantity: z
+      .string()
+      .trim()
+      .regex(/^\d+(?:\.\d{1,3})?$/)
+      .refine((value) => Number(value) > 0, 'quantity must be greater than zero'),
     deliveryMode: z.enum(DeliveryMode),
     notes: z.string().trim().max(1000).optional(),
   })

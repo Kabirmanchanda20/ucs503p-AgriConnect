@@ -119,3 +119,41 @@ export async function queryAssistant(input: {
 
   return { reply: extractReply(payload), source: 'gemini' };
 }
+
+export async function getAssistantStatus(): Promise<{
+  configured: boolean;
+  connected: boolean;
+  model: string;
+  source: 'gemini' | 'local';
+}> {
+  const env = getEnv();
+  if (!env.GEMINI_API_KEY) {
+    return {
+      configured: false,
+      connected: false,
+      model: env.GEMINI_MODEL,
+      source: 'local',
+    };
+  }
+
+  try {
+    const url = new URL(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL)}`,
+    );
+    url.searchParams.set('key', env.GEMINI_API_KEY);
+    const response = await fetch(url, { method: 'GET' });
+    return {
+      configured: true,
+      connected: response.ok,
+      model: env.GEMINI_MODEL,
+      source: response.ok ? 'gemini' : 'local',
+    };
+  } catch {
+    return {
+      configured: true,
+      connected: false,
+      model: env.GEMINI_MODEL,
+      source: 'local',
+    };
+  }
+}

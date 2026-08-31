@@ -298,6 +298,7 @@ Auth limiter: **10 failed requests / minute** → **429 `RATE_LIMIT_EXCEEDED`**.
 | **200** | — | Cookie set; `accessToken` + `user` |
 | **400** | `VALIDATION_ERROR` | Missing email/password |
 | **401** | `INVALID_CREDENTIALS` | Wrong password, unknown email, **or** locked (5 failures / 15 min). Message is always `"Invalid email or password"` |
+| **403** | `ACCOUNT_SUSPENDED` | Valid credentials but `isSuspended` — no session issued |
 
 #### `POST /refresh` — Cookie required — **200**
 

@@ -149,6 +149,14 @@ export async function login(
     data: { failedLoginAttempts: 0, lockedUntil: null },
   });
 
+  if (user.isSuspended) {
+    throw new AppError(
+      403,
+      'ACCOUNT_SUSPENDED',
+      'This account has been suspended',
+    );
+  }
+
   const refreshToken = await issueRefreshToken(user.id, meta);
   return {
     accessToken: signAccessToken(user.id, user.role),

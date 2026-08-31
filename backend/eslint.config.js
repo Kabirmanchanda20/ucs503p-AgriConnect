@@ -6,6 +6,7 @@ export default tseslint.config(
       'dist/**',
       'coverage/**',
       'src/generated/**',
+      'scripts/**',
       'eslint.config.js',
     ],
   },

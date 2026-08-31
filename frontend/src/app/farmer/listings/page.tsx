@@ -4,17 +4,22 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
 import { ListingCard } from '@/components/listing-card';
-import { Button, EmptyState, Spinner } from '@/components/ui';
+import { Button, EmptyState, Spinner, Alert } from '@/components/ui';
 import { listListings } from '@/lib/api/listings';
+import { getErrorMessage } from '@/lib/api/errors';
 import type { Listing } from '@/lib/api/types';
 
 function FarmerListings() {
   const [listings, setListings] = useState<Listing[] | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    void listListings({ mine: true, limit: 50 }).then((result) => setListings(result.data));
+    void listListings({ mine: true, limit: 50 })
+      .then((result) => setListings(result.data))
+      .catch((cause) => setError(getErrorMessage(cause)));
   }, []);
 
+  if (error && !listings) return <Alert>{error}</Alert>;
   if (!listings) return <Spinner />;
 
   return (

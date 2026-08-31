@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
 import { Alert, Badge, Button, Card, Field, Input, Select, Spinner, Textarea } from '@/components/ui';
+import { StarDisplay } from '@/components/star-rating';
 import { createOrder } from '@/lib/api/orders';
 import { getListing } from '@/lib/api/listings';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -82,6 +83,8 @@ export default function ListingDetailPage() {
           {listing.farmer ? (
             <p className="text-sm text-ink/60">
               Sold by {listing.farmer.farmName || listing.farmer.name}
+              {' · '}
+              <StarDisplay value={listing.farmer.ratingAvg} />
             </p>
           ) : null}
         </div>

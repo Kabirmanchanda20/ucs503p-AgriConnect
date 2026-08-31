@@ -13,9 +13,9 @@ function UsersAdmin() {
   const [query, setQuery] = useState('');
 
   function reload(search = query) {
-    void listAdminUsers({ q: search || undefined, limit: 50 }).then((result) =>
-      setUsers(result.data),
-    );
+    void listAdminUsers({ q: search || undefined, limit: 50 })
+      .then((result) => setUsers(result.data))
+      .catch((cause) => setError(getErrorMessage(cause)));
   }
 
   useEffect(() => {
@@ -40,6 +40,7 @@ function UsersAdmin() {
     }
   }
 
+  if (error && !users) return <Alert>{error}</Alert>;
   if (!users) return <Spinner />;
 
   return (

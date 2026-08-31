@@ -132,6 +132,10 @@ Validate with Zod in `src/lib/env.ts` (or `src/env.ts`) at build/start.
 5. Do **not** use Supabase Auth for app users. Express owns `users`.
 6. If RLS on `public` blocks Prisma: ensure the database user in the URI can DML; do not expose table grants to `anon` / `authenticated` Supabase roles.
 
+**Cursor + Supabase MCP:** `.cursor/mcp.json` points at your project (`project_ref` in the URL). After auth, use MCP tools (`list_tables`, `apply_migration`, `get_advisors`) to inspect schema and apply DDL without the direct `5432` port.
+
+**RLS (applied):** All app tables have RLS enabled and `REVOKE ALL` for `anon` / `authenticated`. The API uses the `postgres` pooler user (bypasses RLS). Do not add permissive RLS policies for `anon` — the frontend never queries Supabase tables directly.
+
 IP allowlist: if Supabase network restrictions are enabled, allow the backend host and local IP.
 
 ---

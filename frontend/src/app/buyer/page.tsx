@@ -3,26 +3,40 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
-import { Button, Card, Spinner } from '@/components/ui';
+import { Button, Card, Spinner, Alert } from '@/components/ui';
 import { getMyReport } from '@/lib/api/reports';
 import { listOrders } from '@/lib/api/orders';
+import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
 import type { BuyerReport } from '@/lib/api/types';
 
 function BuyerHome() {
   const [report, setReport] = useState<BuyerReport | null>(null);
   const [openOrders, setOpenOrders] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    void getMyReport().then((result) => {
-      if (result.data.role === 'BUYER') setReport(result.data);
-    });
-    void listOrders({ limit: 1 }).then((result) =>
-      setOpenOrders(result.pagination?.total ?? result.data.length),
-    );
+    void (async () => {
+      try {
+        const reportResult = await getMyReport();
+        if (reportResult.data.role === 'BUYER') {
+          setReport(reportResult.data);
+        } else {
+          setError('Could not load buyer dashboard data.');
+        }
+        const ordersResult = await listOrders({ status: 'pending', limit: 1 });
+        setOpenOrders(ordersResult.pagination?.total ?? ordersResult.data.length);
+      } catch (err) {
+        setError(getErrorMessage(err));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  if (!report) return <Spinner />;
+  if (loading) return <Spinner />;
+  if (error || !report) return <Alert>{error || 'Could not load buyer dashboard data.'}</Alert>;
 
   return (
     <div className="space-y-6">
@@ -39,7 +53,7 @@ function BuyerHome() {
         <Card>
           <p className="text-sm font-bold uppercase text-soil">Orders</p>
           <p className="font-display text-4xl text-forest">{report.totalOrders}</p>
-          <p className="text-sm text-ink/60">{openOrders} on record</p>
+          <p className="text-sm text-ink/60">{openOrders} pending orders</p>
         </Card>
         <Card>
           <p className="text-sm font-bold uppercase text-soil">Spend (fulfilled)</p>

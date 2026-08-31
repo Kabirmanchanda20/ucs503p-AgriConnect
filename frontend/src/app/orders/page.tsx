@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
-import { Badge, Card, EmptyState, Spinner } from '@/components/ui';
+import { Badge, Card, EmptyState, Spinner, Alert } from '@/components/ui';
 import { listOrders } from '@/lib/api/orders';
+import { getErrorMessage } from '@/lib/api/errors';
 import { formatDate, formatMoney, formatQty, titleCase } from '@/lib/format';
 import type { Order } from '@/lib/api/types';
 
@@ -18,11 +19,15 @@ const tones = {
 
 function OrdersList() {
   const [orders, setOrders] = useState<Order[] | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    void listOrders({ limit: 50 }).then((result) => setOrders(result.data));
+    void listOrders({ limit: 50 })
+      .then((result) => setOrders(result.data))
+      .catch((err) => setError(getErrorMessage(err)));
   }, []);
 
+  if (error) return <Alert>{error}</Alert>;
   if (!orders) return <Spinner />;
 
   return (

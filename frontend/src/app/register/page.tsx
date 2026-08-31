@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { dashboardPath, useAuth } from '@/features/auth/auth-context';
 import { GuestOnly } from '@/features/auth/guards';
@@ -12,6 +12,8 @@ import { getErrorMessage } from '@/lib/api/errors';
 function RegisterForm() {
   const { register } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const defaultRole = searchParams.get('role') === 'BUYER' ? 'BUYER' : 'FARMER';
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
 
@@ -44,7 +46,7 @@ function RegisterForm() {
       <form className="mt-6 grid gap-4" action={onSubmit}>
         {error ? <Alert>{error}</Alert> : null}
         <Field label="I am a">
-          <Select name="role" defaultValue="FARMER">
+          <Select name="role" defaultValue={defaultRole}>
             <option value="FARMER">Farmer — I sell produce</option>
             <option value="BUYER">Buyer — I purchase produce</option>
           </Select>

@@ -10,8 +10,21 @@ export class ApiError extends Error {
   }
 }
 
+export function formatFieldErrors(fields?: Record<string, string[]>) {
+  if (!fields) return '';
+  return Object.entries(fields)
+    .flatMap(([key, messages]) => messages.map((message) => `${key}: ${message}`))
+    .join(' · ');
+}
+
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong') {
-  if (error instanceof ApiError) return error.message;
+  if (error instanceof ApiError) {
+    const fieldDetail = formatFieldErrors(error.fields);
+    if (fieldDetail) {
+      return `${error.message} (${fieldDetail})`;
+    }
+    return error.message;
+  }
   if (error instanceof Error) return error.message;
   return fallback;
 }

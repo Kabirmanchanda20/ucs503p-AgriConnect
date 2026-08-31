@@ -232,6 +232,7 @@ Same shape as register `data` (`accessToken` + `user`). Sets refresh cookie.
 #### Errors
 
 - 401 `INVALID_CREDENTIALS` — `"Invalid email or password"` (also used when locked)
+- 403 `ACCOUNT_SUSPENDED` — `"This account has been suspended"` (valid credentials but account suspended)
 - 400 `VALIDATION_ERROR`
 
 ---
@@ -824,8 +825,8 @@ If listing is `active` and this was the last photo → listing forced to `draft`
     "status": "active",
     "photos": []
   },
-  "buyer": { "id": "77777777-7777-4777-8777-777777777777", "name": "Aman Singh" },
-  "farmer": { "id": "11111111-1111-4111-8111-111111111111", "name": "Ravi Kumar" },
+  "buyer": { "id": "77777777-7777-4777-8777-777777777777", "name": "Aman Singh", "ratingAvg": "4.50" },
+  "farmer": { "id": "11111111-1111-4111-8111-111111111111", "name": "Ravi Kumar", "ratingAvg": "4.80" },
   "createdAt": "2026-08-17T17:00:00.000Z",
   "updatedAt": "2026-08-17T17:00:00.000Z"
 }
@@ -938,6 +939,143 @@ Notifies both parties (`ORDER_STATUS_CHANGED`).
 
 ---
 
+### GET /api/v1/orders/:id/messages
+
+**Description:** Paginated order chat history (buyer ↔ farmer).
+**Auth:** Yes  
+**Roles:** order buyer or farmer
+
+#### Response — 200 — paginated message objects.
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "orderId": "66666666-6666-4666-8666-666666666666",
+      "senderId": "11111111-1111-4111-8111-111111111111",
+      "sender": { "id": "11111111-1111-4111-8111-111111111111", "name": "Ravi Kumar" },
+      "body": "Can you deliver tomorrow morning?",
+      "sentAt": "2026-08-17T17:05:00.000Z",
+      "readAt": null
+    }
+  ],
+  "pagination": { "total": 1, "page": 1, "limit": 50, "totalPages": 1 }
+}
+```
+
+---
+
+### POST /api/v1/orders/:id/messages
+
+**Description:** Send a message on an order thread. Persists to DB and pushes `message:new` over Socket.io to room `order:{orderId}`.
+**Auth:** Yes (active account)  
+**Roles:** order buyer or farmer
+
+#### Request
+
+```json
+{ "body": "Can you deliver tomorrow morning?" }
+```
+
+#### Response — 201 — message object.
+
+#### Errors
+
+- 400 `INVALID_REQUEST` — order is `cancelled`
+- 404 — order not found or not a participant
+
+---
+
+### POST /api/v1/orders/:id/messages/read
+
+**Description:** Mark all messages from the counterparty as read.
+**Auth:** Yes (active account)
+
+#### Response — 200
+
+```json
+{ "success": true, "data": { "orderId": "66666666-6666-4666-8666-666666666666", "markedRead": 2 } }
+```
+
+---
+
+### Real-time chat (Socket.io)
+
+- **Path:** `/socket.io` on the same host as the API (e.g. `http://localhost:5001`)
+- **Auth:** pass access JWT in handshake `auth.token` or `Authorization: Bearer`
+- **Join room:** emit `join:order` with `orderId` (ack returns `{ ok: true }`)
+- **Receive:** listen for `message:new` (same shape as REST message object)
+
+---
+
+## 5b. Reviews
+
+### Review object
+
+```json
+{
+  "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "orderId": "66666666-6666-4666-8666-666666666666",
+  "fromUserId": "77777777-7777-4777-8777-777777777777",
+  "toUserId": "11111111-1111-4111-8111-111111111111",
+  "rating": 5,
+  "comment": "Fresh produce, on time.",
+  "fromUser": { "id": "77777777-7777-4777-8777-777777777777", "name": "Aman Singh" },
+  "toUser": { "id": "11111111-1111-4111-8111-111111111111", "name": "Ravi Kumar" },
+  "createdAt": "2026-08-18T10:00:00.000Z"
+}
+```
+
+`ratingAvg` on `FarmerProfile` / `BuyerProfile` updates when a review is submitted.
+
+---
+
+### POST /api/v1/orders/:id/reviews
+
+**Description:** Rate the counterparty after fulfillment (buyer → farmer, farmer → buyer).
+**Auth:** Yes  
+**Roles:** order buyer or farmer
+
+#### Request
+
+```json
+{ "rating": 5, "comment": "Fresh produce, on time." }
+```
+
+#### Response — 201 — review object.
+
+#### Errors
+
+- 400 — order not `fulfilled`
+- 409 `CONFLICT` — already reviewed this order
+
+---
+
+### GET /api/v1/orders/:id/reviews
+
+**Auth:** Yes — order participants
+
+#### Response — 200 — paginated reviews for the order.
+
+---
+
+### GET /api/v1/orders/:id/reviews/me
+
+**Auth:** Yes — returns caller's review for this order or `null`.
+
+---
+
+### GET /api/v1/users/:id/reviews
+
+**Description:** Public list of reviews received by a user (farmer or buyer profile).
+**Auth:** No
+
+#### Response — 200 — paginated review objects.
+
+---
+
 ## 6. Notifications
 
 ### GET /api/v1/notifications
@@ -1029,6 +1167,60 @@ Notifies both parties (`ORDER_STATUS_CHANGED`).
 ```
 
 `totalSpend` from `fulfilled` (V1; pending not counted).
+
+---
+
+## 7b. Assistant (Kisan)
+
+### GET /api/v1/assistant/status
+
+**Description:** Check whether the Gemini-backed farm assistant is configured and reachable.
+**Auth:** Yes
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "configured": true,
+    "connected": true,
+    "model": "gemini-2.0-flash",
+    "source": "gemini"
+  }
+}
+```
+
+`source: "local"` when `GEMINI_API_KEY` is missing or the model endpoint is unreachable.
+
+---
+
+### POST /api/v1/assistant/query
+
+**Description:** Ask Kisan (role-aware Gemini chatbot).
+**Auth:** Yes  
+**Rate limit:** 20 requests / minute
+
+#### Request
+
+```json
+{
+  "message": "How do I list wheat?",
+  "history": [{ "role": "user", "content": "Hi" }, { "role": "assistant", "content": "Namaste!" }]
+}
+```
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Create a draft listing, add photos, then publish.",
+    "source": "gemini"
+  }
+}
+```
 
 ---
 

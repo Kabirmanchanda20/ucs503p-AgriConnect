@@ -5,36 +5,66 @@ const LOGO_WIDTH = 1536;
 const LOGO_HEIGHT = 1024;
 
 type LogoProps = {
-  /** header: nav bar (~52px tall). hero: landing feature (~176px tall). */
+  /** header: readable wordmark. hero: full illustrated lockup. */
   variant?: 'header' | 'hero';
   className?: string;
   linked?: boolean;
 };
 
-export function Logo({ variant = 'header', className, linked = true }: LogoProps) {
-  const image = (
-    // Plain img keeps PNG alpha intact and avoids stale /_next/image cache.
-    <img
-      src="/logo.png"
-      alt="AgriConnect — smart farm-to-market and crop advisory platform"
-      width={LOGO_WIDTH}
-      height={LOGO_HEIGHT}
-      decoding="async"
-      fetchPriority={variant === 'header' ? 'high' : 'auto'}
-      className={cx(
-        'w-auto object-contain',
-        variant === 'header' && 'h-11 max-w-[132px] sm:h-[52px] sm:max-w-[160px]',
-        variant === 'hero' &&
-          'h-40 max-w-[300px] sm:h-44 sm:max-w-[340px] md:h-48 md:max-w-[380px]',
-        className,
-      )}
-    />
+function HeaderWordmark() {
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <svg
+        viewBox="0 0 40 40"
+        className="h-9 w-9 shrink-0 sm:h-10 sm:w-10"
+        aria-hidden
+      >
+        <rect width="40" height="40" rx="10" fill="#3d7a4a" />
+        <ellipse cx="13.5" cy="18" rx="7" ry="5.2" transform="rotate(-38 13.5 18)" fill="#fffcf5" />
+        <ellipse cx="26.5" cy="18" rx="7" ry="5.2" transform="rotate(38 26.5 18)" fill="#fffcf5" />
+        <rect x="18.35" y="17" width="3.3" height="14.5" rx="1.6" fill="#d4a017" />
+      </svg>
+      <span className="font-display text-[1.35rem] leading-none tracking-tight text-paper sm:text-[1.55rem]">
+        AgriConnect
+      </span>
+    </span>
   );
+}
 
-  if (!linked) return image;
+export function Logo({ variant = 'header', className, linked = true }: LogoProps) {
+  const image =
+    variant === 'header' ? (
+      <HeaderWordmark />
+    ) : (
+      // Plain img keeps PNG alpha intact and avoids stale /_next/image cache.
+      <img
+        src="/logo.png"
+        alt="AgriConnect — smart farm-to-market and crop advisory platform"
+        width={LOGO_WIDTH}
+        height={LOGO_HEIGHT}
+        decoding="async"
+        fetchPriority="high"
+        className={cx(
+          'h-auto w-full max-w-[280px] object-contain object-left drop-shadow-sm sm:max-w-[380px] md:max-w-[500px]',
+          className,
+        )}
+      />
+    );
+
+  if (!linked) {
+    return variant === 'header' ? (
+      <span className={className}>{image}</span>
+    ) : (
+      image
+    );
+  }
 
   return (
-    <Link href="/" className="inline-flex shrink-0 items-center" aria-label="AgriConnect home">
+    <Link
+      href="/"
+      className={cx('inline-flex shrink-0 items-center', className)}
+      aria-label="AgriConnect home"
+    >
       {image}
     </Link>
   );

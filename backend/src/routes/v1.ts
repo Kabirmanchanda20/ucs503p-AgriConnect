@@ -7,6 +7,7 @@ import { listingsRouter } from '../modules/listings/listings.routes.js';
 import { notificationsRouter } from '../modules/notifications/notifications.routes.js';
 import { ordersRouter } from '../modules/orders/orders.routes.js';
 import { reportsRouter } from '../modules/reports/reports.routes.js';
+import { reviewsRouter } from '../modules/reviews/reviews.routes.js';
 import { usersRouter } from '../modules/users/users.routes.js';
 
 export const apiV1Router = Router();
@@ -24,5 +25,6 @@ apiV1Router.use('/listings', listingsRouter);
 apiV1Router.use('/orders', ordersRouter);
 apiV1Router.use('/notifications', notificationsRouter);
 apiV1Router.use('/reports', reportsRouter);
+apiV1Router.use('/', reviewsRouter);
 apiV1Router.use('/admin', adminRouter);
 apiV1Router.use('/assistant', assistantRouter);

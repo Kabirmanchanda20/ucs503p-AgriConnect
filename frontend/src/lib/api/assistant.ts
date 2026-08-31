@@ -12,6 +12,17 @@ export interface AssistantReply {
   source: 'gemini' | 'local';
 }
 
+export interface AssistantStatus {
+  configured: boolean;
+  connected: boolean;
+  model: string;
+  source: 'gemini' | 'local';
+}
+
+export function getAssistantStatus() {
+  return apiRequest<AssistantStatus>('/api/v1/assistant/status');
+}
+
 export function queryAssistant(input: {
   message: string;
   history?: AssistantTurn[];

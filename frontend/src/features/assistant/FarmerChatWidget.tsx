@@ -1,7 +1,7 @@
 'use client';
 
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
-import { queryAssistant } from '@/lib/api/assistant';
+import { getAssistantStatus, queryAssistant } from '@/lib/api/assistant';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { Role } from '@/lib/api/types';
 import { Button, cx } from '@/components/ui';
@@ -51,11 +51,18 @@ export function FarmerChatWidget({
   const [showHint, setShowHint] = useState(false);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
+  const [assistantOnline, setAssistantOnline] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     { id: 'welcome', role: 'assistant', content: greetingFor(role, firstName) },
   ]);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    void getAssistantStatus()
+      .then((result) => setAssistantOnline(result.data.connected))
+      .catch(() => setAssistantOnline(false));
+  }, []);
 
   useEffect(() => {
     try {
@@ -154,7 +161,10 @@ export function FarmerChatWidget({
               <h2 id={titleId} className="font-display text-lg leading-tight">
                 Ask Kisan
               </h2>
-              <p className="text-xs text-paper/75">Farm advisor</p>
+              <p className="text-xs text-paper/75">
+                Farm advisor
+                {assistantOnline === true ? ' · Online' : assistantOnline === false ? ' · Offline' : ''}
+              </p>
             </div>
             <button
               type="button"
