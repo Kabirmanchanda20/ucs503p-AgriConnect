@@ -6,6 +6,20 @@ import type { AssistantTurn } from './assistant.schema.js';
 export const MISSING_KEY_REPLY =
   "I'm ready to chat, but my field notes aren't connected yet. Ask the AgriConnect admin to add GEMINI_API_KEY to the backend .env file (from Google AI Studio), then try again.";
 
+const DEPRECATED_GEMINI_MODELS: Record<string, string> = {
+  'gemini-2.0-flash': 'gemini-3.6-flash',
+  'gemini-2.0-flash-exp': 'gemini-3.6-flash',
+  'gemini-2.0-flash-lite': 'gemini-3.6-flash',
+  'gemini-1.5-flash': 'gemini-3.6-flash',
+  'gemini-1.5-flash-8b': 'gemini-3.6-flash',
+};
+
+/** Maps retired model ids to a current default (also used when .env still names an old model). */
+export function resolveGeminiModel(model: string): string {
+  const normalized = model.trim().replace(/^models\//, '');
+  return DEPRECATED_GEMINI_MODELS[normalized] ?? normalized;
+}
+
 interface GeminiPart {
   text?: string;
 }
@@ -76,8 +90,9 @@ export async function queryAssistant(input: {
     return { reply: MISSING_KEY_REPLY, source: 'local' };
   }
 
+  const model = resolveGeminiModel(env.GEMINI_MODEL);
   const url = new URL(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
   );
   url.searchParams.set('key', env.GEMINI_API_KEY);
 
@@ -110,10 +125,15 @@ export async function queryAssistant(input: {
 
   if (!response.ok) {
     const status = response.status === 429 ? 429 : 502;
+    const apiMessage = payload.error?.message ?? '';
+    const userMessage =
+      apiMessage.includes('no longer available') || apiMessage.includes('not found')
+        ? 'Kisan is updating to a newer AI model. Restart the API after setting GEMINI_MODEL=gemini-3.6-flash in backend/.env.'
+        : apiMessage || 'The farm assistant is busy. Please try again shortly.';
     throw new AppError(
       status,
       status === 429 ? 'RATE_LIMIT_EXCEEDED' : 'ASSISTANT_UNAVAILABLE',
-      payload.error?.message ?? 'The farm assistant is busy. Please try again shortly.',
+      userMessage,
     );
   }
 
@@ -127,32 +147,33 @@ export async function getAssistantStatus(): Promise<{
   source: 'gemini' | 'local';
 }> {
   const env = getEnv();
+  const model = resolveGeminiModel(env.GEMINI_MODEL);
   if (!env.GEMINI_API_KEY) {
     return {
       configured: false,
       connected: false,
-      model: env.GEMINI_MODEL,
+      model,
       source: 'local',
     };
   }
 
   try {
     const url = new URL(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL)}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`,
     );
     url.searchParams.set('key', env.GEMINI_API_KEY);
     const response = await fetch(url, { method: 'GET' });
     return {
       configured: true,
       connected: response.ok,
-      model: env.GEMINI_MODEL,
+      model,
       source: response.ok ? 'gemini' : 'local',
     };
   } catch {
     return {
       configured: true,
       connected: false,
-      model: env.GEMINI_MODEL,
+      model,
       source: 'local',
     };
   }

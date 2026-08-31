@@ -1185,7 +1185,7 @@ Notifies both parties (`ORDER_STATUS_CHANGED`).
   "data": {
     "configured": true,
     "connected": true,
-    "model": "gemini-2.0-flash",
+    "model": "gemini-3.6-flash",
     "source": "gemini"
   }
 }

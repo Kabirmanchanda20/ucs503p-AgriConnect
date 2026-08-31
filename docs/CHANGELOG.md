@@ -10,6 +10,8 @@ Format: `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security`.
 
 ### Fixed
 
+- **Kisan AI model** — default `GEMINI_MODEL` is `gemini-3.6-flash`; retired ids (e.g. `gemini-2.0-flash`) are auto-mapped at runtime.
+- **Nav active state** — Dashboard no longer highlights together with My listings on `/farmer/listings`.
 - **Suspended login** — `POST /login` returns **403 `ACCOUNT_SUSPENDED`** instead of issuing tokens for suspended accounts (refresh + `/me` still work for already-signed-in users).
 - **Order quantity validation** — Zod rejects `quantity: "0"` at the API boundary (was only rejected in service).
 - **Login password** — empty password rejected by validation (`min(1)`).

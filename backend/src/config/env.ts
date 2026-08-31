@@ -59,7 +59,7 @@ const envSchema = z
     GEMINI_API_KEY: optionalString,
     GEMINI_MODEL: z.preprocess(
       (value) => (value === '' ? undefined : value),
-      z.string().min(1).default('gemini-2.0-flash'),
+      z.string().min(1).default('gemini-3.6-flash'),
     ),
   })
   .superRefine((value, context) => {

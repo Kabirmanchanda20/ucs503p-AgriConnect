@@ -10,9 +10,25 @@ import { FarmerChatWidget } from '@/features/assistant/FarmerChatWidget';
 import { Logo } from '@/components/logo';
 import { cx } from '@/components/ui';
 
+/** Dashboard roots match exactly; other nav items match their subtree (not sibling routes). */
+function isNavActive(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+
+  const dashboardRoots = ['/farmer', '/buyer', '/admin'];
+  if (dashboardRoots.includes(href)) return false;
+
+  if (!pathname.startsWith(`${href}/`)) return false;
+
+  if (href === '/farmer/listings' && pathname.startsWith('/farmer/listings/new')) {
+    return false;
+  }
+
+  return true;
+}
+
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   const pathname = usePathname();
-  const active = pathname === href || (href !== '/' && pathname.startsWith(href));
+  const active = isNavActive(pathname, href);
   return (
     <Link
       href={href}
