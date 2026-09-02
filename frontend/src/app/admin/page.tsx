@@ -2,18 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
-import { Card, Spinner } from '@/components/ui';
+import { Card, Spinner, Alert } from '@/components/ui';
 import { getAdminAnalytics } from '@/lib/api/admin';
+import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
 import type { AdminAnalytics } from '@/lib/api/types';
 
 function AdminHome() {
   const [stats, setStats] = useState<AdminAnalytics | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    void getAdminAnalytics().then((result) => setStats(result.data));
+    void getAdminAnalytics()
+      .then((result) => setStats(result.data))
+      .catch((cause) => setError(getErrorMessage(cause)));
   }, []);
 
+  if (error && !stats) return <Alert>{error}</Alert>;
   if (!stats) return <Spinner />;
 
   return (

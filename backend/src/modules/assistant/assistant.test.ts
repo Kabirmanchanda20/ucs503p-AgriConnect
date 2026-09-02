@@ -3,6 +3,7 @@ import { queryAssistantBodySchema } from './assistant.schema.js';
 import {
   MISSING_KEY_REPLY,
   buildSystemPrompt,
+  resolveGeminiModel,
   toGeminiContents,
 } from './assistant.service.js';
 
@@ -34,6 +35,16 @@ describe('assistant query schema', () => {
       queryAssistantBodySchema.safeParse({ message: 'next', history }).success,
     ).toBe(false);
   });
+
+  it('clips oversized history turns instead of rejecting them', () => {
+    const longReply = 'a'.repeat(5000);
+    const parsed = queryAssistantBodySchema.parse({
+      message: 'Thanks',
+      history: [{ role: 'assistant', content: longReply }],
+    });
+    expect(parsed.history[0]?.content.length).toBe(4000);
+    expect(parsed.history[0]?.content.endsWith('…')).toBe(true);
+  });
 });
 
 describe('assistant prompt mapping', () => {
@@ -42,6 +53,12 @@ describe('assistant prompt mapping', () => {
     expect(buildSystemPrompt('BUYER')).toMatch(/buyer on AgriConnect/i);
     expect(buildSystemPrompt('ADMIN')).toContain('admin');
     expect(MISSING_KEY_REPLY).toMatch(/GEMINI_API_KEY/);
+  });
+
+  it('maps retired Gemini model ids to the current default', () => {
+    expect(resolveGeminiModel('gemini-2.0-flash')).toBe('gemini-3.6-flash');
+    expect(resolveGeminiModel('models/gemini-2.0-flash')).toBe('gemini-3.6-flash');
+    expect(resolveGeminiModel('gemini-3.6-flash')).toBe('gemini-3.6-flash');
   });
 
   it('maps assistant history to Gemini model turns', () => {

@@ -2,7 +2,11 @@ import { asyncHandler } from '../../common/async-handler.js';
 import { AppError } from '../../common/app-error.js';
 import { sendSuccess } from '../../common/response.js';
 import type { QueryAssistantBody } from './assistant.schema.js';
-import { queryAssistant } from './assistant.service.js';
+import { getAssistantStatus, queryAssistant } from './assistant.service.js';
+
+export const getAssistantStatusController = asyncHandler(async (_request, response) => {
+  sendSuccess(response, await getAssistantStatus());
+});
 
 export const queryAssistantController = asyncHandler(async (request, response) => {
   if (!request.user) {

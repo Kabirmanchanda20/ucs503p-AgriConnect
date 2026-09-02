@@ -60,7 +60,10 @@ Browser  →  Next.js (UI)  →  Express REST API  →  Prisma  →  Supabase Po
 4. Farmers create listings as **draft**, upload 1–5 photos (JPEG/PNG/WebP, ≤5 MB), then **PATCH** status to `active`.
 5. Buyers place orders against **active** listings. Quantity is decremented in a database transaction so two buyers cannot oversell.
 6. The farmer **approves** (`accepted`), **changes** (`confirmed` → `fulfilled`), or **discards** (`cancelled` + reason). Buyers may discard only from `pending`. Admins may only cancel.
-7. In-app notifications fire on order and moderation events. The UI polls; Socket.io is reserved for V2.
+7. After **fulfilled**, buyer and farmer can rate each other; averages update on profiles.
+8. **Order-scoped chat** uses REST + Socket.io (`join:order`, `message:new`) on the order detail page.
+9. Farmers can open the **Kisan AI** widget (Gemini when `GEMINI_API_KEY` is set).
+10. In-app notifications fire on order and moderation events; the header badge polls and refreshes on mark-read.
 
 **Hard rules**
 
@@ -89,26 +92,31 @@ Names only — install current patched releases; do not copy old version pins fr
 | Auth | **jsonwebtoken** + bcryptjs | Access JWT + hashed refresh tokens |
 | Email | **Nodemailer** | Password reset; console fallback if SMTP unset |
 | Security | helmet, cors allowlist, express-rate-limit | Headers, cookies, 100 req/min API, 10 failed auth/min |
+| Real-time | Socket.io (order chat) | Same host as API (`/socket.io`) |
 | Logging | pino | Structured logs |
 | Tests | Vitest + Supertest | `backend` |
 | Local DB option | Docker Compose `postgres:16` | When not using cloud Postgres |
 | API exploration | Postman collection | `backend/postman/` |
 
-Not in V1: MongoDB, Mongoose, Vite, Passport/Google OAuth, Socket.io, FastAPI/ML.
+Not in product scope yet: payments/escrow, logistics tracking, separate ML service, MongoDB/Mongoose, Passport OAuth.
 
 ---
 
-## What is already built (V1)
+## What is already built
 
 | Area | Capability |
 |---|---|
-| Auth | Register (farmer/buyer), login, refresh, logout, `/me`, forgot/reset password, lockout after 5 failed logins |
+| Auth | Register (farmer/buyer), login, refresh, logout, `/me`, forgot/reset password, lockout after 5 failed logins; suspended users blocked at login |
 | Profiles | Farmer/buyer profiles, DPDP-style data export, soft-delete account |
 | Listings | Draft → photos → active; search/filter; view counts; expire/sold-out; farmer unpublish or delete |
 | Orders | Place order, inventory decrement, status machine, stock restore on cancel |
-| Notifications | List, mark one read, mark all read |
+| Chat | Order-scoped messages (REST + Socket.io on order detail) |
+| Reviews | Ratings after `fulfilled`; `ratingAvg` on profiles and order detail |
+| Assistant | Kisan AI widget (`GEMINI_API_KEY` optional) |
+| Notifications | List, mark read, mark all read; header unread badge |
 | Reports | Farmer: listings / qty sold / revenue (fulfilled). Buyer: orders / spend (fulfilled) |
-| Admin | Users (search, suspend, verify), listing moderate (remove/reinstate), analytics, activity logs |
+| Admin | Users (search, suspend, verify), listing moderate, analytics, activity logs |
+| CI / QA | GitHub Actions; `npx tsx scripts/integration-crud-check.ts` verifies API → Supabase writes |
 
 **Listing statuses:** `draft` → `active` ⇄ `draft`; `sold_out` / `expired` → `active`; `removed` is terminal for farmers (admin can reinstate).
 
@@ -131,11 +139,13 @@ Project AgriConnect/
 │   ├── src/
 │   │   ├── app.ts            # Middleware, rate limits, /health, /ready
 │   │   ├── routes/v1.ts      # Mounts /api/v1/*
-│   │   ├── modules/          # auth, users, listings, orders, notifications, reports, admin
+│   │   ├── modules/          # auth, users, listings, orders, messages, reviews, assistant, …
 │   │   ├── middleware/       # JWT, roles, Zod, errors
 │   │   └── services/         # email, storage, notifications
 │   ├── prisma/               # schema, migrations, seed
+│   ├── scripts/              # integration-crud-check, apply-pending-migration
 │   └── postman/
+├── .github/workflows/        # CI (typecheck, lint, test)
 ├── docs/                     # Contracts, architecture, guides
 ├── docker-compose.yml        # Optional local PostgreSQL
 ├── instruction.md            # Engineering blueprint (practices, not this product)
@@ -176,7 +186,15 @@ npm run prisma:seed
 npm run dev
 ```
 
+If `prisma migrate deploy` fails on direct port 5432 (common with Supabase), use the pooler fallback:
+
+```bash
+npm run prisma:deploy:pooler
+```
+
 API: `http://localhost:5001`. Seeded admin is `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`.
+
+Optional: set `GEMINI_API_KEY` for live Kisan AI replies.
 
 Optional local database:
 
@@ -214,6 +232,13 @@ npm audit --audit-level=high
 
 Frontend: `npm run lint`. Confirm `/health` returns `{ "success": true, "data": { "status": "ok" } }`.
 
+With the API running, verify frontend actions persist to Supabase:
+
+```bash
+cd backend
+npx tsx scripts/integration-crud-check.ts
+```
+
 ---
 
 ## API at a glance
@@ -225,6 +250,9 @@ Frontend: `npm run lint`. Confirm `/health` returns `{ "success": true, "data": 
 | GET | `/api/v1/auth/me` | Any logged-in user |
 | GET/POST/PATCH/DELETE | `/api/v1/listings` | Public browse; farmer writes |
 | POST/GET/PATCH | `/api/v1/orders`, `/orders/:id/status` | Buyer create; farmer/admin status |
+| GET/POST | `/api/v1/orders/:id/messages` | Order chat (Socket.io `message:new`) |
+| POST/GET | `/api/v1/orders/:id/reviews` | Ratings after fulfilled |
+| GET/POST | `/api/v1/assistant/status`, `/assistant/query` | Kisan AI (farmer) |
 | GET/PATCH/POST | `/api/v1/notifications` | Logged-in |
 | GET | `/api/v1/reports/me` | Farmer or buyer |
 | GET/PATCH | `/api/v1/admin/*` | Admin only |
@@ -236,7 +264,7 @@ Auth header: `Authorization: Bearer <accessToken>`. Browser calls use cookies fo
 | 200 / 201 | Success / created |
 | 400 | Validation or illegal approve / discard / change |
 | 401 | Missing, expired, or invalid token; bad login |
-| 403 | Wrong role, or account suspended on a write |
+| 403 | Wrong role, suspended login, or suspended write |
 | 404 | Missing resource, or not yours (IDOR-safe) |
 | 409 | Email taken or not enough listing quantity |
 | 413 / 415 | Photo too large / wrong type |
@@ -284,11 +312,11 @@ Cursor agents: `.cursor/rules/update-api-docs.mdc` requires API docs to update w
 
 ## Roadmap (V1 → V2 → V3)
 
-| Phase | Theme | Not in this repo yet |
+| Phase | Theme | Status |
 |---|---|---|
-| **V1 — Lab (current)** | Auth, RBAC, listings, orders, admin, notifications, reports | — |
-| **V2 — Prototype** | Chat, reviews, escrow-style payments, logistics tracking, Docker/CI, Socket.io | Do not add until scoped |
-| **V3 — Capstone** | ML advisory (separate Python service), richer market intelligence | Separate `ml-service/` later |
+| **V1 — Lab** | Auth, RBAC, listings, orders, admin, notifications, reports | Shipped |
+| **V2 — Prototype** | Chat, reviews, assistant, Docker/CI | Partially in repo (chat, reviews, assistant, CI) |
+| **V3 — Capstone** | ML advisory service, market intelligence | Not started |
 
 ---
 
@@ -296,7 +324,7 @@ Cursor agents: `.cursor/rules/update-api-docs.mdc` requires API docs to update w
 
 - Secrets stay in `backend/.env`. The only public frontend env is `NEXT_PUBLIC_API_BASE_URL`.
 - Refresh tokens are hashed in the database, rotated on every refresh, and reuse of an old token revokes the user’s refresh family.
-- Suspended users can still refresh and load `/me` (so the UI can show a blocked state) but cannot mutate listings, orders, or profiles.
+- Suspended users cannot log in (**403 `ACCOUNT_SUSPENDED`**) but may still refresh and load `/me` if they were signed in before suspension (UI shows blocked state). Writes use `requireActiveAccount` (listings, orders, chat, reviews, assistant query, profile).
 - Rate limits apply to `/api` and more strictly to `/api/v1/auth`.
 - Ownership checks return **404**, not 403, so listings/orders of other users are not confirmed to exist.
 
@@ -312,6 +340,8 @@ Cursor agents: `.cursor/rules/update-api-docs.mdc` requires API docs to update w
 | `npm run build` / `npm start` | Production compile + run |
 | `npm run typecheck` / `lint` / `test` | Quality gates |
 | `npm run prisma:generate` / `migrate` / `seed` | Database |
+| `npm run prisma:deploy:pooler` | Migrate via pooler when direct 5432 blocked |
+| `npx tsx scripts/integration-crud-check.ts` | Live API → DB sync test (API must be running) |
 
 **Frontend** (`cd frontend`)
 

@@ -3,10 +3,12 @@ import { app } from './app.js';
 import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { getEnv } from './config/env.js';
 import { logger } from './config/logger.js';
+import { initSocketIO } from './config/socket.js';
 import { expireDueListings } from './modules/listings/listings.service.js';
 
 const env = getEnv();
 const server = createServer(app);
+initSocketIO(server);
 let shuttingDown = false;
 
 function shutdown(signal: NodeJS.Signals): void {

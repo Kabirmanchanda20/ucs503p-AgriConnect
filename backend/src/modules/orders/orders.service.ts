@@ -26,8 +26,20 @@ const orderInclude = {
       },
     },
   },
-  buyer: { select: { id: true, name: true } },
-  farmer: { select: { id: true, name: true } },
+  buyer: {
+    select: {
+      id: true,
+      name: true,
+      buyerProfile: { select: { ratingAvg: true } },
+    },
+  },
+  farmer: {
+    select: {
+      id: true,
+      name: true,
+      farmerProfile: { select: { ratingAvg: true } },
+    },
+  },
 } satisfies Prisma.OrderInclude;
 
 interface AuthenticatedActor {
@@ -52,8 +64,20 @@ function serializeOrder(
     notes: order.notes,
     cancellationReason: order.cancellationReason,
     listing: order.listing,
-    buyer: order.buyer,
-    farmer: order.farmer,
+    buyer: {
+      id: order.buyer.id,
+      name: order.buyer.name,
+      ratingAvg: order.buyer.buyerProfile?.ratingAvg
+        ? moneyString(order.buyer.buyerProfile.ratingAvg)
+        : null,
+    },
+    farmer: {
+      id: order.farmer.id,
+      name: order.farmer.name,
+      ratingAvg: order.farmer.farmerProfile?.ratingAvg
+        ? moneyString(order.farmer.farmerProfile.ratingAvg)
+        : null,
+    },
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
   };

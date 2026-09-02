@@ -2,18 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
-import { Card, EmptyState, Spinner } from '@/components/ui';
+import { Card, EmptyState, Spinner, Alert } from '@/components/ui';
 import { listActivityLogs } from '@/lib/api/admin';
+import { getErrorMessage } from '@/lib/api/errors';
 import { formatDate, titleCase } from '@/lib/format';
 import type { ActivityLog } from '@/lib/api/types';
 
 function Logs() {
   const [logs, setLogs] = useState<ActivityLog[] | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    void listActivityLogs({ limit: 50 }).then((result) => setLogs(result.data));
+    void listActivityLogs({ limit: 50 })
+      .then((result) => setLogs(result.data))
+      .catch((cause) => setError(getErrorMessage(cause)));
   }, []);
 
+  if (error && !logs) return <Alert>{error}</Alert>;
   if (!logs) return <Spinner />;
 
   return (

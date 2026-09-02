@@ -3,6 +3,8 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
+import { OrderChat } from '@/features/messages/OrderChat';
+import { OrderReviewSection } from '@/features/reviews/OrderReviewSection';
 import { useAuth } from '@/features/auth/auth-context';
 import { Alert, Badge, Button, Card, Field, Spinner, Textarea } from '@/components/ui';
 import { getOrder, updateOrderStatus } from '@/lib/api/orders';
@@ -64,8 +66,16 @@ function OrderDetail() {
   if (!order || !user) return <Spinner />;
 
   const actions = nextActions(order, user.id, user.role);
+  const counterparty =
+    user.id === order.buyerId
+      ? { name: order.farmer?.name ?? 'Farmer', id: order.farmerId }
+      : { name: order.buyer?.name ?? 'Buyer', id: order.buyerId };
+  const counterpartyRating =
+    user.id === order.buyerId ? order.farmer?.ratingAvg : order.buyer?.ratingAvg;
+  const chatDisabled = order.status === 'cancelled';
 
   return (
+    <div className="space-y-6">
     <Card className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-4xl text-forest">
@@ -110,6 +120,17 @@ function OrderDetail() {
         )}
       </div>
     </Card>
+
+    <OrderChat orderId={order.id} userId={user.id} disabled={chatDisabled} />
+
+    {order.status === 'fulfilled' ? (
+      <OrderReviewSection
+        orderId={order.id}
+        counterpartyName={counterparty.name}
+        counterpartyRating={counterpartyRating}
+      />
+    ) : null}
+    </div>
   );
 }
 

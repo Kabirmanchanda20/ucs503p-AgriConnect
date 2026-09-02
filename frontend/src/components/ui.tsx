@@ -9,7 +9,7 @@ export function Button({
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold' | 'outline-light';
 }) {
   const styles = {
     primary:
@@ -18,6 +18,10 @@ export function Button({
       'bg-paper text-forest border border-forest/20 hover:border-forest/50',
     ghost: 'bg-transparent text-forest hover:bg-forest/8',
     danger: 'bg-clay text-paper hover:bg-clay/90',
+    // Forest on harvest gold — do not pair harvest with text-soil (fails contrast).
+    gold: 'bg-harvest text-forest hover:bg-[#c49212] disabled:bg-soil/40',
+    'outline-light':
+      'border border-paper/55 bg-transparent text-paper hover:border-paper hover:bg-paper/10',
   }[variant];
 
   return (

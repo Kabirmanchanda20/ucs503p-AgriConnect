@@ -15,9 +15,9 @@ function AdminListings() {
   const [status, setStatus] = useState<ListingStatus>('active');
 
   function reload(nextStatus = status) {
-    void listListings({ status: nextStatus, limit: 50 }).then((result) =>
-      setListings(result.data),
-    );
+    void listListings({ status: nextStatus, limit: 50 })
+      .then((result) => setListings(result.data))
+      .catch((cause) => setError(getErrorMessage(cause)));
   }
 
   useEffect(() => {
@@ -38,6 +38,7 @@ function AdminListings() {
     }
   }
 
+  if (error && !listings) return <Alert>{error}</Alert>;
   if (!listings) return <Spinner />;
 
   return (

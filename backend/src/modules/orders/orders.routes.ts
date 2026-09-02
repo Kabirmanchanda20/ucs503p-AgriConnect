@@ -10,6 +10,15 @@ import {
   updateOrderStatusController,
 } from './orders.controller.js';
 import {
+  createMessageController,
+  listMessagesController,
+  markMessagesReadController,
+} from '../messages/messages.controller.js';
+import {
+  createMessageBodySchema,
+  listMessagesQuerySchema,
+} from '../messages/messages.schema.js';
+import {
   createOrderBodySchema,
   listOrdersQuerySchema,
   orderIdParamsSchema,
@@ -38,4 +47,24 @@ ordersRouter.patch(
   requireActiveAccount,
   validate({ params: orderIdParamsSchema, body: updateOrderStatusBodySchema }),
   updateOrderStatusController,
+);
+
+ordersRouter.get(
+  '/:id/messages',
+  validate({ params: orderIdParamsSchema, query: listMessagesQuerySchema }),
+  listMessagesController,
+);
+
+ordersRouter.post(
+  '/:id/messages',
+  requireActiveAccount,
+  validate({ params: orderIdParamsSchema, body: createMessageBodySchema }),
+  createMessageController,
+);
+
+ordersRouter.post(
+  '/:id/messages/read',
+  requireActiveAccount,
+  validate({ params: orderIdParamsSchema }),
+  markMessagesReadController,
 );

@@ -9,29 +9,31 @@ export default function HomePage() {
       <section className="landing-hero relative isolate overflow-hidden text-paper">
         <div className="landing-hero-glow" aria-hidden />
         <div className="relative mx-auto flex min-h-[min(88vh,760px)] max-w-6xl flex-col justify-center px-5 py-16 sm:px-8 md:px-12">
-          <div className="landing-rise">
-            <Logo variant="hero" linked={false} className="mb-8 drop-shadow-sm" />
-            <h1 className="max-w-3xl font-display text-[2.35rem] leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
-              Sell harvest and buy produce without the middleman.
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-paper/85 sm:text-lg">
-              AgriConnect connects farmers and buyers: list crops with photos, find fair
-              local prices, and track every order in one place — free to join.
-            </p>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link href="/register" className="landing-cta-primary">
-                <Button className="min-h-12 bg-harvest px-6 text-soil hover:bg-harvest/90">
-                  Join free — sell or buy
-                </Button>
-              </Link>
-              <Link href="/marketplace">
-                <Button
-                  variant="secondary"
-                  className="min-h-12 border-paper/35 bg-transparent text-paper hover:border-paper/60 hover:bg-paper/10"
-                >
-                  Browse fresh produce
-                </Button>
-              </Link>
+          <div className="landing-rise grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+            <Logo variant="hero" linked={false} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-harvest">
+                Farm-to-market marketplace
+              </p>
+              <h1 className="mt-3 max-w-xl font-display text-[2.15rem] font-semibold leading-[1.15] tracking-tight sm:text-5xl md:text-[3.25rem]">
+                Sell harvest and buy produce without the middleman.
+              </h1>
+              <p className="mt-5 max-w-xl font-sans text-lg leading-relaxed text-paper/90 sm:text-xl">
+                AgriConnect connects farmers and buyers: list crops with photos, find fair
+                local prices, and track every order in one place — free to join.
+              </p>
+              <div className="mt-9 flex flex-wrap items-center gap-3">
+                <Link href="/register" className="landing-cta-primary">
+                  <Button variant="gold" className="min-h-12 px-6">
+                    Join free — sell or buy
+                  </Button>
+                </Link>
+                <Link href="/marketplace">
+                  <Button variant="outline-light" className="min-h-12">
+                    Browse fresh produce
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -156,15 +158,12 @@ export default function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/register" className="landing-cta-primary">
-              <Button className="min-h-12 bg-harvest px-6 text-soil hover:bg-harvest/90">
+              <Button variant="gold" className="min-h-12 px-6">
                 Create your free account
               </Button>
             </Link>
             <Link href="/marketplace">
-              <Button
-                variant="secondary"
-                className="min-h-12 border-paper/35 bg-transparent text-paper hover:bg-paper/10"
-              >
+              <Button variant="outline-light" className="min-h-12">
                 Browse listings
               </Button>
             </Link>

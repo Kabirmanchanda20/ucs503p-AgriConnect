@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
-import { Button, Card, EmptyState, Spinner } from '@/components/ui';
+import { Button, Card, EmptyState, Spinner, Alert } from '@/components/ui';
 import { getMyReport } from '@/lib/api/reports';
 import { listListings } from '@/lib/api/listings';
 import { listOrders } from '@/lib/api/orders';
+import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
 import type { FarmerReport } from '@/lib/api/types';
 
@@ -14,20 +15,34 @@ function FarmerHome() {
   const [report, setReport] = useState<FarmerReport | null>(null);
   const [openOrders, setOpenOrders] = useState(0);
   const [activeListings, setActiveListings] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    void getMyReport().then((result) => {
-      if (result.data.role === 'FARMER') setReport(result.data);
-    });
-    void listOrders({ status: 'pending', limit: 1 }).then((result) =>
-      setOpenOrders(result.pagination?.total ?? result.data.length),
-    );
-    void listListings({ mine: true, status: 'active', limit: 1 }).then((result) =>
-      setActiveListings(result.pagination?.total ?? result.data.length),
-    );
+    void (async () => {
+      try {
+        const reportResult = await getMyReport();
+        if (reportResult.data.role === 'FARMER') {
+          setReport(reportResult.data);
+        } else {
+          setError('Could not load farmer dashboard data.');
+        }
+        const ordersResult = await listOrders({ status: 'pending', limit: 1 });
+        setOpenOrders(ordersResult.pagination?.total ?? ordersResult.data.length);
+        const listingsResult = await listListings({ mine: true, status: 'active', limit: 1 });
+        setActiveListings(
+          listingsResult.pagination?.total ?? listingsResult.data.length,
+        );
+      } catch (err) {
+        setError(getErrorMessage(err));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  if (!report) return <Spinner />;
+  if (loading) return <Spinner />;
+  if (error || !report) return <Alert>{error || 'Could not load farmer dashboard data.'}</Alert>;
 
   return (
     <div className="space-y-6">

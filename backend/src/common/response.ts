@@ -13,6 +13,7 @@ export function sendSuccess(
   data: unknown,
   statusCode = 200,
 ): Response {
+  response.set('Cache-Control', 'no-store');
   return response.status(statusCode).json({ success: true, data });
 }
 
@@ -21,6 +22,7 @@ export function sendPaginated(
   data: unknown[],
   pagination: Pagination,
 ): Response {
+  response.set('Cache-Control', 'no-store');
   return response.status(200).json({ success: true, data, pagination });
 }
 

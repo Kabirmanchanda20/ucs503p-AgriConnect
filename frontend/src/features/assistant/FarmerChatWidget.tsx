@@ -1,7 +1,7 @@
 'use client';
 
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
-import { queryAssistant } from '@/lib/api/assistant';
+import { getAssistantStatus, queryAssistant } from '@/lib/api/assistant';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { Role } from '@/lib/api/types';
 import { Button, cx } from '@/components/ui';
@@ -36,6 +36,20 @@ function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function clipForHistory(content: string, max = 2000): string {
+  const trimmed = content.trim();
+  if (trimmed.length <= max) return trimmed;
+  return `${trimmed.slice(0, max - 1)}…`;
+}
+
+function readHintDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(HINT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function FarmerChatWidget({
   role,
   name,
@@ -48,9 +62,12 @@ export function FarmerChatWidget({
   const inputId = useId();
   const firstName = name.split(' ')[0] ?? '';
   const [open, setOpen] = useState(false);
-  const [showHint, setShowHint] = useState(false);
+  const [showHint, setShowHint] = useState(() =>
+    typeof window === 'undefined' ? true : !readHintDismissed(),
+  );
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
+  const [assistantOnline, setAssistantOnline] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     { id: 'welcome', role: 'assistant', content: greetingFor(role, firstName) },
   ]);
@@ -58,11 +75,9 @@ export function FarmerChatWidget({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    try {
-      setShowHint(window.localStorage.getItem(HINT_KEY) !== '1');
-    } catch {
-      setShowHint(true);
-    }
+    void getAssistantStatus()
+      .then((result) => setAssistantOnline(result.data.connected))
+      .catch(() => setAssistantOnline(false));
   }, []);
 
   useEffect(() => {
@@ -110,22 +125,30 @@ export function FarmerChatWidget({
         .filter((item) => item.id !== 'welcome')
         .slice(0, -1)
         .slice(-8)
-        .map((item) => ({ role: item.role, content: item.content }));
+        .map((item) => ({
+          role: item.role,
+          content: clipForHistory(item.content),
+        }));
       const { data } = await queryAssistant({ message, history });
       setMessages((current) => [
         ...current,
         { id: newId(), role: 'assistant', content: data.reply },
       ]);
     } catch (error) {
+      const raw = getErrorMessage(
+        error,
+        "I couldn't reach the fields just now. Please try again in a moment.",
+      );
+      const friendly =
+        raw.includes('Validation failed') || raw.includes('Too big')
+          ? "That reply was too long to continue the chat. I've reset — please ask again."
+          : raw;
       setMessages((current) => [
         ...current,
         {
           id: newId(),
           role: 'assistant',
-          content: getErrorMessage(
-            error,
-            "I couldn't reach the fields just now. Please try again in a moment.",
-          ),
+          content: friendly,
         },
       ]);
     } finally {
@@ -154,7 +177,10 @@ export function FarmerChatWidget({
               <h2 id={titleId} className="font-display text-lg leading-tight">
                 Ask Kisan
               </h2>
-              <p className="text-xs text-paper/75">Farm advisor</p>
+              <p className="text-xs text-paper/75">
+                Farm advisor
+                {assistantOnline === true ? ' · Online' : assistantOnline === false ? ' · Offline' : ''}
+              </p>
             </div>
             <button
               type="button"

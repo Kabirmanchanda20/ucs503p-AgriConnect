@@ -92,6 +92,7 @@ export async function apiRequest<T>(
 
     return fetch(`${API_BASE_URL}${path}${toQuery(query)}`, {
       ...init,
+      cache: 'no-store',
       credentials: 'include',
       headers: requestHeaders,
       body: isFormData

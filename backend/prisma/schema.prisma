@@ -51,6 +51,7 @@ enum BuyerType {
 enum NotificationType {
   ORDER_PLACED
   ORDER_STATUS_CHANGED
+  MESSAGE_RECEIVED
   LISTING_EXPIRING
   ACCOUNT_SUSPENDED
   LISTING_MODERATED
@@ -83,6 +84,9 @@ model User {
   adminActivityLogs   AdminActivityLog[]   @relation("AdminActor")
   buyerOrders         Order[]              @relation("OrderBuyer")
   farmerOrders        Order[]              @relation("OrderFarmer")
+  messagesSent        Message[]
+  reviewsWritten      Review[]             @relation("ReviewAuthor")
+  reviewsReceived     Review[]             @relation("ReviewTarget")
 
   @@index([role])
   @@index([isSuspended])
@@ -185,6 +189,8 @@ model Order {
   listing            Listing      @relation(fields: [listingId], references: [id])
   buyer              User         @relation("OrderBuyer", fields: [buyerId], references: [id])
   farmer             User         @relation("OrderFarmer", fields: [farmerId], references: [id])
+  messages           Message[]
+  reviews            Review[]
 
   @@index([buyerId])
   @@index([farmerId])
@@ -261,4 +267,36 @@ model AdminActivityLog {
   @@index([actorId, createdAt])
   @@index([targetType, targetId])
   @@map("admin_activity_logs")
+}
+
+model Message {
+  id        String    @id @default(uuid()) @db.Uuid
+  orderId   String    @db.Uuid
+  senderId  String    @db.Uuid
+  body      String
+  sentAt    DateTime  @default(now()) @db.Timestamptz(6)
+  readAt    DateTime? @db.Timestamptz(6)
+  order     Order     @relation(fields: [orderId], references: [id])
+  sender    User      @relation(fields: [senderId], references: [id])
+
+  @@index([orderId, sentAt])
+  @@map("messages")
+}
+
+model Review {
+  id         String   @id @default(uuid()) @db.Uuid
+  orderId    String   @db.Uuid
+  fromUserId String   @db.Uuid
+  toUserId   String   @db.Uuid
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+  order      Order    @relation(fields: [orderId], references: [id])
+  fromUser   User     @relation("ReviewAuthor", fields: [fromUserId], references: [id])
+  toUser     User     @relation("ReviewTarget", fields: [toUserId], references: [id])
+
+  @@unique([orderId, fromUserId])
+  @@index([toUserId])
+  @@map("reviews")
 }

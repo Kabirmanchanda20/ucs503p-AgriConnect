@@ -67,9 +67,14 @@ Never `fetch` ad-hoc in a page if a wrapper already exists. Add a function in `s
 | `users.ts` | profile, export, delete |
 | `notifications.ts` | list, read, read-all |
 | `reports.ts` | `/reports/me` |
+| `messages.ts` | order chat history, send, mark read |
+| `reviews.ts` | order/user reviews, submit rating |
+| `assistant.ts` | Kisan query + `/assistant/status` |
+| `socket.ts` | Socket.io client (`join:order`, `message:new`) |
 | `admin.ts` | users, suspend, verify, moderate, analytics, logs |
 | `types.ts` | Shared TS types (must match API JSON) |
-| `errors.ts` | `ApiError`, `getErrorMessage` |
+| `errors.ts` | `ApiError`, `getErrorMessage` (includes Zod `fields` when present), `formatFieldErrors` |
+| `notifications-events.ts` | `notifyNotificationsUpdated` / `onNotificationsUpdated` for header badge refresh |
 | `token-store.ts` | In-memory access token (**not** localStorage) |
 
 ### Rules the client already enforces

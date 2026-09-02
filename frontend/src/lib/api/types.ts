@@ -104,8 +104,8 @@ export interface Order {
   notes: string | null;
   cancellationReason: string | null;
   listing?: Pick<Listing, 'id' | 'crop' | 'status' | 'photos'>;
-  buyer?: { id: string; name: string };
-  farmer?: { id: string; name: string };
+  buyer?: { id: string; name: string; ratingAvg?: string | number | null };
+  farmer?: { id: string; name: string; ratingAvg?: string | number | null };
   createdAt: string;
   updatedAt: string;
 }
