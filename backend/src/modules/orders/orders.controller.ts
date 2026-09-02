@@ -11,6 +11,7 @@ import {
   createOrder,
   getOrder,
   listOrders,
+  updateOrderLogistics,
   updateOrderStatus,
 } from './orders.service.js';
 
@@ -52,6 +53,16 @@ export const updateOrderStatusController = asyncHandler(async (request, response
     authenticated(request),
     orderId(request),
     request.body as UpdateOrderStatusInput,
+  );
+  sendSuccess(response, order);
+});
+
+export const updateOrderLogisticsController = asyncHandler(async (request, response) => {
+  const order = await updateOrderLogistics(
+    authenticated(request),
+    orderId(request),
+    (request.body as { logisticsStatus: 'dispatched' | 'in_transit' | 'delivered' })
+      .logisticsStatus,
   );
   sendSuccess(response, order);
 });

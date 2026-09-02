@@ -103,6 +103,16 @@ export interface Order {
   deliveryMode: DeliveryMode;
   notes: string | null;
   cancellationReason: string | null;
+  logisticsStatus?: 'none' | 'dispatched' | 'in_transit' | 'delivered';
+  dispatchedAt?: string | null;
+  inTransitAt?: string | null;
+  logisticsDeliveredAt?: string | null;
+  payment?: {
+    id: string;
+    status: string;
+    provider: string;
+    amount: string;
+  } | null;
   listing?: Pick<Listing, 'id' | 'crop' | 'status' | 'photos'>;
   buyer?: { id: string; name: string; ratingAvg?: string | number | null };
   farmer?: { id: string; name: string; ratingAvg?: string | number | null };

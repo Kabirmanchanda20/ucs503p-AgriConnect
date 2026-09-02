@@ -96,6 +96,12 @@ export function initSocketIO(server: HttpServer): Server {
         void appSocket.leave(`order:${orderId}`);
       }
     });
+
+    appSocket.on('typing:start', (orderId: string) => {
+      if (typeof orderId === 'string') {
+        appSocket.to(`order:${orderId}`).emit('typing', { orderId, userId: user.id });
+      }
+    });
   });
 
   logger.info('Socket.io initialized');

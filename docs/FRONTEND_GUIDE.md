@@ -32,10 +32,11 @@ There is no frontend unit-test script in V1. Treat the API contract + manual flo
 ```
 frontend/src/
 ├── app/                      # App Router pages
-│   ├── page.tsx              # Public landing / marketplace entry
+│   ├── page.tsx              # Public landing (logo hero + live listings)
 │   ├── login / register / forgot-password / reset-password
-│   ├── marketplace/          # Browse listings
-│   ├── listings/[id]/        # Public listing detail
+│   ├── marketplace/          # Public browse (no login)
+│   ├── listings/[id]/        # Public listing detail (order needs buyer)
+│   ├── market-prices/        # Public mandi / reference prices
 │   ├── farmer/               # Farmer dashboard + listing CRUD
 │   ├── buyer/                # Buyer home
 │   ├── orders/               # List + [id] status actions
@@ -44,13 +45,23 @@ frontend/src/
 │   ├── dashboard/            # Role redirect hub
 │   └── admin/                # Users, listings moderate, logs, analytics
 ├── components/               # shell, listing-card, ui primitives, providers
-├── features/auth/            # AuthProvider, RequireAuth, GuestOnly
+├── features/
+│   ├── auth/                 # AuthProvider, RequireAuth, GuestOnly
+│   ├── home/                 # Public landing listings preview
+│   ├── assistant/            # Kisan chat widget
+│   ├── messages/             # Order chat
+│   ├── listings/             # Listing form
+│   └── reviews/              # Order review UI
 └── lib/
     ├── api/                  # HTTP client — keep in sync with the contract
     ├── env.ts
     ├── constants.ts
     └── format.ts             # money / qty / dates for decimal strings
 ```
+
+The landing page uses the illustrated AgriConnect logo on a forest banner, a marketplace promo, and a live listings preview. Live mandi rates are on `/market-prices` (linked in the header). Marketplace, listing, and dashboard pages stay conventional UI.
+
+**Without an account** a visitor can use: `/` (home), `/marketplace`, `/listings/:id` (view only), `/market-prices`. Sign-in is required to list, order, chat, or open dashboards.
 
 ---
 
@@ -132,7 +143,8 @@ If `user.isSuspended`, mutating API calls return **403 `ACCOUNT_SUSPENDED`**. Sh
 | User goal | Page | API |
 |---|---|---|
 | Register / login | `app/register`, `app/login` | `POST /auth/register`, `/login` |
-| Browse crops | `app/marketplace` | `GET /listings` |
+| Browse crops | `app/marketplace` | `GET /listings` (public) |
+| Mandi / reference prices | `app/market-prices` | `GET /market/prices`, `/market/mandi/prices` (public) |
 | Listing detail | `app/listings/[id]` | `GET /listings/:id`, `GET /users/:id/public` |
 | Create listing | `app/farmer/listings/new` | `POST /listings` (draft) → `POST .../photos` → `PATCH` `{ status: "active" }` |
 | Edit listing | `app/farmer/listings/[id]/edit` | `PATCH /listings/:id`, photo add/delete |

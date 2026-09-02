@@ -43,3 +43,31 @@ export async function sendPasswordResetEmail(
     html: `<p>Reset your password using the link below. It is valid for one hour.</p><p><a href="${resetUrl}">Reset password</a></p>`,
   });
 }
+
+export async function sendUserNotificationEmail(
+  userId: string,
+  title: string,
+  body: string,
+): Promise<void> {
+  const transport = getTransporter();
+  if (!transport) return;
+
+  const { getPrismaClient } = await import('../config/db.js');
+  const user = await getPrismaClient().user.findUnique({
+    where: { id: userId },
+    select: { email: true, deletedAt: true },
+  });
+  if (!user?.email || user.deletedAt) return;
+
+  try {
+    await transport.sendMail({
+      from: getEnv().EMAIL_FROM,
+      to: user.email,
+      subject: `AgriConnect — ${title}`,
+      text: body,
+      html: `<p>${body}</p><p><small>Log in to AgriConnect to view details.</small></p>`,
+    });
+  } catch (error) {
+    logger.warn({ err: error, userId }, 'Notification email failed');
+  }
+}

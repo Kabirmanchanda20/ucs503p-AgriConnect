@@ -4,8 +4,8 @@ import { sendSuccess } from '../../common/response.js';
 import type { QueryAssistantBody } from './assistant.schema.js';
 import { getAssistantStatus, queryAssistant } from './assistant.service.js';
 
-export const getAssistantStatusController = asyncHandler(async (_request, response) => {
-  sendSuccess(response, await getAssistantStatus());
+export const getAssistantStatusController = asyncHandler((_request, response) => {
+  sendSuccess(response, getAssistantStatus());
 });
 
 export const queryAssistantController = asyncHandler(async (request, response) => {

@@ -23,7 +23,7 @@ export const assistantTurnSchema = z
 export const queryAssistantBodySchema = z
   .object({
     message: z.string().trim().min(1).max(USER_MESSAGE_MAX),
-    history: z.array(assistantTurnSchema).max(8).default([]),
+    history: z.array(assistantTurnSchema).max(4).default([]),
   })
   .strict();
 

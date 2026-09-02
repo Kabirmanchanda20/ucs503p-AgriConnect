@@ -3,11 +3,12 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
+import { OrderTimeline } from '@/features/orders/OrderTimeline';
 import { OrderChat } from '@/features/messages/OrderChat';
 import { OrderReviewSection } from '@/features/reviews/OrderReviewSection';
 import { useAuth } from '@/features/auth/auth-context';
 import { Alert, Badge, Button, Card, Field, Spinner, Textarea } from '@/components/ui';
-import { getOrder, updateOrderStatus } from '@/lib/api/orders';
+import { getOrder, updateOrderStatus, updateOrderLogistics, initOrderPayment, confirmOrderPaymentHeld } from '@/lib/api/orders';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatDate, formatMoney, formatQty, titleCase } from '@/lib/format';
 import type { Order, OrderStatus } from '@/lib/api/types';
@@ -73,6 +74,41 @@ function OrderDetail() {
   const counterpartyRating =
     user.id === order.buyerId ? order.farmer?.ratingAvg : order.buyer?.ratingAvg;
   const chatDisabled = order.status === 'cancelled';
+  const isFarmer = user.role === 'FARMER' && order.farmerId === user.id;
+  const isBuyer = user.role === 'BUYER' && order.buyerId === user.id;
+
+  async function advanceLogistics(status: 'dispatched' | 'in_transit' | 'delivered') {
+    setPending(true);
+    setError('');
+    try {
+      const { data } = await updateOrderLogistics(order!.id, { logisticsStatus: status });
+      setOrder(data);
+    } catch (cause) {
+      setError(getErrorMessage(cause));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function startPayment() {
+    setPending(true);
+    setError('');
+    try {
+      const { data } = await initOrderPayment(order!.id);
+      if (data.mode === 'mock') {
+        await confirmOrderPaymentHeld(order!.id);
+        const refreshed = await getOrder(order!.id);
+        setOrder(refreshed.data);
+        setError(data.message ?? 'Payment simulated (escrow hold).');
+      } else {
+        setError(`Razorpay order ${data.razorpayOrderId ?? ''} created — complete checkout in Razorpay widget.`);
+      }
+    } catch (cause) {
+      setError(getErrorMessage(cause));
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -91,7 +127,32 @@ function OrderDetail() {
       <p>Placed {formatDate(order.createdAt)}</p>
       {order.notes ? <p>Notes: {order.notes}</p> : null}
       {order.cancellationReason ? <p>Cancelled: {order.cancellationReason}</p> : null}
+      <OrderTimeline order={order} />
       {error ? <Alert>{error}</Alert> : null}
+      {isBuyer && order.status !== 'cancelled' && !order.payment ? (
+        <Button type="button" disabled={pending} onClick={() => void startPayment()}>
+          Pay & hold in escrow
+        </Button>
+      ) : null}
+      {isFarmer && order.deliveryMode === 'delivery' && order.status !== 'cancelled' ? (
+        <div className="flex flex-wrap gap-2">
+          {order.logisticsStatus === 'none' ? (
+            <Button type="button" disabled={pending} onClick={() => void advanceLogistics('dispatched')}>
+              Mark dispatched
+            </Button>
+          ) : null}
+          {order.logisticsStatus === 'dispatched' ? (
+            <Button type="button" disabled={pending} onClick={() => void advanceLogistics('in_transit')}>
+              In transit
+            </Button>
+          ) : null}
+          {['dispatched', 'in_transit'].includes(order.logisticsStatus ?? 'none') ? (
+            <Button type="button" disabled={pending} onClick={() => void advanceLogistics('delivered')}>
+              Mark delivered
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="flex flex-col gap-3">
         {actions.map((action) =>
           action.needsReason ? (
@@ -122,6 +183,11 @@ function OrderDetail() {
     </Card>
 
     <OrderChat orderId={order.id} userId={user.id} disabled={chatDisabled} />
+
+    <p className="text-sm text-ink/60">
+      Order chat messages the buyer or farmer on this order. For general farm help, use{' '}
+      <strong>Ask Kisan</strong> button at the bottom-right.
+    </p>
 
     {order.status === 'fulfilled' ? (
       <OrderReviewSection

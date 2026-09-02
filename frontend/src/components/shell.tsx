@@ -58,6 +58,8 @@ function roleNav(role: string | undefined): ReactNode {
       <>
         <NavLink href="/buyer">Dashboard</NavLink>
         <NavLink href="/marketplace">Browse</NavLink>
+        <NavLink href="/market-prices">Mandi prices</NavLink>
+        <NavLink href="/buyer/alerts">Alerts</NavLink>
         <NavLink href="/orders">My orders</NavLink>
       </>
     );
@@ -72,7 +74,12 @@ function roleNav(role: string | undefined): ReactNode {
       </>
     );
   }
-  return <NavLink href="/marketplace">Browse produce</NavLink>;
+  return (
+    <>
+      <NavLink href="/marketplace">Browse produce</NavLink>
+      <NavLink href="/market-prices">Mandi prices</NavLink>
+    </>
+  );
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -96,7 +103,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [user, pathname]);
 
-  const isLanding = pathname === '/';
   const links = roleNav(user?.role);
 
   return (
@@ -150,11 +156,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main
-        className={cx(
-          'mx-auto w-full',
-          isLanding ? 'max-w-none px-0 py-0' : 'max-w-6xl px-4 py-8',
-          user ? 'pb-28' : '',
-        )}
+        className={cx('mx-auto w-full max-w-6xl px-4 py-8', user ? 'pb-28' : '')}
       >
         {children}
       </main>

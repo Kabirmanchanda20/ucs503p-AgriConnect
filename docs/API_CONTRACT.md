@@ -817,6 +817,11 @@ If listing is `active` and this was the last photo → listing forced to `draft`
   "priceTotal": "2500.00",
   "status": "pending",
   "deliveryMode": "pickup",
+  "logisticsStatus": "none",
+  "dispatchedAt": null,
+  "inTransitAt": null,
+  "logisticsDeliveredAt": null,
+  "payment": null,
   "notes": "Will collect Thursday morning",
   "cancellationReason": null,
   "listing": {
@@ -1007,6 +1012,313 @@ Notifies both parties (`ORDER_STATUS_CHANGED`).
 - **Auth:** pass access JWT in handshake `auth.token` or `Authorization: Bearer`
 - **Join room:** emit `join:order` with `orderId` (ack returns `{ ok: true }`)
 - **Receive:** listen for `message:new` (same shape as REST message object)
+- **Typing (V2):** emit `typing:start` with `{ orderId }`; counterparty receives `typing` with `{ orderId, userId }`
+
+---
+
+### PATCH /api/v1/orders/:id/logistics
+
+**Description:** Farmer advances logistics checkpoints on a non-cancelled order.
+**Auth:** Yes (active account)  
+**Roles:** FARMER (order seller)
+
+#### Request
+
+```json
+{ "logisticsStatus": "dispatched" }
+```
+
+Allowed values: `dispatched` → `in_transit` → `delivered` (from `none` only `dispatched`).
+
+#### Response — 200 — updated order object.
+
+#### Errors
+
+- 400 `INVALID_REQUEST` — illegal transition or order `cancelled`
+- 403 `FORBIDDEN` — not the farmer
+- 404
+
+Notifies buyer (`ORDER_STATUS_CHANGED`).
+
+---
+
+### POST /api/v1/orders/:id/payment
+
+**Description:** Buyer initiates escrow-style payment for an order.
+**Auth:** Yes (active account)  
+**Roles:** BUYER
+
+#### Response — 201
+
+**Mock mode** (no Razorpay keys):
+
+```json
+{
+  "success": true,
+  "data": {
+    "paymentId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "orderId": "66666666-6666-4666-8666-666666666666",
+    "amount": "2500.00",
+    "currency": "INR",
+    "status": "pending",
+    "mode": "mock",
+    "message": "Razorpay keys are not configured..."
+  }
+}
+```
+
+**Razorpay sandbox** (`RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` set):
+
+```json
+{
+  "success": true,
+  "data": {
+    "paymentId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "orderId": "66666666-6666-4666-8666-666666666666",
+    "amount": "2500.00",
+    "currency": "INR",
+    "status": "authorized",
+    "mode": "razorpay",
+    "razorpayOrderId": "order_xxx",
+    "keyId": "rzp_test_xxx"
+  }
+}
+```
+
+#### Errors
+
+- 400 `INVALID_REQUEST` — order `cancelled`
+- 404
+- 502 `PAYMENT_UNAVAILABLE` — Razorpay API error
+
+---
+
+### POST /api/v1/orders/:id/payment/confirm
+
+**Description:** Mark payment as **held** (mock confirm or after Razorpay checkout). On order `fulfilled`, server releases held payment to `released`.
+**Auth:** Yes (active account)  
+**Roles:** BUYER
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "status": "held",
+    "heldAt": "2026-08-18T10:00:00.000Z"
+  }
+}
+```
+
+#### Errors
+
+- 404 — payment not found
+
+---
+
+## 5c. Market prices (V2)
+
+Public read-only mandi-style price trends (internal trades + seeded Agmarknet samples).
+
+### GET /api/v1/market/prices
+
+**Auth:** No
+
+#### Query
+
+| Param | Default | Description |
+|---|---|---|
+| `crop` | — | filter |
+| `state` | — | filter |
+| `days` | 90 | window |
+| `limit` | 120 | max rows |
+
+#### Response — 200 — array of price trend points.
+
+---
+
+### GET /api/v1/market/prices/summary
+
+**Auth:** No
+
+Same query params. Returns latest price per crop/state in the window.
+
+---
+
+### POST /api/v1/market/prices/compare
+
+**Auth:** No
+
+Compare listing prices to latest Agmarknet mandi reference (₹/kg) per crop and state.
+
+#### Body
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "crop": "Wheat",
+      "state": "Punjab",
+      "pricePerUnit": "24.50",
+      "unit": "kg"
+    }
+  ]
+}
+```
+
+| Field | Rules |
+|---|---|
+| `items` | 1–50 objects |
+| `id` | UUID (echoed in response) |
+| `unit` | `kg` \| `quintal` \| `ton` |
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "listingPricePerKg": "24.50",
+      "mandiPricePerKg": "26.00",
+      "diffPerKg": "-1.50",
+      "diffPercent": -6,
+      "verdict": "below_mandi"
+    }
+  ]
+}
+```
+
+`verdict`: `below_mandi` (≥2% under mandi), `above_mandi` (≥2% over), `at_mandi`, or `unknown` (no mandi row).
+
+#### Errors
+
+| Status | When |
+|---|---|
+| 400 | Invalid body (Zod) |
+
+---
+
+### GET /api/v1/market/mandi/prices
+
+**Description:** Live wholesale mandi prices from Govt Agmarknet (synced via data.gov.in open feed). Default state **Punjab**.
+**Auth:** No
+
+#### Query
+
+| Param | Default | Description |
+|---|---|---|
+| `state` | Punjab | Indian state |
+| `commodity` | — | e.g. `Wheat` |
+| `market` | — | APMC name filter |
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "state": "Punjab",
+      "district": "Fazilka",
+      "market": "Abohar APMC",
+      "commodity": "Wheat",
+      "arrivalDate": "2026-08-28",
+      "minPrice": 2610,
+      "maxPrice": 2615,
+      "modalPrice": 2610,
+      "unit": "quintal",
+      "pricePerKg": "26.10",
+      "source": "agmarknet",
+      "fetchedAt": "2026-08-28T23:43:56.945+00:00"
+    }
+  ]
+}
+```
+
+Prices are **₹/quintal** from mandi; `pricePerKg` is derived for charts.
+
+#### Errors
+
+- 502 `MANDI_FEED_UNAVAILABLE` — upstream feed unreachable
+
+---
+
+### GET /api/v1/market/mandi/history
+
+**Auth:** No
+
+#### Query
+
+| Param | Required | Description |
+|---|---|---|
+| `state` | no (default Punjab) | state |
+| `commodity` | yes | crop name |
+| `market` | no | APMC |
+| `from`, `to` | no | `YYYY-MM-DD` range |
+
+#### Response — 200 — daily averaged mandi modal/min/max with `avgModalPricePerKg`.
+
+---
+
+### GET /api/v1/market/mandi/states
+
+**Auth:** No — list states covered by the feed (Maharashtra, UP, Punjab, MP, Karnataka).
+
+### GET /api/v1/market/mandi/markets
+
+**Auth:** No — query `state` required; lists APMCs in that state.
+
+Server syncs mandi rows into `price_trends` on startup and daily when `MANDI_SYNC_ENABLED=true`.
+
+---
+
+## 5d. Buyer produce alerts (V2)
+
+### GET /api/v1/alerts
+
+**Auth:** Yes  
+**Roles:** BUYER
+
+#### Response — 200 — array of alert objects.
+
+---
+
+### POST /api/v1/alerts
+
+**Auth:** Yes (active account)  
+**Roles:** BUYER
+
+#### Request
+
+```json
+{ "crop": "Wheat", "state": "Punjab" }
+```
+
+Both fields optional (`null` = any). Duplicate `(userId, crop, state)` → 409.
+
+#### Response — 201 — alert object.
+
+---
+
+### DELETE /api/v1/alerts/:id
+
+**Auth:** Yes (active account)  
+**Roles:** BUYER (owner)
+
+#### Response — 200 — `{ "deleted": true }`
+
+#### Errors
+
+- 404
+
+---
+
+When a farmer **publishes** a listing, matching buyers receive `LISTING_PUBLISHED` notifications (crop/state alerts + same-state buyers). Hourly jobs warn farmers of listings expiring within 3 days (`LISTING_EXPIRING`) and auto-expire due listings.
 
 ---
 

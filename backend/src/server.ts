@@ -4,7 +4,9 @@ import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { getEnv } from './config/env.js';
 import { logger } from './config/logger.js';
 import { initSocketIO } from './config/socket.js';
-import { expireDueListings } from './modules/listings/listings.service.js';
+import { runListingMaintenanceJobs } from './jobs/listing-jobs.js';
+import { syncMandiPricesToTrends } from './services/mandi-prices.service.js';
+import { seedReferencePriceTrendsIfEmpty } from './services/price-trend.service.js';
 
 const env = getEnv();
 const server = createServer(app);
@@ -48,12 +50,20 @@ process.once('SIGTERM', () => {
 
 try {
   await connectDatabase();
+  await seedReferencePriceTrendsIfEmpty();
   const expiryTimer = setInterval(() => {
-    void expireDueListings().catch((error: unknown) => {
-      logger.error({ err: error }, 'Listing expiry job failed');
+    void runListingMaintenanceJobs().catch((error: unknown) => {
+      logger.error({ err: error }, 'Listing maintenance job failed');
     });
   }, 60 * 60 * 1000);
   expiryTimer.unref();
+
+  const mandiSyncTimer = setInterval(() => {
+    void syncMandiPricesToTrends().catch((error: unknown) => {
+      logger.warn({ err: error }, 'Scheduled mandi price sync failed');
+    });
+  }, 24 * 60 * 60 * 1000);
+  mandiSyncTimer.unref();
 
   server.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, 'AgriConnect API listening');

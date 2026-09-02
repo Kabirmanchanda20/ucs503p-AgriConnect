@@ -48,6 +48,12 @@ function BuyerHome() {
         <Link href="/marketplace">
           <Button>Browse produce</Button>
         </Link>
+        <Link href="/buyer/alerts">
+          <Button variant="secondary">Produce alerts</Button>
+        </Link>
+        <Link href="/market-prices">
+          <Button variant="secondary">Market prices</Button>
+        </Link>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

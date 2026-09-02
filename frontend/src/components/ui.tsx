@@ -96,17 +96,29 @@ export function Card({
 export function Badge({
   children,
   tone = 'neutral',
+  onImage = false,
 }: {
   children: ReactNode;
   tone?: 'neutral' | 'good' | 'warn' | 'bad' | 'gold';
+  /** High-contrast styling for badges overlaid on listing photos. */
+  onImage?: boolean;
 }) {
-  const tones = {
-    neutral: 'bg-forest/8 text-forest',
-    good: 'bg-leaf/15 text-forest',
-    warn: 'bg-harvest/20 text-soil',
-    bad: 'bg-clay/15 text-clay',
-    gold: 'bg-harvest/25 text-soil',
-  }[tone];
+  const toneClasses = onImage
+    ? {
+        neutral: 'bg-white/95 text-forest shadow-sm ring-1 ring-black/10',
+        good: 'bg-leaf text-white shadow-sm',
+        warn: 'bg-harvest text-forest shadow-sm ring-1 ring-black/10',
+        bad: 'bg-clay text-white shadow-sm',
+        gold: 'bg-harvest text-forest shadow-sm ring-1 ring-black/10',
+      }
+    : {
+        neutral: 'bg-forest/8 text-forest',
+        good: 'bg-leaf/15 text-forest',
+        warn: 'bg-harvest/20 text-soil',
+        bad: 'bg-clay/15 text-clay',
+        gold: 'bg-harvest/25 text-soil',
+      };
+  const tones = toneClasses[tone];
   return (
     <span className={cx('inline-flex rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide', tones)}>
       {children}

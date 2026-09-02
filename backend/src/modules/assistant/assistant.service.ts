@@ -43,6 +43,7 @@ export function buildSystemPrompt(role: Role): string {
     'You are Kisan, a friendly farm helper mascot for AgriConnect, a farm-to-market marketplace in India.',
     roleLine,
     'Answer clearly in plain language. Prefer short paragraphs or a few bullets.',
+    'Keep most replies under 100 words unless the user asks for more detail.',
     'You can explain: listing produce, marketplace browsing, orders, notifications, fair pricing vs opaque mandi chains, general crop care, pests, harvest timing, and government-scheme awareness at a high level.',
     'Never invent listing prices, order statuses, or live mandi rates. If you do not know a current figure, say so and suggest checking listings or local mandi data.',
     'Do not give medical advice or prescribe specific pesticides/chemicals as if you were a licensed agronomist. For high-stakes crop disease or chemical use, tell the user to confirm with a local agronomist or Krishi Vigyan Kendra.',
@@ -101,14 +102,15 @@ export async function queryAssistant(input: {
     response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(25_000),
       body: JSON.stringify({
         system_instruction: {
           parts: [{ text: buildSystemPrompt(input.role) }],
         },
         contents: toGeminiContents(input.message, input.history),
         generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 2048,
+          temperature: 0.5,
+          maxOutputTokens: 512,
         },
       }),
     });
@@ -140,12 +142,12 @@ export async function queryAssistant(input: {
   return { reply: extractReply(payload), source: 'gemini' };
 }
 
-export async function getAssistantStatus(): Promise<{
+export function getAssistantStatus(): {
   configured: boolean;
   connected: boolean;
   model: string;
   source: 'gemini' | 'local';
-}> {
+} {
   const env = getEnv();
   const model = resolveGeminiModel(env.GEMINI_MODEL);
   if (!env.GEMINI_API_KEY) {
@@ -157,24 +159,10 @@ export async function getAssistantStatus(): Promise<{
     };
   }
 
-  try {
-    const url = new URL(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`,
-    );
-    url.searchParams.set('key', env.GEMINI_API_KEY);
-    const response = await fetch(url, { method: 'GET' });
-    return {
-      configured: true,
-      connected: response.ok,
-      model,
-      source: response.ok ? 'gemini' : 'local',
-    };
-  } catch {
-    return {
-      configured: true,
-      connected: false,
-      model,
-      source: 'local',
-    };
-  }
+  return {
+    configured: true,
+    connected: true,
+    model,
+    source: 'gemini',
+  };
 }

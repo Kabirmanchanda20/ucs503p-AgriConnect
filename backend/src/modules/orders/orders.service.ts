@@ -6,6 +6,7 @@ import {
   createNotification,
   createNotifications,
 } from '../../services/notification.service.js';
+import { recordPriceTrend } from '../../services/price-trend.service.js';
 import { listingStatusAfterQuantity, restoreListingStock } from './inventory.js';
 import { canTransitionOrder } from './order-state-machine.js';
 import type {
@@ -40,6 +41,7 @@ const orderInclude = {
       farmerProfile: { select: { ratingAvg: true } },
     },
   },
+  payment: { select: { id: true, status: true, provider: true, amount: true } },
 } satisfies Prisma.OrderInclude;
 
 interface AuthenticatedActor {
@@ -63,6 +65,18 @@ function serializeOrder(
     deliveryMode: order.deliveryMode,
     notes: order.notes,
     cancellationReason: order.cancellationReason,
+    logisticsStatus: order.logisticsStatus,
+    dispatchedAt: order.dispatchedAt?.toISOString() ?? null,
+    inTransitAt: order.inTransitAt?.toISOString() ?? null,
+    logisticsDeliveredAt: order.logisticsDeliveredAt?.toISOString() ?? null,
+    payment: order.payment
+      ? {
+          id: order.payment.id,
+          status: order.payment.status,
+          provider: order.payment.provider,
+          amount: moneyString(order.payment.amount),
+        }
+      : null,
     listing: order.listing,
     buyer: {
       id: order.buyer.id,
@@ -282,6 +296,96 @@ export async function updateOrderStatus(
       })),
       transaction,
     );
+
+    if (input.status === 'fulfilled') {
+      const listing = await transaction.listing.findUnique({
+        where: { id: order.listingId },
+        select: { crop: true, state: true, district: true, pricePerUnit: true, unit: true },
+      });
+      if (listing) {
+        await recordPriceTrend({
+          crop: listing.crop,
+          state: listing.state,
+          district: listing.district,
+          source: 'internal_order',
+          pricePerUnit: moneyString(order.pricePerUnit),
+          unit: order.unit,
+        });
+      }
+      await transaction.payment.updateMany({
+        where: { orderId: order.id, status: 'held' },
+        data: { status: 'released', releasedAt: new Date() },
+      });
+    }
+
+    return next;
+  });
+
+  return serializeOrder(updated);
+}
+
+const logisticsTransitions: Record<string, string[]> = {
+  none: ['dispatched'],
+  dispatched: ['in_transit', 'delivered'],
+  in_transit: ['delivered'],
+  delivered: [],
+};
+
+export async function updateOrderLogistics(
+  actor: AuthenticatedActor,
+  orderId: string,
+  logisticsStatus: 'dispatched' | 'in_transit' | 'delivered',
+) {
+  if (actor.role !== 'FARMER' && actor.role !== 'ADMIN') {
+    throw new AppError(403, 'FORBIDDEN', 'Only the farmer can update logistics');
+  }
+
+  const updated = await getPrismaClient().$transaction(async (transaction) => {
+    const order = await transaction.order.findFirst({
+      where: {
+        id: orderId,
+        ...(actor.role === 'FARMER' ? { farmerId: actor.id } : {}),
+      },
+    });
+    if (!order) {
+      throw new AppError(404, 'NOT_FOUND', 'Order not found');
+    }
+    if (order.status === 'cancelled') {
+      throw new AppError(400, 'INVALID_REQUEST', 'Cancelled orders cannot update logistics');
+    }
+
+    const allowed = logisticsTransitions[order.logisticsStatus] ?? [];
+    if (!allowed.includes(logisticsStatus)) {
+      throw new AppError(400, 'INVALID_REQUEST', 'Logistics status transition is not allowed');
+    }
+
+    const timestamps: {
+      dispatchedAt?: Date;
+      inTransitAt?: Date;
+      logisticsDeliveredAt?: Date;
+    } = {};
+    if (logisticsStatus === 'dispatched') timestamps.dispatchedAt = new Date();
+    if (logisticsStatus === 'in_transit') timestamps.inTransitAt = new Date();
+    if (logisticsStatus === 'delivered') timestamps.logisticsDeliveredAt = new Date();
+
+    const next = await transaction.order.update({
+      where: { id: order.id },
+      data: { logisticsStatus, ...timestamps },
+      include: orderInclude,
+    });
+
+    await createNotification(
+      {
+        userId: order.buyerId,
+        type: 'ORDER_STATUS_CHANGED',
+        title: 'Delivery update',
+        body: `Your order is now: ${logisticsStatus.replace('_', ' ')}.`,
+        relatedEntityType: 'Order',
+        relatedEntityId: order.id,
+      },
+      transaction,
+    );
+
     return next;
   });
 

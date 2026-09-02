@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import { API_BASE_URL } from '../env';
+import { API_BASE_URL } from './env';
 import { tokenStore } from './api/token-store';
 
 let socket: Socket | null = null;
@@ -34,11 +34,16 @@ export function disconnectSocket(): void {
 export function joinOrderRoom(
   orderId: string,
   onMessage: (message: unknown) => void,
+  onTyping?: (payload: { orderId: string; userId: string }) => void,
 ): () => void {
   const client = connectSocket();
 
   const onNew = (message: unknown) => onMessage(message);
+  const onTypingEvent = (payload: { orderId: string; userId: string }) => {
+    onTyping?.(payload);
+  };
   client.on('message:new', onNew);
+  client.on('typing', onTypingEvent);
 
   client.emit('join:order', orderId, (result?: { ok: boolean }) => {
     if (!result?.ok) {
@@ -48,6 +53,7 @@ export function joinOrderRoom(
 
   return () => {
     client.off('message:new', onNew);
+    client.off('typing', onTypingEvent);
     client.emit('leave:order', orderId);
   };
 }

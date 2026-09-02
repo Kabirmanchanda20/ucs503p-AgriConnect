@@ -8,6 +8,7 @@ type QueryValue = string | number | boolean | undefined | null;
 export interface ApiResult<T> {
   data: T;
   pagination?: Pagination;
+  meta?: Record<string, unknown>;
 }
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
@@ -36,6 +37,7 @@ async function readEnvelope(response: Response) {
       success?: boolean;
       data?: unknown;
       pagination?: Pagination;
+      meta?: Record<string, unknown>;
       error?: { code?: string; message?: string; fields?: Record<string, string[]> };
     };
   } catch {
@@ -131,5 +133,6 @@ export async function apiRequest<T>(
   return {
     data: (envelope?.data ?? null) as T,
     pagination: envelope?.pagination,
+    meta: envelope?.meta,
   };
 }

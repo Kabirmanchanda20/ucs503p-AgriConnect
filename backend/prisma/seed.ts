@@ -3,6 +3,7 @@ import { config as loadEnv } from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { PrismaClient, Role } from '../src/generated/prisma/client.js';
 import { createPrismaAdapter } from '../src/config/pg-adapter.js';
+import { seedDemoData } from './seed-demo.js';
 
 loadEnv({ path: resolve(import.meta.dirname, '../.env') });
 loadEnv({
@@ -18,6 +19,12 @@ function requiredEnv(name: string, fallbackName?: string): string {
     );
   }
   return value;
+}
+
+function seedDemoEnabled(): boolean {
+  const raw = process.env.SEED_DEMO;
+  if (raw === undefined || raw === '') return true;
+  return raw !== 'false' && raw !== '0';
 }
 
 const databaseUrl = requiredEnv('DATABASE_URL', 'DIRECT_URL');
@@ -54,6 +61,12 @@ async function main(): Promise<void> {
   });
 
   console.info(`Admin seed ensured for ${email}.`);
+
+  if (seedDemoEnabled()) {
+    await seedDemoData(prisma);
+  } else {
+    console.info('SEED_DEMO=false — skipped demo marketplace data.');
+  }
 }
 
 try {

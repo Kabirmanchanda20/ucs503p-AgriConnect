@@ -26,8 +26,8 @@ describe('assistant query schema', () => {
     );
   });
 
-  it('caps conversation history at eight turns', () => {
-    const history = Array.from({ length: 9 }, (_, index) => ({
+  it('caps conversation history at four turns', () => {
+    const history = Array.from({ length: 5 }, (_, index) => ({
       role: index % 2 === 0 ? 'user' : 'assistant',
       content: `turn ${String(index)}`,
     }));

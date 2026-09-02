@@ -46,8 +46,16 @@ export function ListingForm({ listing }: { listing?: Listing }) {
             };
 
       const saved = listing
-        ? await updateListing(listing.id, payload)
-        : await createListing(payload);
+        ? await updateListing(listing.id, {
+            ...payload,
+            status:
+              publishNow
+                ? 'active'
+                : listing.status === 'active' || listing.status === 'draft'
+                  ? listing.status
+                  : undefined,
+          })
+        : await createListing({ ...payload, status: 'draft' });
 
       const files = Array.from((form.getAll('files') as File[]).filter((file) => file.size > 0));
       if (files.length > 0) {

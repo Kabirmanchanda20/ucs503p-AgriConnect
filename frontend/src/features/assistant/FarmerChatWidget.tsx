@@ -7,8 +7,6 @@ import type { Role } from '@/lib/api/types';
 import { Button, cx } from '@/components/ui';
 import { FarmerMascot } from './FarmerMascot';
 
-const HINT_KEY = 'agriconnect.kisan.hintDismissed';
-
 const QUICK_CHIPS = [
   'How do I list produce?',
   'Fair price tips',
@@ -36,18 +34,10 @@ function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function clipForHistory(content: string, max = 2000): string {
+function clipForHistory(content: string, max = 800): string {
   const trimmed = content.trim();
   if (trimmed.length <= max) return trimmed;
   return `${trimmed.slice(0, max - 1)}…`;
-}
-
-function readHintDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(HINT_KEY) === '1';
-  } catch {
-    return false;
-  }
 }
 
 export function FarmerChatWidget({
@@ -62,9 +52,6 @@ export function FarmerChatWidget({
   const inputId = useId();
   const firstName = name.split(' ')[0] ?? '';
   const [open, setOpen] = useState(false);
-  const [showHint, setShowHint] = useState(() =>
-    typeof window === 'undefined' ? true : !readHintDismissed(),
-  );
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
   const [assistantOnline, setAssistantOnline] = useState<boolean | null>(null);
@@ -75,19 +62,10 @@ export function FarmerChatWidget({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (!open) return;
     void getAssistantStatus()
       .then((result) => setAssistantOnline(result.data.connected))
       .catch(() => setAssistantOnline(false));
-  }, []);
-
-  useEffect(() => {
-    const node = listRef.current;
-    if (!node) return;
-    node.scrollTop = node.scrollHeight;
-  }, [messages, pending, open]);
-
-  useEffect(() => {
-    if (!open) return;
     inputRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
@@ -96,18 +74,14 @@ export function FarmerChatWidget({
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  function dismissHint() {
-    setShowHint(false);
-    try {
-      window.localStorage.setItem(HINT_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-  }
+  useEffect(() => {
+    const node = listRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  }, [messages, pending, open]);
 
   function openChat() {
     setOpen(true);
-    dismissHint();
   }
 
   async function sendMessage(text: string) {
@@ -124,7 +98,7 @@ export function FarmerChatWidget({
       const history = nextMessages
         .filter((item) => item.id !== 'welcome')
         .slice(0, -1)
-        .slice(-8)
+        .slice(-4)
         .map((item) => ({
           role: item.role,
           content: clipForHistory(item.content),
@@ -162,7 +136,7 @@ export function FarmerChatWidget({
   }
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-4 z-40 sm:right-6 sm:bottom-6">
+    <div className="pointer-events-none fixed right-4 bottom-4 z-[60] sm:right-6 sm:bottom-6">
       {open ? (
         <section
           id={panelId}
@@ -217,7 +191,7 @@ export function FarmerChatWidget({
               <div className="flex items-center gap-2 text-soil">
                 <FarmerMascot size={28} />
                 <span className="kisan-typing rounded-2xl border border-forest/10 bg-field px-3 py-2 text-sm">
-                  Kisan is thinking
+                  Kisan is thinking… (AI replies can take 5–15 seconds)
                 </span>
               </div>
             ) : null}
@@ -265,23 +239,19 @@ export function FarmerChatWidget({
       ) : null}
 
       <div className="relative flex justify-end">
-        {showHint && !open ? (
-          <p className="kisan-hint pointer-events-auto absolute right-full bottom-7 mr-3 whitespace-nowrap rounded-xl bg-forest px-3 py-2 text-sm font-medium tracking-wide text-paper shadow-[0_10px_24px_rgba(31,61,43,0.28)]">
-            Ask Kisan
-          </p>
-        ) : null}
         <button
           type="button"
           onClick={() => (open ? setOpen(false) : openChat())}
           className={cx(
-            'pointer-events-auto kisan-glow rounded-full transition duration-200 hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-harvest',
+            'pointer-events-auto flex items-center gap-2 rounded-full bg-forest pl-1 pr-4 py-1 shadow-[0_12px_32px_rgba(31,61,43,0.35)] transition duration-200 hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-harvest',
             open ? '' : 'kisan-bounce',
           )}
           aria-expanded={open}
           aria-controls={panelId}
           aria-label={open ? 'Close Kisan chat' : 'Ask Kisan, farm assistant'}
         >
-          <FarmerMascot size={92} />
+          <FarmerMascot size={52} />
+          <span className="text-sm font-bold text-paper">Ask Kisan</span>
         </button>
       </div>
     </div>

@@ -8,6 +8,26 @@ export const CROP_CATEGORIES = [
   'other',
 ] as const;
 
+export const MANDI_CROPS = [
+  'Wheat',
+  'Rice',
+  'Potato',
+  'Tomato',
+  'Onion',
+  'Mustard',
+  'Maize',
+  'Cotton',
+] as const;
+
+/** States with live official mandi data (Agmarknet / data.gov.in via open API). */
+export const MANDI_LIVE_STATES = [
+  'Punjab',
+  'Maharashtra',
+  'Uttar Pradesh',
+  'Madhya Pradesh',
+  'Karnataka',
+] as const;
+
 export const UNITS = ['kg', 'quintal', 'ton'] as const;
 
 export const BUYER_TYPES = ['trader', 'retailer', 'bulk', 'horeca'] as const;
