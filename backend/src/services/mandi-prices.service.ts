@@ -240,7 +240,7 @@ function parseGovPrice(value: string | number | undefined): number {
 /** Agmarknet via data.gov.in often uses DD/MM/YYYY; mandi-api uses YYYY-MM-DD. */
 export function normalizeArrivalDate(raw: string): string {
   const trimmed = raw.trim();
-  const slashDmy = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const slashDmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
   if (slashDmy) {
     const [, dayRaw, monthRaw, year] = slashDmy;
     if (!dayRaw || !monthRaw || !year) return trimmed;
@@ -275,12 +275,14 @@ function normalizeDataGovRow(record: DataGovMandiRecord): MandiPriceRow | null {
 
   const variety = record.variety?.trim() ? record.variety.trim() : null;
   const grade = record.grade?.trim() ? record.grade.trim() : null;
-  const minPrice = parseGovPrice(record.min_price) || modal;
-  const maxPrice = parseGovPrice(record.max_price) || modal;
+  const minPriceParsed = Number(record.min_price);
+  const maxPriceParsed = Number(record.max_price);
+  const minPrice = Number.isFinite(minPriceParsed) ? minPriceParsed : modal;
+  const maxPrice = Number.isFinite(maxPriceParsed) ? maxPriceParsed : modal;
 
   const base = {
     state: record.state.trim(),
-    district: (record.district?.trim() || record.state).trim(),
+    district: (record.district?.trim() ?? record.state).trim(),
     market: record.market.trim(),
     commodity: record.commodity.trim(),
     variety,

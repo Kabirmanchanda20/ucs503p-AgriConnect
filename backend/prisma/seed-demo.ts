@@ -8,7 +8,6 @@ import {
   NotificationType,
   OrderStatus,
   PaymentStatus,
-  PriceTrendSource,
   Role,
   Unit,
 } from '../src/generated/prisma/client.js';
