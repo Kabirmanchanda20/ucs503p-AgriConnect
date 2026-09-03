@@ -52,9 +52,13 @@ describe('filterToLatestArrivalDay', () => {
       row('2026-08-26', 'Wheat'),
       row('2026-08-20', 'Wheat'),
     ];
-    rows[0].market = 'Abohar APMC';
-    rows[1].market = 'Nawanshahar APMC';
-    rows[2].market = 'Nawanshahar APMC';
+    const row0 = rows[0];
+    const row1 = rows[1];
+    const row2 = rows[2];
+    if (!row0 || !row1 || !row2) throw new Error('Test setup failed');
+    row0.market = 'Abohar APMC';
+    row1.market = 'Nawanshahar APMC';
+    row2.market = 'Nawanshahar APMC';
     const filtered = filterToLatestArrivalDay(rows);
     expect(filtered.length).toBe(2);
     expect(filtered.map((item) => item.market).sort()).toEqual(['Abohar APMC', 'Nawanshahar APMC']);

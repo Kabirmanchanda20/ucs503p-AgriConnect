@@ -242,9 +242,10 @@ export function normalizeArrivalDate(raw: string): string {
   const trimmed = raw.trim();
   const slashDmy = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (slashDmy) {
-    const day = slashDmy[1].padStart(2, '0');
-    const month = slashDmy[2].padStart(2, '0');
-    const year = slashDmy[3];
+    const [, dayRaw, monthRaw, year] = slashDmy;
+    if (!dayRaw || !monthRaw || !year) return trimmed;
+    const day = dayRaw.padStart(2, '0');
+    const month = monthRaw.padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
@@ -536,6 +537,7 @@ async function mapWithConcurrency<T>(
     while (index < items.length) {
       const current = items[index];
       index += 1;
+      if (current === undefined) continue;
       await worker(current);
     }
   }
