@@ -34,7 +34,10 @@ function OrdersList() {
     <div className="space-y-4">
       <h1 className="font-display text-4xl text-forest">Orders</h1>
       {orders.length === 0 ? (
-        <EmptyState title="No orders yet" body="Buyer orders will show up here for both sides." />
+        <EmptyState
+          title="No orders yet"
+          body="When a buyer places an order on your listing, it appears here. Open any order to chat with the buyer in real time. For farm advice, use Kisan AI in the header or the Ask Kisan button at the bottom-right."
+        />
       ) : (
         orders.map((order) => (
           <Link key={order.id} href={`/orders/${order.id}`}>
@@ -47,6 +50,7 @@ function OrdersList() {
                   {formatQty(order.quantity, order.unit)} · {formatMoney(order.priceTotal)} ·{' '}
                   {formatDate(order.createdAt)}
                 </p>
+                <p className="mt-1 text-sm font-semibold text-leaf">Open order → chat with buyer</p>
               </div>
               <Badge tone={tones[order.status]}>{titleCase(order.status)}</Badge>
             </Card>

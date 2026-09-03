@@ -61,6 +61,21 @@ const envSchema = z
       (value) => (value === '' ? undefined : value),
       z.string().min(1).default('gemini-3.6-flash'),
     ),
+    RAZORPAY_KEY_ID: optionalString,
+    RAZORPAY_KEY_SECRET: optionalString,
+    MANDI_API_BASE_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.url().optional(),
+    ),
+    MANDI_SYNC_ENABLED: z
+      .preprocess((value) => {
+        if (value === '' || value === undefined) return true;
+        if (value === 'false' || value === '0') return false;
+        return value;
+      }, z.coerce.boolean())
+      .default(true),
+    /** Free key from https://data.gov.in — official Agmarknet OGD feed (all states incl. Haryana). */
+    DATA_GOV_IN_API_KEY: optionalString,
   })
   .superRefine((value, context) => {
     if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) {

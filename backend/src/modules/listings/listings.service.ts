@@ -6,6 +6,8 @@ import {
   deleteListingPhotos,
   uploadListingPhoto,
 } from '../../services/storage.service.js';
+import { notifyBuyersOfPublishedListing } from '../../services/listing-notifications.service.js';
+import { recordPriceTrend } from '../../services/price-trend.service.js';
 import {
   assertFarmerStatusTransition,
   assertListingCanActivate,
@@ -291,6 +293,26 @@ export async function updateListing(
     data,
     include: listingInclude,
   });
+
+  if (listing.status !== 'active' && nextStatus === 'active') {
+    void recordPriceTrend({
+      crop: updated.crop,
+      state: updated.state,
+      district: updated.district,
+      source: 'internal_listing',
+      pricePerUnit: updated.pricePerUnit.toString(),
+      unit: updated.unit,
+    });
+    void notifyBuyersOfPublishedListing({
+      id: updated.id,
+      crop: updated.crop,
+      state: updated.state,
+      district: updated.district,
+      pricePerUnit: updated.pricePerUnit,
+      unit: updated.unit,
+      farmerName: updated.farmerProfile.user.name,
+    });
+  }
 
   return serializeListing(updated, { id: farmerUserId, role: 'FARMER' });
 }

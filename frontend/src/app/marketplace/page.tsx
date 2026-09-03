@@ -5,11 +5,18 @@ import { ListingCard } from '@/components/listing-card';
 import { Alert, Button, Card, EmptyState, Field, Input, Select, Spinner } from '@/components/ui';
 import { listListings, type ListingFilters } from '@/lib/api/listings';
 import { getErrorMessage } from '@/lib/api/errors';
+import { isPublicListing } from '@/lib/listing-display';
 import type { Listing } from '@/lib/api/types';
+import { compareListingPrices, type MandiCompareResult } from '@/lib/api/market';
 import { CROP_CATEGORIES, INDIAN_STATES } from '@/lib/constants';
+
+function mandiCompareMap(results: MandiCompareResult[]): Record<string, MandiCompareResult> {
+  return Object.fromEntries(results.map((row) => [row.id, row]));
+}
 
 export default function MarketplacePage() {
   const [listings, setListings] = useState<Listing[]>([]);
+  const [mandiCompare, setMandiCompare] = useState<Record<string, MandiCompareResult>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState<ListingFilters>({
@@ -21,10 +28,28 @@ export default function MarketplacePage() {
   useEffect(() => {
     let cancelled = false;
     void listListings(filters)
-      .then((result) => {
-        if (!cancelled) {
-          setListings(result.data);
-          setError('');
+      .then(async (result) => {
+        if (cancelled) return;
+        const data = result.data;
+        setListings(data);
+        setError('');
+        if (data.length === 0) {
+          setMandiCompare({});
+          return;
+        }
+        try {
+          const compareResult = await compareListingPrices(
+            data.map((listing) => ({
+              id: listing.id,
+              crop: listing.crop,
+              state: listing.state,
+              pricePerUnit: listing.pricePerUnit,
+              unit: listing.unit,
+            })),
+          );
+          if (!cancelled) setMandiCompare(mandiCompareMap(compareResult.data));
+        } catch {
+          if (!cancelled) setMandiCompare({});
         }
       })
       .catch((cause) => {
@@ -40,6 +65,7 @@ export default function MarketplacePage() {
 
   function apply(form: FormData) {
     setLoading(true);
+    setMandiCompare({});
     setFilters({
       crop: String(form.get('crop') || '') || undefined,
       category: String(form.get('category') || '') || undefined,
@@ -111,9 +137,13 @@ export default function MarketplacePage() {
           body="Try another crop or state, or check back after farmers post harvest."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {listings.filter((listing) => isPublicListing(listing.crop)).map((listing) => (
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              mandiCompare={mandiCompare[listing.id]}
+            />
           ))}
         </div>
       )}

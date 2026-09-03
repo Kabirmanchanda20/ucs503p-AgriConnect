@@ -8,6 +8,35 @@ Format: `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security`.
 
 ## Unreleased
 
+### Added
+
+- **Browse before signup** — landing lists live produce; guests get Marketplace + Prices in the header; home pulls three live listings. Sign-in is only for listing, ordering, chat, and dashboards.
+- **Order timeline** — visual stepper on order detail for order status, escrow payment, and delivery logistics.
+- **Mandi compare badge** — `POST /api/v1/market/prices/compare`; marketplace listing cards show Below/Above/Matches mandi vs Agmarknet reference.
+- **Mandi prices resilience** — unsupported states (e.g. Haryana) and rate-limited live feed fall back to seeded Agmarknet reference data; expanded demo mandi seed across Punjab/Haryana/API states.
+
+### Removed
+
+- **3D harvest hero** — dropped the WebGL farm scene and Three.js packages. Landing is the original logo banner again.
+
+### Fixed
+
+- **Listing photos** — demo onion/tomato Unsplash URLs were 404; cards now fall back to local crop photos and skip the redundant Active badge.
+- **Landing discoverability** — marketplace-focused home; live mandi rates live on `/market-prices` only (header link). Audit test listings hidden from public browse.
+
+### Added (V2)
+
+- **Market prices** — `GET /api/v1/market/prices` and `/prices/summary`; `PriceTrend` model; seeded Agmarknet-style reference data; frontend `/market-prices`.
+- **Live govt mandi feed** — `GET /api/v1/market/mandi/prices`, `/mandi/history`, `/mandi/states`, `/mandi/markets`; Punjab/Haryana/Maharashtra sync from Agmarknet via data.gov.in (open mandi API); daily sync into `price_trends`.
+- **Demo seed data** — `npm run prisma:seed` creates Punjab farmers/buyers, listings, orders (all statuses), chat messages, payments, reviews, alerts, and price trends for faculty demos.
+- **Buyer produce alerts** — `BuyerCropAlert` CRUD (`GET/POST/DELETE /api/v1/alerts`); buyers notified on `LISTING_PUBLISHED` when farmers publish matching listings.
+- **Listing jobs** — hourly expiry warnings (`LISTING_EXPIRING`) and auto-expire due listings.
+- **Logistics tracking** — `logisticsStatus` on orders (`none` → `dispatched` → `in_transit` → `delivered`); `PATCH /api/v1/orders/:id/logistics`; farmer UI on order detail.
+- **Escrow-style payments** — `Payment` model; `POST /orders/:id/payment` + `/payment/confirm`; optional Razorpay sandbox; mock mode without keys; release on `fulfilled`.
+- **Chat typing** — Socket.io `typing:start` / `typing` events.
+- **Docker** — `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` (postgres + api + web).
+- **Price recording** — internal listing publish and order fulfill write `PriceTrend` rows.
+
 ### Fixed
 
 - **Kisan chat history** — assistant replies longer than 4000 chars no longer break follow-up questions; frontend clips history to 2000 chars per turn when sending.

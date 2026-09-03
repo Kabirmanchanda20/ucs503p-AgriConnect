@@ -10,6 +10,7 @@ import {
   sendOrderMessage,
 } from '@/lib/api/messages';
 import { joinOrderRoom } from '@/lib/socket';
+import { emitTyping } from '@/lib/socket-typing';
 
 export function OrderChat({
   orderId,
@@ -25,6 +26,7 @@ export function OrderChat({
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,17 +40,26 @@ export function OrderChat({
   }, [orderId]);
 
   useEffect(() => {
-    const leave = joinOrderRoom(orderId, (payload) => {
-      const message = payload as Message;
-      if (!message?.id) return;
-      setMessages((current) => {
-        if (current.some((item) => item.id === message.id)) return current;
-        return [...current, message];
-      });
-      if (message.senderId !== userId) {
-        void markOrderMessagesRead(orderId).catch(() => undefined);
-      }
-    });
+    const leave = joinOrderRoom(
+      orderId,
+      (payload) => {
+        const message = payload as Message;
+        if (!message?.id) return;
+        setMessages((current) => {
+          if (current.some((item) => item.id === message.id)) return current;
+          return [...current, message];
+        });
+        if (message.senderId !== userId) {
+          void markOrderMessagesRead(orderId).catch(() => undefined);
+        }
+      },
+      (payload) => {
+        if (payload.userId !== userId) {
+          setTypingUserId(payload.userId);
+          window.setTimeout(() => setTypingUserId(null), 2500);
+        }
+      },
+    );
     return leave;
   }, [orderId, userId]);
 
@@ -116,13 +127,19 @@ export function OrderChat({
           })
         )}
       </div>
+      {typingUserId ? (
+        <p className="text-xs text-ink/60">Other party is typing…</p>
+      ) : null}
       {disabled ? (
         <p className="text-sm text-ink/60">Chat is closed for cancelled orders.</p>
       ) : (
         <form onSubmit={onSubmit} className="flex gap-2">
           <input
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              emitTyping(orderId);
+            }}
             maxLength={2000}
             placeholder="Type a message…"
             className="min-h-12 flex-1 rounded-xl border border-forest/15 bg-paper px-4 text-sm outline-none ring-harvest/40 focus:border-leaf focus:ring-2"

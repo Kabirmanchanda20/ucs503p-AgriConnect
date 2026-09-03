@@ -74,6 +74,7 @@ Verify backend: `npm run typecheck`, `npm run lint`, `npm test` from `backend/`.
 | 6 | Role-specific guide | [FRONTEND_GUIDE.md](./FRONTEND_GUIDE.md) or [BACKEND_GUIDE.md](./BACKEND_GUIDE.md) |
 | 7 | [DATABASE_DESIGN.md](./DATABASE_DESIGN.md) | Tables, enums, order/listing state machines |
 | 8 | [CHANGELOG.md](./CHANGELOG.md) | What changed since you last pulled |
+| — | [WEEKLY_PROGRESS.md](./WEEKLY_PROGRESS.md) | Monday→Monday faculty tracker (backlog / working on / done) |
 
 Product intent lives in [AgriConnect_PRD.md](./AgriConnect_PRD.md) and [PRD_AMENDMENTS.md](./PRD_AMENDMENTS.md). [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) is historical phase planning; the code has already shipped past Phase 0.
 

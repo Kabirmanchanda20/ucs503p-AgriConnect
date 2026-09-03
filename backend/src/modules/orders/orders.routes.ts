@@ -4,12 +4,6 @@ import { requireAuth } from '../../middleware/require-auth.js';
 import { roleGuard } from '../../middleware/role-guard.js';
 import { validate } from '../../middleware/validate.js';
 import {
-  createOrderController,
-  getOrderController,
-  listOrdersController,
-  updateOrderStatusController,
-} from './orders.controller.js';
-import {
   createMessageController,
   listMessagesController,
   markMessagesReadController,
@@ -18,6 +12,18 @@ import {
   createMessageBodySchema,
   listMessagesQuerySchema,
 } from '../messages/messages.schema.js';
+import {
+  confirmPaymentHeldController,
+  initOrderPaymentController,
+} from '../payments/payments.controller.js';
+import {
+  createOrderController,
+  getOrderController,
+  listOrdersController,
+  updateOrderLogisticsController,
+  updateOrderStatusController,
+} from './orders.controller.js';
+import { updateLogisticsBodySchema } from './logistics.schema.js';
 import {
   createOrderBodySchema,
   listOrdersQuerySchema,
@@ -47,6 +53,26 @@ ordersRouter.patch(
   requireActiveAccount,
   validate({ params: orderIdParamsSchema, body: updateOrderStatusBodySchema }),
   updateOrderStatusController,
+);
+ordersRouter.patch(
+  '/:id/logistics',
+  requireActiveAccount,
+  validate({ params: orderIdParamsSchema, body: updateLogisticsBodySchema }),
+  updateOrderLogisticsController,
+);
+ordersRouter.post(
+  '/:id/payment',
+  roleGuard('BUYER'),
+  requireActiveAccount,
+  validate({ params: orderIdParamsSchema }),
+  initOrderPaymentController,
+);
+ordersRouter.post(
+  '/:id/payment/confirm',
+  roleGuard('BUYER'),
+  requireActiveAccount,
+  validate({ params: orderIdParamsSchema }),
+  confirmPaymentHeldController,
 );
 
 ordersRouter.get(

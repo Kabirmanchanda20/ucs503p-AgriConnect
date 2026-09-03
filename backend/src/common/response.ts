@@ -12,8 +12,12 @@ export function sendSuccess(
   response: Response,
   data: unknown,
   statusCode = 200,
+  meta?: unknown,
 ): Response {
   response.set('Cache-Control', 'no-store');
+  if (meta !== undefined) {
+    return response.status(statusCode).json({ success: true, data, meta });
+  }
   return response.status(statusCode).json({ success: true, data });
 }
 

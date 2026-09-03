@@ -27,3 +27,34 @@ export function updateOrderStatus(
     body,
   });
 }
+
+export function updateOrderLogistics(
+  id: string,
+  body: { logisticsStatus: 'dispatched' | 'in_transit' | 'delivered' },
+) {
+  return apiRequest<Order>(`/api/v1/orders/${id}/logistics`, {
+    method: 'PATCH',
+    body,
+  });
+}
+
+export function initOrderPayment(id: string) {
+  return apiRequest<{
+    paymentId: string;
+    orderId: string;
+    amount: string;
+    currency: string;
+    status: string;
+    mode: 'mock' | 'razorpay';
+    message?: string;
+    razorpayOrderId?: string;
+    keyId?: string;
+  }>(`/api/v1/orders/${id}/payment`, { method: 'POST' });
+}
+
+export function confirmOrderPaymentHeld(id: string) {
+  return apiRequest<{ id: string; status: string; heldAt: string | null }>(
+    `/api/v1/orders/${id}/payment/confirm`,
+    { method: 'POST' },
+  );
+}

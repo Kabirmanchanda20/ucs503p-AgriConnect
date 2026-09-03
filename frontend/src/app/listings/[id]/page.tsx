@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
 import { Alert, Badge, Button, Card, Field, Input, Select, Spinner, Textarea } from '@/components/ui';
+import { ListingPhoto } from '@/components/listing-photo';
 import { StarDisplay } from '@/components/star-rating';
 import { createOrder } from '@/lib/api/orders';
 import { getListing } from '@/lib/api/listings';
@@ -54,11 +55,8 @@ export default function ListingDetailPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
       <Card className="overflow-hidden p-0">
-        <div className="h-72 bg-forest/10">
-          {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt={listing.crop} className="h-full w-full object-cover" />
-          ) : null}
+        <div className="relative h-56 overflow-hidden bg-forest/8 sm:h-64">
+          <ListingPhoto crop={listing.crop} src={photo} />
         </div>
         <div className="space-y-3 p-6">
           <div className="flex flex-wrap gap-2">

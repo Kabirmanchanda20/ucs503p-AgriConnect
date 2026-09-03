@@ -53,9 +53,33 @@ enum NotificationType {
   ORDER_STATUS_CHANGED
   MESSAGE_RECEIVED
   LISTING_EXPIRING
+  LISTING_PUBLISHED
   ACCOUNT_SUSPENDED
   LISTING_MODERATED
   PASSWORD_RESET
+}
+
+enum LogisticsStatus {
+  none
+  dispatched
+  in_transit
+  delivered
+}
+
+enum PaymentStatus {
+  pending
+  authorized
+  held
+  released
+  refunded
+  failed
+}
+
+enum PriceTrendSource {
+  internal_listing
+  internal_order
+  agmarknet
+  enam
 }
 
 model User {
@@ -87,6 +111,7 @@ model User {
   messagesSent        Message[]
   reviewsWritten      Review[]             @relation("ReviewAuthor")
   reviewsReceived     Review[]             @relation("ReviewTarget")
+  buyerCropAlerts     BuyerCropAlert[]
 
   @@index([role])
   @@index([isSuspended])
@@ -184,13 +209,18 @@ model Order {
   deliveryMode       DeliveryMode
   notes              String?
   cancellationReason String?
-  createdAt          DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt          DateTime     @updatedAt @db.Timestamptz(6)
-  listing            Listing      @relation(fields: [listingId], references: [id])
-  buyer              User         @relation("OrderBuyer", fields: [buyerId], references: [id])
-  farmer             User         @relation("OrderFarmer", fields: [farmerId], references: [id])
+  logisticsStatus    LogisticsStatus @default(none)
+  dispatchedAt       DateTime?       @db.Timestamptz(6)
+  inTransitAt        DateTime?       @db.Timestamptz(6)
+  logisticsDeliveredAt DateTime?       @db.Timestamptz(6)
+  createdAt          DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime        @updatedAt @db.Timestamptz(6)
+  listing            Listing         @relation(fields: [listingId], references: [id])
+  buyer              User            @relation("OrderBuyer", fields: [buyerId], references: [id])
+  farmer             User            @relation("OrderFarmer", fields: [farmerId], references: [id])
   messages           Message[]
   reviews            Review[]
+  payment            Payment?
 
   @@index([buyerId])
   @@index([farmerId])
@@ -299,4 +329,52 @@ model Review {
   @@unique([orderId, fromUserId])
   @@index([toUserId])
   @@map("reviews")
+}
+
+model PriceTrend {
+  id           String           @id @default(uuid()) @db.Uuid
+  crop         String
+  state        String
+  district     String?
+  source       PriceTrendSource
+  pricePerUnit Decimal          @db.Decimal(12, 2)
+  unit         Unit
+  recordedAt   DateTime         @default(now()) @db.Timestamptz(6)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@index([crop, state, recordedAt(sort: Desc)])
+  @@map("price_trends")
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Uuid
+  orderId     String        @unique @db.Uuid
+  provider    String        @default("razorpay")
+  providerRef String?
+  status      PaymentStatus @default(pending)
+  amount      Decimal       @db.Decimal(12, 2)
+  currency    String        @default("INR")
+  heldAt      DateTime?     @db.Timestamptz(6)
+  releasedAt  DateTime?     @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(6)
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("payments")
+}
+
+model BuyerCropAlert {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  crop      String?
+  state     String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, crop, state])
+  @@index([userId])
+  @@map("buyer_crop_alerts")
 }
