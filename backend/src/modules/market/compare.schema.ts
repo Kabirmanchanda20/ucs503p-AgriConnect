@@ -6,7 +6,7 @@ export const comparePricesBodySchema = z
       .array(
         z
           .object({
-            id: z.string().uuid(),
+            id: z.uuid(),
             crop: z.string().trim().min(1).max(80),
             state: z.string().trim().min(1).max(100),
             pricePerUnit: z.string().trim().min(1),

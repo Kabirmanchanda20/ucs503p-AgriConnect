@@ -85,22 +85,22 @@ async function getMandiReferencePerKg(crop: string, state: string): Promise<numb
 }
 
 export async function compareListingsToMandi(
-  items: Array<{
+  items: {
     id: string;
     crop: string;
     state: string;
     pricePerUnit: string;
     unit: 'kg' | 'quintal' | 'ton';
-  }>,
+  }[],
 ) {
-  const results: Array<{
+  const results: {
     id: string;
     listingPricePerKg: string;
     mandiPricePerKg: string | null;
     diffPerKg: string | null;
     diffPercent: number | null;
     verdict: MandiCompareVerdict;
-  }> = [];
+  }[] = [];
 
   for (const item of items) {
     const listingKg = listingPricePerKg(item.pricePerUnit, item.unit);
