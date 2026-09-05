@@ -31,7 +31,7 @@ interface GeminiResponse {
   error?: { message?: string; status?: string; code?: number };
 }
 
-export function buildSystemPrompt(role: Role): string {
+export function buildSystemPrompt(role: Role, language = 'en'): string {
   const roleLine =
     role === 'FARMER'
       ? 'The user is a farmer on AgriConnect. Help them list produce, set fair prices, manage orders, and care for crops.'
@@ -39,9 +39,17 @@ export function buildSystemPrompt(role: Role): string {
         ? 'The user is a buyer on AgriConnect. Help them browse listings, place orders, and understand fair farm prices.'
         : 'The user is an AgriConnect admin. Help them understand how farmers and buyers use the marketplace.';
 
+  const languageLine =
+    language === 'hi'
+      ? 'Reply in clear Hindi (Devanagari script) unless the user explicitly asks for another language.'
+      : language === 'pa'
+        ? 'Reply in clear Punjabi (Gurmukhi script) unless the user explicitly asks for another language.'
+        : 'Reply in clear simple English unless the user writes in another language — then match their language.';
+
   return [
     'You are Kisan, a friendly farm helper mascot for AgriConnect, a farm-to-market marketplace in India.',
     roleLine,
+    languageLine,
     'Answer clearly in plain language. Prefer short paragraphs or a few bullets.',
     'Keep most replies under 100 words unless the user asks for more detail.',
     'You can explain: listing produce, marketplace browsing, orders, notifications, fair pricing vs opaque mandi chains, general crop care, pests, harvest timing, and government-scheme awareness at a high level.',
@@ -85,6 +93,7 @@ export async function queryAssistant(input: {
   message: string;
   history: AssistantTurn[];
   role: Role;
+  language?: string | undefined;
 }): Promise<{ reply: string; source: 'gemini' | 'local' }> {
   const env = getEnv();
   if (!env.GEMINI_API_KEY) {
@@ -105,7 +114,7 @@ export async function queryAssistant(input: {
       signal: AbortSignal.timeout(25_000),
       body: JSON.stringify({
         system_instruction: {
-          parts: [{ text: buildSystemPrompt(input.role) }],
+          parts: [{ text: buildSystemPrompt(input.role, input.language ?? 'en') }],
         },
         contents: toGeminiContents(input.message, input.history),
         generationConfig: {

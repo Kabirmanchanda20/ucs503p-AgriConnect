@@ -55,6 +55,12 @@ describe('assistant prompt mapping', () => {
     expect(MISSING_KEY_REPLY).toMatch(/GEMINI_API_KEY/);
   });
 
+  it('asks Kisan to reply in Hindi or Punjabi when language is set', () => {
+    expect(buildSystemPrompt('FARMER', 'hi')).toMatch(/Hindi/i);
+    expect(buildSystemPrompt('BUYER', 'pa')).toMatch(/Punjabi/i);
+    expect(buildSystemPrompt('ADMIN', 'en')).toMatch(/English/i);
+  });
+
   it('maps retired Gemini model ids to the current default', () => {
     expect(resolveGeminiModel('gemini-2.0-flash')).toBe('gemini-3.6-flash');
     expect(resolveGeminiModel('models/gemini-2.0-flash')).toBe('gemini-3.6-flash');

@@ -15,6 +15,7 @@ export function registerAccount(body: {
   state?: string;
   district?: string;
   village?: string;
+  languagePref?: 'en' | 'hi' | 'pa';
 }) {
   return apiRequest<AuthSession>('/api/v1/auth/register', {
     method: 'POST',

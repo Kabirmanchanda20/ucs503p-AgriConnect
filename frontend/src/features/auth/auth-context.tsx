@@ -20,6 +20,7 @@ interface AuthContextValue {
     state?: string;
     district?: string;
     village?: string;
+    languagePref?: 'en' | 'hi' | 'pa';
   }) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;

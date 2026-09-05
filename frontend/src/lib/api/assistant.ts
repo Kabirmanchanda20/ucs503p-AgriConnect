@@ -26,12 +26,14 @@ export function getAssistantStatus() {
 export function queryAssistant(input: {
   message: string;
   history?: AssistantTurn[];
+  language?: 'en' | 'hi' | 'pa';
 }) {
   return apiRequest<AssistantReply>('/api/v1/assistant/query', {
     method: 'POST',
     body: {
       message: input.message,
       history: input.history ?? [],
+      language: input.language,
     },
   });
 }

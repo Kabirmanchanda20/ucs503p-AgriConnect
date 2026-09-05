@@ -6,9 +6,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { listNotifications } from '@/lib/api/notifications';
 import { onNotificationsUpdated } from '@/lib/notifications-events';
 import { dashboardPath, useAuth } from '@/features/auth/auth-context';
+import { useLocale } from '@/features/i18n/locale-context';
+import { LanguageSwitcher } from '@/features/i18n/language-switcher';
 import { FarmerChatWidget } from '@/features/assistant/FarmerChatWidget';
 import { Logo } from '@/components/logo';
 import { cx } from '@/components/ui';
+import type { MessageKey } from '@/lib/i18n';
 
 /** Dashboard roots match exactly; other nav items match their subtree (not sibling routes). */
 function isNavActive(pathname: string, href: string): boolean {
@@ -42,48 +45,52 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   );
 }
 
-function roleNav(role: string | undefined): ReactNode {
+function roleNav(
+  role: string | undefined,
+  t: (key: MessageKey) => string,
+): ReactNode {
   if (role === 'FARMER') {
     return (
       <>
-        <NavLink href="/farmer">Dashboard</NavLink>
-        <NavLink href="/farmer/listings">My listings</NavLink>
-        <NavLink href="/farmer/listings/new">Add produce</NavLink>
-        <NavLink href="/orders">Orders</NavLink>
+        <NavLink href="/farmer">{t('nav.dashboard')}</NavLink>
+        <NavLink href="/farmer/listings">{t('nav.myListings')}</NavLink>
+        <NavLink href="/farmer/listings/new">{t('nav.addProduce')}</NavLink>
+        <NavLink href="/orders">{t('nav.orders')}</NavLink>
       </>
     );
   }
   if (role === 'BUYER') {
     return (
       <>
-        <NavLink href="/buyer">Dashboard</NavLink>
-        <NavLink href="/marketplace">Browse</NavLink>
-        <NavLink href="/market-prices">Mandi prices</NavLink>
-        <NavLink href="/buyer/alerts">Alerts</NavLink>
-        <NavLink href="/orders">My orders</NavLink>
+        <NavLink href="/buyer">{t('nav.dashboard')}</NavLink>
+        <NavLink href="/marketplace">{t('nav.browse')}</NavLink>
+        <NavLink href="/market-prices">{t('nav.mandiPrices')}</NavLink>
+        <NavLink href="/buyer/alerts">{t('nav.alerts')}</NavLink>
+        <NavLink href="/orders">{t('nav.myOrders')}</NavLink>
       </>
     );
   }
   if (role === 'ADMIN') {
     return (
       <>
-        <NavLink href="/admin">Overview</NavLink>
-        <NavLink href="/admin/users">Users</NavLink>
-        <NavLink href="/admin/listings">Listings</NavLink>
-        <NavLink href="/admin/logs">Logs</NavLink>
+        <NavLink href="/admin">{t('nav.overview')}</NavLink>
+        <NavLink href="/admin/users">{t('nav.users')}</NavLink>
+        <NavLink href="/admin/listings">{t('nav.listings')}</NavLink>
+        <NavLink href="/admin/logs">{t('nav.logs')}</NavLink>
       </>
     );
   }
   return (
     <>
-      <NavLink href="/marketplace">Browse produce</NavLink>
-      <NavLink href="/market-prices">Mandi prices</NavLink>
+      <NavLink href="/marketplace">{t('nav.browseProduce')}</NavLink>
+      <NavLink href="/market-prices">{t('nav.mandiPrices')}</NavLink>
     </>
   );
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, ready, logout } = useAuth();
+  const { t } = useLocale();
   const [unread, setUnread] = useState(0);
   const pathname = usePathname();
 
@@ -103,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [user, pathname]);
 
-  const links = roleNav(user?.role);
+  const links = roleNav(user?.role, t);
 
   return (
     <div className="min-h-full bg-field">
@@ -111,30 +118,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex min-w-0 items-center gap-4 md:gap-6">
             <Logo variant="header" />
-            <nav className="hidden items-center gap-0.5 md:flex" aria-label="Primary">
+            <nav className="hidden items-center gap-0.5 md:flex" aria-label={t('nav.primaryNav')}>
               {links}
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <LanguageSwitcher />
             {!user ? (
               <>
-                <NavLink href="/login">Log in</NavLink>
+                <NavLink href="/login">{t('nav.logIn')}</NavLink>
                 <Link
                   href="/register"
                   className="rounded-lg bg-harvest px-3 py-2 text-sm font-bold text-forest hover:bg-[#c49212]"
                 >
-                  Join
+                  {t('nav.join')}
                 </Link>
               </>
             ) : (
               <>
                 {user.isSuspended ? (
                   <span className="rounded-full bg-clay px-3 py-1 text-xs font-bold">
-                    Suspended
+                    {t('nav.suspended')}
                   </span>
                 ) : null}
                 <NavLink href="/notifications">
-                  Alerts{unread ? ` (${unread})` : ''}
+                  {t('nav.alerts')}
+                  {unread ? ` (${unread})` : ''}
                 </NavLink>
                 <NavLink href="/profile">{user.name.split(' ')[0]}</NavLink>
                 <button
@@ -142,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onClick={() => void logout()}
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-paper/80 hover:bg-paper/10 hover:text-paper"
                 >
-                  Log out
+                  {t('nav.logOut')}
                 </button>
               </>
             )}
@@ -150,7 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav
           className="flex gap-1 overflow-x-auto border-t border-paper/10 px-4 py-1.5 [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
-          aria-label="Primary"
+          aria-label={t('nav.primaryNav')}
         >
           {links}
         </nav>

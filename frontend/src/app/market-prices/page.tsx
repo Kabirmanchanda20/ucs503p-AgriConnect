@@ -15,6 +15,7 @@ import {
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
 import { MANDI_LIVE_STATES } from '@/lib/constants';
+import { useLocale } from '@/features/i18n/locale-context';
 
 function pickDefaultCrop(crops: string[]): string {
   const wheat = crops.find((crop) => crop.toLowerCase() === 'wheat');
@@ -35,6 +36,7 @@ function getTodayIST(): string {
 }
 
 export default function MarketPricesPage() {
+  const { t } = useLocale();
   const [liveStates, setLiveStates] = useState<string[]>([...MANDI_LIVE_STATES]);
   const [state, setState] = useState<string>(MANDI_LIVE_STATES[0]);
   const [crop, setCrop] = useState('');
@@ -168,19 +170,15 @@ export default function MarketPricesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-4xl text-forest">Mandi prices</h1>
-        <p className="mt-1 text-ink/70">
-          Live wholesale rates from Ministry of Agriculture <strong>Agmarknet</strong> (published on
-          data.gov.in). Crop list includes fruits, vegetables, cereals, and grains reported in the
-          official mandi feed for the selected state.
-        </p>
+        <h1 className="font-display text-4xl text-forest">{t('marketPrices.title')}</h1>
+        <p className="mt-1 text-ink/70">{t('marketPrices.subtitle')}</p>
       </div>
       {error ? <Alert>{error}</Alert> : null}
       {staleNotice ? (
         <p className="rounded-xl border border-leaf/30 bg-leaf/10 px-4 py-3 text-sm text-forest">{staleNotice}</p>
       ) : null}
       <Card className="grid gap-3 md:grid-cols-3">
-        <Field label="State">
+        <Field label={t('marketPrices.state')}>
           <Select
             value={state}
             onChange={(e) => {
@@ -197,7 +195,7 @@ export default function MarketPricesPage() {
             ))}
           </Select>
         </Field>
-        <Field label="Crop (from official mandi report)">
+        <Field label={t('marketPrices.crop')}>
           <Select
             value={crop}
             disabled={cropsLoading || stateCrops.length === 0}
@@ -215,8 +213,8 @@ export default function MarketPricesPage() {
         </Field>
         <div className="flex items-end text-sm text-ink/60">
           {cropsLoading
-            ? 'Loading crops from govt mandi feed…'
-            : `${stateCrops.length} crops in official mandi feed for ${state}`}
+            ? t('marketPrices.loadingCrops')
+            : t('marketPrices.cropCount', { count: stateCrops.length, state })}
         </div>
       </Card>
       {loading ? (
@@ -239,7 +237,9 @@ export default function MarketPricesPage() {
           ) : null}
 
           <Card>
-            <h2 className="font-display text-2xl text-forest">Live mandi prices — {crop}</h2>
+            <h2 className="font-display text-2xl text-forest">
+              {t('marketPrices.liveTitle', { crop })}
+            </h2>
             <p className="mt-1 text-sm text-ink/60">
               Source: agmarknet.gov.in → data.gov.in.
               {arrivalDateLabel
@@ -251,7 +251,7 @@ export default function MarketPricesPage() {
             </p>
             {mandiRows.length === 0 ? (
               <p className="mt-3 text-ink/70">
-                No official mandi rows for {crop} in {state} right now.
+                {t('marketPrices.noRows', { crop, state })}
               </p>
             ) : (
               <div className="mt-4 overflow-x-auto">
@@ -288,13 +288,12 @@ export default function MarketPricesPage() {
           </Card>
 
           <Card>
-            <h2 className="font-display text-2xl text-forest">Price history (90 days)</h2>
+            <h2 className="font-display text-2xl text-forest">{t('marketPrices.historyTitle')}</h2>
             <p className="mt-1 text-sm text-ink/60">
-              Past Agmarknet daily averages (dark bars) and AgriConnect marketplace trades (green).
-              The live table above shows only the latest arrival day.
+              {t('marketPrices.historyHint')}
             </p>
             {historyForChart.length === 0 && points.length === 0 ? (
-              <p className="mt-3 text-ink/70">No past history for this crop and state yet.</p>
+              <p className="mt-3 text-ink/70">{t('marketPrices.noHistory')}</p>
             ) : (
               <div className="mt-4 flex items-end gap-1 h-48">
                 {historyForChart.map((point, index) => (

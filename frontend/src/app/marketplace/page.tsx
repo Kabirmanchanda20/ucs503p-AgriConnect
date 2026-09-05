@@ -9,12 +9,14 @@ import { isPublicListing } from '@/lib/listing-display';
 import type { Listing } from '@/lib/api/types';
 import { compareListingPrices, type MandiCompareResult } from '@/lib/api/market';
 import { CROP_CATEGORIES, INDIAN_STATES } from '@/lib/constants';
+import { useLocale } from '@/features/i18n/locale-context';
 
 function mandiCompareMap(results: MandiCompareResult[]): Record<string, MandiCompareResult> {
   return Object.fromEntries(results.map((row) => [row.id, row]));
 }
 
 export default function MarketplacePage() {
+  const { t } = useLocale();
   const [listings, setListings] = useState<Listing[]>([]);
   const [mandiCompare, setMandiCompare] = useState<Record<string, MandiCompareResult>>({});
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function MarketplacePage() {
         }
       })
       .catch((cause) => {
-        if (!cancelled) setError(getErrorMessage(cause, 'Could not load listings'));
+        if (!cancelled) setError(getErrorMessage(cause, t('marketplace.loadFail')));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -61,7 +63,7 @@ export default function MarketplacePage() {
     return () => {
       cancelled = true;
     };
-  }, [filters]);
+  }, [filters, t]);
 
   function apply(form: FormData) {
     setLoading(true);
@@ -81,18 +83,18 @@ export default function MarketplacePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-4xl text-forest">Marketplace</h1>
-        <p className="mt-1 text-ink/70">Find produce listed by farmers across India.</p>
+        <h1 className="font-display text-4xl text-forest">{t('marketplace.title')}</h1>
+        <p className="mt-1 text-ink/70">{t('marketplace.subtitle')}</p>
       </div>
       {error ? <Alert>{error}</Alert> : null}
       <Card>
         <form className="grid gap-3 md:grid-cols-6" action={apply}>
-          <Field label="Crop">
+          <Field label={t('marketplace.crop')}>
             <Input name="crop" placeholder="Wheat" defaultValue={filters.crop} />
           </Field>
-          <Field label="Category">
+          <Field label={t('marketplace.category')}>
             <Select name="category" defaultValue={filters.category ?? ''}>
-              <option value="">Any</option>
+              <option value="">{t('common.select')}</option>
               {CROP_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -100,9 +102,9 @@ export default function MarketplacePage() {
               ))}
             </Select>
           </Field>
-          <Field label="State">
+          <Field label={t('marketplace.state')}>
             <Select name="state" defaultValue={filters.state ?? ''}>
-              <option value="">Any</option>
+              <option value="">{t('common.select')}</option>
               {INDIAN_STATES.map((state) => (
                 <option key={state} value={state}>
                   {state}
@@ -110,13 +112,13 @@ export default function MarketplacePage() {
               ))}
             </Select>
           </Field>
-          <Field label="Min ₹">
+          <Field label={t('marketplace.minPrice')}>
             <Input name="minPrice" defaultValue={filters.minPrice} />
           </Field>
-          <Field label="Max ₹">
+          <Field label={t('marketplace.maxPrice')}>
             <Input name="maxPrice" defaultValue={filters.maxPrice} />
           </Field>
-          <Field label="Sort">
+          <Field label={t('marketplace.sort')}>
             <Select name="sort" defaultValue={filters.sort}>
               <option value="createdAt_desc">Newest</option>
               <option value="price_asc">Price: low</option>
@@ -125,7 +127,7 @@ export default function MarketplacePage() {
             </Select>
           </Field>
           <div className="md:col-span-6">
-            <Button type="submit">Apply filters</Button>
+            <Button type="submit">{t('marketplace.apply')}</Button>
           </div>
         </form>
       </Card>
@@ -133,8 +135,8 @@ export default function MarketplacePage() {
         <Spinner />
       ) : listings.length === 0 ? (
         <EmptyState
-          title="No listings yet"
-          body="Try another crop or state, or check back after farmers post harvest."
+          title={t('marketplace.empty')}
+          body={t('marketplace.subtitle')}
         />
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

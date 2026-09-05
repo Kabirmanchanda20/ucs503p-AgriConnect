@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { dashboardPath, useAuth } from '@/features/auth/auth-context';
 import { GuestOnly } from '@/features/auth/guards';
+import { useLocale } from '@/features/i18n/locale-context';
 import { Alert, Button, Card, Field, Input, Select } from '@/components/ui';
 import { INDIAN_STATES } from '@/lib/constants';
 import { getErrorMessage } from '@/lib/api/errors';
 
 function RegisterForm() {
   const { register } = useAuth();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultRole = searchParams.get('role') === 'BUYER' ? 'BUYER' : 'FARMER';
@@ -30,10 +32,11 @@ function RegisterForm() {
         state: String(form.get('state') || '') || undefined,
         district: String(form.get('district') || '') || undefined,
         village: String(form.get('village') || '') || undefined,
+        languagePref: locale,
       });
       router.replace(dashboardPath(user.role));
     } catch (cause) {
-      setError(getErrorMessage(cause, 'Could not create account'));
+      setError(getErrorMessage(cause, t('register.fail')));
     } finally {
       setPending(false);
     }
@@ -41,31 +44,31 @@ function RegisterForm() {
 
   return (
     <Card className="mx-auto max-w-lg">
-      <h1 className="font-display text-3xl text-forest">Join AgriConnect</h1>
-      <p className="mt-1 text-ink/70">One account. Farmer or buyer — pick below.</p>
+      <h1 className="font-display text-3xl text-forest">{t('register.title')}</h1>
+      <p className="mt-1 text-ink/70">{t('register.subtitle')}</p>
       <form className="mt-6 grid gap-4" action={onSubmit}>
         {error ? <Alert>{error}</Alert> : null}
-        <Field label="I am a">
+        <Field label={t('register.roleLabel')}>
           <Select name="role" defaultValue={defaultRole}>
-            <option value="FARMER">Farmer — I sell produce</option>
-            <option value="BUYER">Buyer — I purchase produce</option>
+            <option value="FARMER">{t('register.roleFarmer')}</option>
+            <option value="BUYER">{t('register.roleBuyer')}</option>
           </Select>
         </Field>
-        <Field label="Full name">
+        <Field label={t('register.fullName')}>
           <Input name="name" required minLength={1} />
         </Field>
-        <Field label="Email">
+        <Field label={t('register.email')}>
           <Input name="email" type="email" required />
         </Field>
-        <Field label="Password (8+ characters)">
+        <Field label={t('register.password')}>
           <Input name="password" type="password" required minLength={8} />
         </Field>
-        <Field label="Phone (optional)">
+        <Field label={t('register.phone')}>
           <Input name="phone" />
         </Field>
-        <Field label="State (optional)">
+        <Field label={t('register.state')}>
           <Select name="state" defaultValue="">
-            <option value="">Select state</option>
+            <option value="">{t('register.selectState')}</option>
             {INDIAN_STATES.map((state) => (
               <option key={state} value={state}>
                 {state}
@@ -73,20 +76,20 @@ function RegisterForm() {
             ))}
           </Select>
         </Field>
-        <Field label="District (optional)">
+        <Field label={t('register.district')}>
           <Input name="district" />
         </Field>
-        <Field label="Village (optional)">
+        <Field label={t('register.village')}>
           <Input name="village" />
         </Field>
         <Button type="submit" disabled={pending} className="w-full">
-          {pending ? 'Creating account…' : 'Create account'}
+          {pending ? t('register.submitting') : t('register.submit')}
         </Button>
       </form>
       <p className="mt-4 text-sm text-ink/70">
-        Already registered?{' '}
+        {t('register.already')}{' '}
         <Link href="/login" className="font-semibold text-leaf">
-          Log in
+          {t('register.logIn')}
         </Link>
       </p>
     </Card>
