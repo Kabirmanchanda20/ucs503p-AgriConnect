@@ -345,8 +345,8 @@ Auth limiter: **10 failed requests / minute** → **429 `RATE_LIMIT_EXCEEDED`**.
 
 | HTTP | Code | Scenario |
 |---|---|---|
-| **200** | — | Name / phone / location / language updated |
-| **400** | `VALIDATION_ERROR` | Bad field |
+| **200** | — | Name / phone / location / language updated (`languagePref`: `en`\|`hi`\|`pa`) |
+| **400** | `VALIDATION_ERROR` | Bad field (incl. invalid `languagePref`) |
 | **403** | `ACCOUNT_SUSPENDED` | Suspended |
 
 Cannot change `email` or `role` in V1 (ignored / not in schema → extra keys **400**).

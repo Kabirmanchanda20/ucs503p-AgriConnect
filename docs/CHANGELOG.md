@@ -10,7 +10,7 @@ Format: `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security`.
 
 ### Added
 
-- **Browse before signup** — landing lists live produce; guests get Marketplace + Prices in the header; home pulls three live listings. Sign-in is only for listing, ordering, chat, and dashboards.
+- **Hindi / Punjabi i18n** — English, Hindi (हिन्दी), and Punjabi (ਪੰਜਾਬੀ) UI via header language switcher; persists in `localStorage` and syncs to `languagePref` when signed in. Register/`PATCH /users/me` accept only `en`|`hi`|`pa`. Kisan assistant accepts optional `language` (`en`|`hi`|`pa`) and replies in that language.
 - **Order timeline** — visual stepper on order detail for order status, escrow payment, and delivery logistics.
 - **Mandi compare badge** — `POST /api/v1/market/prices/compare`; marketplace listing cards show Below/Above/Matches mandi vs Agmarknet reference.
 - **Mandi prices resilience** — unsupported states (e.g. Haryana) and rate-limited live feed fall back to seeded Agmarknet reference data; expanded demo mandi seed across Punjab/Haryana/API states.

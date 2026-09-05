@@ -7,8 +7,8 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 | **Team** | Kabir Manchanda, Manbhav Kumar Terry |
 | **Course** | UCS503P |
 | **Current week** | **Week 2** — Mon 31 Aug → Mon 7 Sep 2026 |
-| **Updated** | Wed 2 Sep 2026 |
-| **Status** | **Amber** — Mandi prices production-hardened: cache, circuit breaker, full crop list, stale fallback |
+| **Updated** | Sat 5 Sep 2026 |
+| **Status** | **Amber** — Hindi/Punjabi i18n shipped (UI + Kisan); Prototype still needs faculty demo polish |
 
 ## Project phase snapshot
 
@@ -26,6 +26,7 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 
 | | Task | Notes |
 |---|---|---|
+| **Done** | Hindi / Punjabi i18n | en/hi/pa switcher; register + profile sync; Kisan language-aware; FE build + BE tests + parity |
 | **Working on** | Commit + push Prototype slice | Uncommitted: migration, market, logistics, payments, alerts, Docker, timeline, mandi badges |
 | **Working on** | Live mandi feed (Agmarknet) | `latestOnly` on live table; grain probes for Wheat/Rice; history chart uses 90-day API |
 | **Working on** | Docker + CI verification | Compose + Dockerfiles in repo; run `docker compose up` before demo |

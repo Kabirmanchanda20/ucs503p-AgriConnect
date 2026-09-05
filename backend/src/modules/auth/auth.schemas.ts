@@ -14,7 +14,7 @@ export const registerSchema = z
     state: optionalLocation,
     district: optionalLocation,
     village: optionalLocation,
-    languagePref: z.string().trim().min(2).max(20).default('en'),
+    languagePref: z.enum(['en', 'hi', 'pa']).default('en'),
   })
   .strict();
 

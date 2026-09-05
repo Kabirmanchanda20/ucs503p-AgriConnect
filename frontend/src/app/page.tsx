@@ -1,29 +1,31 @@
+'use client';
+
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui';
 import { PublicListingsPreview } from '@/features/home/public-listings-preview';
+import { useLocale } from '@/features/i18n/locale-context';
 
 export default function HomePage() {
+  const { t } = useLocale();
+
   return (
     <div className="space-y-10">
       <section className="overflow-hidden rounded-3xl bg-forest px-6 py-14 text-paper md:px-12">
         <Logo variant="hero" linked={false} className="mb-6" />
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-harvest">
-          Direct from the farm
+          {t('home.eyebrow')}
         </p>
         <h1 className="mt-3 max-w-2xl font-display text-5xl leading-tight md:text-6xl">
-          Sell harvest. Buy produce. Skip the middleman.
+          {t('home.title')}
         </h1>
-        <p className="mt-5 max-w-xl text-lg text-paper/80">
-          AgriConnect is a farm-to-buyer marketplace. Browse live listings with photos
-          and prices — create a free account when you are ready to list or order.
-        </p>
+        <p className="mt-5 max-w-xl text-lg text-paper/80">{t('home.subtitle')}</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/marketplace">
-            <Button variant="gold">Browse listings</Button>
+            <Button variant="gold">{t('home.browseListings')}</Button>
           </Link>
           <Link href="/register">
-            <Button variant="outline-light">Create a free account</Button>
+            <Button variant="outline-light">{t('home.createAccount')}</Button>
           </Link>
         </div>
       </section>
@@ -38,18 +40,15 @@ export default function HomePage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/crops/tomato.jpg"
-                alt="Fresh produce on the AgriConnect marketplace"
+                alt={t('home.marketplaceTitle')}
                 className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
               />
             </div>
             <div className="flex flex-col justify-center p-6 sm:p-8">
-              <h2 className="font-display text-3xl text-forest">Browse the marketplace</h2>
-              <p className="mt-3 text-ink/70">
-                Filter by crop, district, and price. See farmer photos and minimum order
-                sizes — no login required to look around.
-              </p>
+              <h2 className="font-display text-3xl text-forest">{t('home.marketplaceTitle')}</h2>
+              <p className="mt-3 text-ink/70">{t('home.marketplaceBody')}</p>
               <p className="mt-5 text-sm font-bold text-leaf group-hover:underline">
-                Open marketplace →
+                {t('home.marketplaceCta')}
               </p>
             </div>
           </div>
@@ -57,11 +56,8 @@ export default function HomePage() {
       </section>
 
       <section>
-        <h2 className="font-display text-3xl text-forest">On the market now</h2>
-        <p className="mt-2 max-w-2xl text-ink/70">
-          Live produce from farmers. Open any card for photos and price — sign in only to
-          order or list.
-        </p>
+        <h2 className="font-display text-3xl text-forest">{t('home.onMarketTitle')}</h2>
+        <p className="mt-2 max-w-2xl text-ink/70">{t('home.onMarketBody')}</p>
         <div className="mt-6">
           <PublicListingsPreview />
         </div>

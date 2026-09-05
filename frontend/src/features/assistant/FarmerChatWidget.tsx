@@ -1,33 +1,17 @@
 'use client';
 
-import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { getAssistantStatus, queryAssistant } from '@/lib/api/assistant';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { Role } from '@/lib/api/types';
 import { Button, cx } from '@/components/ui';
+import { useLocale } from '@/features/i18n/locale-context';
 import { FarmerMascot } from './FarmerMascot';
-
-const QUICK_CHIPS = [
-  'How do I list produce?',
-  'Fair price tips',
-  'Crop care',
-  'How orders work',
-];
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-}
-
-function greetingFor(role: Role, firstName: string) {
-  if (role === 'FARMER') {
-    return `Namaste${firstName ? `, ${firstName}` : ''}! I'm Kisan. Ask me about listing produce, fair prices, crop care, or how AgriConnect works.`;
-  }
-  if (role === 'BUYER') {
-    return `Namaste${firstName ? `, ${firstName}` : ''}! I'm Kisan. I can help you browse produce, place orders, or understand fair farm prices.`;
-  }
-  return `Hello${firstName ? `, ${firstName}` : ''}! I'm Kisan. I can explain AgriConnect for farmers and buyers, plus general crop and market questions.`;
 }
 
 function newId() {
@@ -47,19 +31,41 @@ export function FarmerChatWidget({
   role: Role;
   name: string;
 }) {
+  const { t, locale } = useLocale();
   const panelId = useId();
   const titleId = useId();
   const inputId = useId();
   const firstName = name.split(' ')[0] ?? '';
+  const nameSuffix = firstName ? `, ${firstName}` : '';
+
+  const greeting = useMemo(() => {
+    if (role === 'FARMER') return t('kisan.greetingFarmer', { name: nameSuffix });
+    if (role === 'BUYER') return t('kisan.greetingBuyer', { name: nameSuffix });
+    return t('kisan.greetingAdmin', { name: nameSuffix });
+  }, [role, nameSuffix, t]);
+
+  const chips = useMemo(
+    () => [
+      t('kisan.chips.list'),
+      t('kisan.chips.fairPrice'),
+      t('kisan.chips.cropCare'),
+      t('kisan.chips.orders'),
+    ],
+    [t],
+  );
+
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
   const [assistantOnline, setAssistantOnline] = useState<boolean | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    { id: 'welcome', role: 'assistant', content: greetingFor(role, firstName) },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const visibleMessages = useMemo<ChatMessage[]>(
+    () => [{ id: 'welcome', role: 'assistant', content: greeting }, ...messages],
+    [greeting, messages],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -78,7 +84,7 @@ export function FarmerChatWidget({
     const node = listRef.current;
     if (!node) return;
     node.scrollTop = node.scrollHeight;
-  }, [messages, pending, open]);
+  }, [visibleMessages, pending, open]);
 
   function openChat() {
     setOpen(true);
@@ -96,14 +102,13 @@ export function FarmerChatWidget({
 
     try {
       const history = nextMessages
-        .filter((item) => item.id !== 'welcome')
         .slice(0, -1)
         .slice(-4)
         .map((item) => ({
           role: item.role,
           content: clipForHistory(item.content),
         }));
-      const { data } = await queryAssistant({ message, history });
+      const { data } = await queryAssistant({ message, history, language: locale });
       setMessages((current) => [
         ...current,
         { id: newId(), role: 'assistant', content: data.reply },
@@ -149,25 +154,28 @@ export function FarmerChatWidget({
             <FarmerMascot size={46} className="ring-1 ring-harvest/40" />
             <div className="min-w-0 flex-1">
               <h2 id={titleId} className="font-display text-lg leading-tight">
-                Ask Kisan
+                {t('kisan.title')}
               </h2>
               <p className="text-xs text-paper/75">
-                Farm advisor
-                {assistantOnline === true ? ' · Online' : assistantOnline === false ? ' · Offline' : ''}
+                {assistantOnline === true
+                  ? t('kisan.online')
+                  : assistantOnline === false
+                    ? t('kisan.offline')
+                    : ''}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="rounded-lg px-2 py-1 text-sm font-semibold text-paper/80 hover:bg-paper/10 hover:text-paper"
-              aria-label="Close Kisan chat"
+              aria-label={t('kisan.closeLabel')}
             >
-              Close
+              ✕
             </button>
           </header>
 
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
-            {messages.map((item) => (
+            {visibleMessages.map((item) => (
               <div
                 key={item.id}
                 className={cx('flex gap-2', item.role === 'user' ? 'justify-end' : 'justify-start')}
@@ -191,14 +199,14 @@ export function FarmerChatWidget({
               <div className="flex items-center gap-2 text-soil">
                 <FarmerMascot size={28} />
                 <span className="kisan-typing rounded-2xl border border-forest/10 bg-field px-3 py-2 text-sm">
-                  Kisan is thinking… (AI replies can take 5–15 seconds)
+                  {t('kisan.sending')}
                 </span>
               </div>
             ) : null}
           </div>
 
           <div className="flex flex-wrap gap-1.5 border-t border-forest/10 px-3 py-2">
-            {QUICK_CHIPS.map((chip) => (
+            {chips.map((chip) => (
               <button
                 key={chip}
                 type="button"
@@ -213,7 +221,7 @@ export function FarmerChatWidget({
 
           <form onSubmit={onSubmit} className="flex gap-2 border-t border-forest/10 p-3">
             <label htmlFor={inputId} className="sr-only">
-              Ask Kisan a farm question
+              {t('kisan.title')}
             </label>
             <textarea
               id={inputId}
@@ -228,11 +236,11 @@ export function FarmerChatWidget({
               }}
               maxLength={800}
               rows={2}
-              placeholder="Ask about crops, prices, or AgriConnect…"
+              placeholder={t('kisan.placeholder')}
               className="min-h-12 flex-1 resize-none rounded-xl border border-forest/15 bg-field px-3 py-2 text-sm text-ink outline-none ring-harvest/40 focus:border-leaf focus:ring-2"
             />
             <Button type="submit" disabled={pending || !draft.trim()} className="self-end px-4">
-              Ask
+              {t('kisan.send')}
             </Button>
           </form>
         </section>
@@ -248,10 +256,10 @@ export function FarmerChatWidget({
           )}
           aria-expanded={open}
           aria-controls={panelId}
-          aria-label={open ? 'Close Kisan chat' : 'Ask Kisan, farm assistant'}
+          aria-label={open ? t('kisan.closeLabel') : t('kisan.openLabel')}
         >
           <FarmerMascot size={52} />
-          <span className="text-sm font-bold text-paper">Ask Kisan</span>
+          <span className="text-sm font-bold text-paper">{t('kisan.title')}</span>
         </button>
       </div>
     </div>

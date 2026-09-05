@@ -47,6 +47,7 @@ frontend/src/
 ├── components/               # shell, listing-card, ui primitives, providers
 ├── features/
 │   ├── auth/                 # AuthProvider, RequireAuth, GuestOnly
+│   ├── i18n/                 # LocaleProvider, LanguageSwitcher (en/hi/pa)
 │   ├── home/                 # Public landing listings preview
 │   ├── assistant/            # Kisan chat widget
 │   ├── messages/             # Order chat
@@ -54,12 +55,15 @@ frontend/src/
 │   └── reviews/              # Order review UI
 └── lib/
     ├── api/                  # HTTP client — keep in sync with the contract
+    ├── i18n/                 # en/hi/pa dictionaries + translate()
     ├── env.ts
     ├── constants.ts
     └── format.ts             # money / qty / dates for decimal strings
 ```
 
 The landing page uses the illustrated AgriConnect logo on a forest banner, a marketplace promo, and a live listings preview. Live mandi rates are on `/market-prices` (linked in the header). Marketplace, listing, and dashboard pages stay conventional UI.
+
+**i18n:** Header language switcher sets `en` / `hi` / `pa`. Strings live in `src/lib/i18n/messages/`. Prefer `useLocale().t('nav.dashboard')` for user-facing copy. Signed-in preference syncs to `PATCH /users/me` `languagePref`. Kisan receives the same locale on `POST /assistant/query`.
 
 **Without an account** a visitor can use: `/` (home), `/marketplace`, `/listings/:id` (view only), `/market-prices`. Sign-in is required to list, order, chat, or open dashboards.
 

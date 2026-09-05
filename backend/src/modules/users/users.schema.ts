@@ -7,7 +7,7 @@ export const updateMeSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
     phone: optionalText(30),
-    languagePref: z.string().trim().min(2).max(20).optional(),
+    languagePref: z.enum(['en', 'hi', 'pa']).optional(),
     state: optionalText(100),
     district: optionalText(100),
     village: optionalText(100),

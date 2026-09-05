@@ -168,7 +168,7 @@ Access token is **only** in JSON `data.accessToken`, never in localStorage.
 | role | yes | `FARMER` or `BUYER` only (`ADMIN` rejected) |
 | phone | no | string |
 | state, district, village | no | strings |
-| languagePref | no | default `en` |
+| languagePref | no | `en` \| `hi` \| `pa` (default `en`) |
 
 #### Response — 201
 
@@ -403,6 +403,8 @@ Revokes **all** refresh tokens for that user after success.
 **Roles:** any authenticated
 
 #### Request (all optional)
+
+`languagePref` if sent must be `en` | `hi` | `pa`.
 
 ```json
 {
@@ -1518,11 +1520,12 @@ When a farmer **publishes** a listing, matching buyers receive `LISTING_PUBLISHE
 ```json
 {
   "message": "How do I list wheat?",
-  "history": [{ "role": "user", "content": "Hi" }, { "role": "assistant", "content": "Namaste!" }]
+  "history": [{ "role": "user", "content": "Hi" }, { "role": "assistant", "content": "Namaste!" }],
+  "language": "hi"
 }
 ```
 
-`message` max **800** characters. Each `history` turn max **4000** characters (longer turns are clipped); up to **8** prior turns.
+`message` max **800** characters. Each `history` turn max **4000** characters (longer turns are clipped); up to **4** prior turns. Optional `language`: `en` | `hi` | `pa` — Kisan replies in that language (defaults to English).
 
 #### Response — 200
 
