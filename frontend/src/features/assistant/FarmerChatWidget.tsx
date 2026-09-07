@@ -4,8 +4,15 @@ import { type FormEvent, useEffect, useId, useMemo, useRef, useState } from 'rea
 import { getAssistantStatus, queryAssistant } from '@/lib/api/assistant';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { Role } from '@/lib/api/types';
-import { Button, cx } from '@/components/ui';
+import { cx } from '@/components/ui';
 import { useLocale } from '@/features/i18n/locale-context';
+import {
+  isSpeechRecognitionSupported,
+  isSpeechSynthesisSupported,
+  speakText,
+  startListening,
+  stopSpeaking,
+} from '@/lib/speech';
 import { FarmerMascot } from './FarmerMascot';
 
 interface ChatMessage {
@@ -13,6 +20,8 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+const AUTO_SPEAK_KEY = 'agriconnect.kisan.autoSpeak';
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -22,6 +31,26 @@ function clipForHistory(content: string, max = 800): string {
   const trimmed = content.trim();
   if (trimmed.length <= max) return trimmed;
   return `${trimmed.slice(0, max - 1)}…`;
+}
+
+function VoiceWave({ active, tone }: { active: boolean; tone: 'listen' | 'speak' | 'idle' }) {
+  const color =
+    tone === 'listen' ? 'bg-harvest' : tone === 'speak' ? 'bg-leaf' : 'bg-forest/25';
+  return (
+    <div className="flex h-8 items-end justify-center gap-1" aria-hidden>
+      {[0, 1, 2, 3, 4, 5, 6].map((index) => (
+        <span
+          key={index}
+          className={cx(
+            'w-1 rounded-full transition-all',
+            color,
+            active ? 'kisan-wave-bar' : 'h-1.5 opacity-50',
+          )}
+          style={active ? { animationDelay: `${index * 70}ms` } : undefined}
+        />
+      ))}
+    </div>
+  );
 }
 
 export function FarmerChatWidget({
@@ -35,6 +64,7 @@ export function FarmerChatWidget({
   const panelId = useId();
   const titleId = useId();
   const inputId = useId();
+  const liveId = useId();
   const firstName = name.split(' ')[0] ?? '';
   const nameSuffix = firstName ? `, ${firstName}` : '';
 
@@ -57,10 +87,20 @@ export function FarmerChatWidget({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [voiceError, setVoiceError] = useState('');
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const [assistantOnline, setAssistantOnline] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const listenStopRef = useRef<(() => void) | null>(null);
+  const pendingRef = useRef(false);
+
+  const voiceReady = isSpeechRecognitionSupported();
+  const ttsReady = isSpeechSynthesisSupported();
+  const voiceTone = listening ? 'listen' : speakingId ? 'speak' : 'idle';
 
   const visibleMessages = useMemo<ChatMessage[]>(
     () => [{ id: 'welcome', role: 'assistant', content: greeting }, ...messages],
@@ -68,11 +108,29 @@ export function FarmerChatWidget({
   );
 
   useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(AUTO_SPEAK_KEY);
+      if (stored != null) setAutoSpeak(stored === '1');
+    } catch {
+      /* keep default */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      listenStopRef.current?.();
+      listenStopRef.current = null;
+      setListening(false);
+      stopSpeaking();
+      setSpeakingId(null);
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     void getAssistantStatus()
       .then((result) => setAssistantOnline(result.data.connected))
       .catch(() => setAssistantOnline(false));
-    inputRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
     };
@@ -84,21 +142,103 @@ export function FarmerChatWidget({
     const node = listRef.current;
     if (!node) return;
     node.scrollTop = node.scrollHeight;
-  }, [visibleMessages, pending, open]);
+  }, [visibleMessages, pending, open, listening]);
 
-  function openChat() {
-    setOpen(true);
+  useEffect(() => {
+    return () => {
+      listenStopRef.current?.();
+      stopSpeaking();
+    };
+  }, []);
+
+  function toggleAutoSpeak() {
+    setAutoSpeak((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(AUTO_SPEAK_KEY, next ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
+
+  function readAloud(id: string, content: string) {
+    if (!ttsReady) {
+      setVoiceError(t('kisan.voiceUnsupported'));
+      return;
+    }
+    if (speakingId === id) {
+      stopSpeaking();
+      setSpeakingId(null);
+      return;
+    }
+    stopSpeaking();
+    setVoiceError('');
+    setSpeakingId(id);
+    speakText(content, locale);
+    const estimatedMs = Math.min(60_000, Math.max(2_500, content.length * 55));
+    window.setTimeout(() => {
+      setSpeakingId((current) => (current === id ? null : current));
+    }, estimatedMs);
+  }
+
+  function toggleMic() {
+    if (!voiceReady) {
+      setVoiceError(t('kisan.voiceUnsupported'));
+      return;
+    }
+    if (listening) {
+      listenStopRef.current?.();
+      listenStopRef.current = null;
+      setListening(false);
+      return;
+    }
+
+    // Barge-in: stop TTS when user starts talking.
+    stopSpeaking();
+    setSpeakingId(null);
+    setVoiceError('');
+
+    const session = startListening({
+      locale,
+      onResult: (transcript) => {
+        // Show live transcript in the composer so the farmer can review before Send.
+        setDraft(transcript);
+      },
+      onError: () => {
+        setListening(false);
+        listenStopRef.current = null;
+        setVoiceError(t('kisan.voiceUnsupported'));
+      },
+      onEnd: () => {
+        setListening(false);
+        listenStopRef.current = null;
+        inputRef.current?.focus();
+      },
+    });
+    if (!session) {
+      setVoiceError(t('kisan.voiceUnsupported'));
+      return;
+    }
+    listenStopRef.current = session.stop;
+    setListening(true);
   }
 
   async function sendMessage(text: string) {
     const message = text.trim();
-    if (!message || pending) return;
+    if (!message || pendingRef.current) return;
+
+    pendingRef.current = true;
+    setPending(true);
+    listenStopRef.current?.();
+    listenStopRef.current = null;
+    setListening(false);
 
     const userTurn: ChatMessage = { id: newId(), role: 'user', content: message };
     const nextMessages = [...messages, userTurn];
     setMessages(nextMessages);
     setDraft('');
-    setPending(true);
 
     try {
       const history = nextMessages
@@ -109,10 +249,15 @@ export function FarmerChatWidget({
           content: clipForHistory(item.content),
         }));
       const { data } = await queryAssistant({ message, history, language: locale });
+      const replyId = newId();
       setMessages((current) => [
         ...current,
-        { id: newId(), role: 'assistant', content: data.reply },
+        { id: replyId, role: 'assistant', content: data.reply },
       ]);
+      if (autoSpeak && ttsReady) {
+        setSpeakingId(replyId);
+        speakText(data.reply, locale);
+      }
     } catch (error) {
       const raw = getErrorMessage(
         error,
@@ -124,13 +269,10 @@ export function FarmerChatWidget({
           : raw;
       setMessages((current) => [
         ...current,
-        {
-          id: newId(),
-          role: 'assistant',
-          content: friendly,
-        },
+        { id: newId(), role: 'assistant', content: friendly },
       ]);
     } finally {
+      pendingRef.current = false;
       setPending(false);
     }
   }
@@ -140,41 +282,54 @@ export function FarmerChatWidget({
     void sendMessage(draft);
   }
 
+  const statusLabel = listening
+    ? t('kisan.listening')
+    : speakingId
+      ? t('kisan.speaking')
+      : pending
+        ? t('kisan.sending')
+        : assistantOnline === true
+          ? t('kisan.online')
+          : assistantOnline === false
+            ? t('kisan.offline')
+            : '';
+
   return (
-    <div className="pointer-events-none fixed right-4 bottom-4 z-[60] sm:right-6 sm:bottom-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-end p-3 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:p-0">
       {open ? (
         <section
           id={panelId}
           role="dialog"
-          aria-modal="false"
+          aria-modal="true"
           aria-labelledby={titleId}
-          className="pointer-events-auto kisan-panel mb-3 flex h-[min(32rem,70vh)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-forest/15 bg-paper shadow-[0_18px_50px_rgba(31,61,43,0.22)]"
+          className="pointer-events-auto kisan-panel flex h-[100dvh] w-full flex-col overflow-hidden border border-forest/15 bg-paper shadow-[0_18px_50px_rgba(31,61,43,0.22)] sm:mb-3 sm:h-[min(34rem,68vh)] sm:w-[min(24.5rem,calc(100vw-2rem))] sm:rounded-3xl"
         >
           <header className="flex items-center gap-3 bg-forest px-4 py-3 text-paper">
-            <FarmerMascot size={46} className="ring-1 ring-harvest/40" />
+            <FarmerMascot size={44} className="ring-1 ring-harvest/40" />
             <div className="min-w-0 flex-1">
               <h2 id={titleId} className="font-display text-lg leading-tight">
                 {t('kisan.title')}
               </h2>
-              <p className="text-xs text-paper/75">
-                {assistantOnline === true
-                  ? t('kisan.online')
-                  : assistantOnline === false
-                    ? t('kisan.offline')
-                    : ''}
+              <p className="truncate text-xs text-paper/75" aria-live="polite">
+                {statusLabel}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-lg px-2 py-1 text-sm font-semibold text-paper/80 hover:bg-paper/10 hover:text-paper"
+              className="min-h-11 min-w-11 rounded-xl text-lg font-semibold text-paper/85 hover:bg-paper/10 hover:text-paper"
               aria-label={t('kisan.closeLabel')}
             >
               ✕
             </button>
           </header>
 
-          <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+          <div
+            ref={listRef}
+            className="flex-1 space-y-3 overflow-y-auto px-3 py-3"
+            aria-live="polite"
+            id={liveId}
+          >
             {visibleMessages.map((item) => (
               <div
                 key={item.id}
@@ -183,16 +338,28 @@ export function FarmerChatWidget({
                 {item.role === 'assistant' ? (
                   <FarmerMascot size={28} className="mt-1 shrink-0" />
                 ) : null}
-                <p
+                <div
                   className={cx(
-                    'max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                    'max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
                     item.role === 'user'
                       ? 'bg-leaf text-paper'
                       : 'border border-forest/10 bg-field text-ink',
                   )}
                 >
-                  {item.content}
-                </p>
+                  <p>{item.content}</p>
+                  {item.role === 'assistant' && ttsReady ? (
+                    <button
+                      type="button"
+                      onClick={() => readAloud(item.id, item.content)}
+                      className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-forest/8 px-2.5 text-xs font-bold text-forest hover:bg-forest/12"
+                      aria-label={
+                        speakingId === item.id ? t('kisan.stopSpeakLabel') : t('kisan.speakLabel')
+                      }
+                    >
+                      {speakingId === item.id ? t('kisan.stopSpeakLabel') : t('kisan.speakLabel')}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ))}
             {pending ? (
@@ -205,63 +372,108 @@ export function FarmerChatWidget({
             ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 border-t border-forest/10 px-3 py-2">
-            {chips.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                disabled={pending}
-                onClick={() => void sendMessage(chip)}
-                className="rounded-full border border-harvest/40 bg-harvest/15 px-2.5 py-1 text-xs font-semibold text-soil hover:bg-harvest/25 disabled:opacity-50"
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
+          <div className="border-t border-forest/10 bg-field/60 px-3 py-2">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <VoiceWave active={listening || Boolean(speakingId)} tone={voiceTone} />
+              {ttsReady ? (
+                <button
+                  type="button"
+                  onClick={toggleAutoSpeak}
+                  className={cx(
+                    'rounded-full border px-2.5 py-1 text-xs font-semibold',
+                    autoSpeak
+                      ? 'border-leaf bg-leaf/15 text-forest'
+                      : 'border-forest/20 bg-paper text-ink/70',
+                  )}
+                  aria-pressed={autoSpeak}
+                >
+                  {t('kisan.autoSpeak')}
+                </button>
+              ) : null}
+            </div>
 
-          <form onSubmit={onSubmit} className="flex gap-2 border-t border-forest/10 p-3">
-            <label htmlFor={inputId} className="sr-only">
-              {t('kisan.title')}
-            </label>
-            <textarea
-              id={inputId}
-              ref={inputRef}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  void sendMessage(draft);
-                }
-              }}
-              maxLength={800}
-              rows={2}
-              placeholder={t('kisan.placeholder')}
-              className="min-h-12 flex-1 resize-none rounded-xl border border-forest/15 bg-field px-3 py-2 text-sm text-ink outline-none ring-harvest/40 focus:border-leaf focus:ring-2"
-            />
-            <Button type="submit" disabled={pending || !draft.trim()} className="self-end px-4">
-              {t('kisan.send')}
-            </Button>
-          </form>
+            <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+              {chips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void sendMessage(chip)}
+                  className="shrink-0 rounded-full border border-harvest/40 bg-harvest/15 px-3 py-1.5 text-xs font-semibold text-soil hover:bg-harvest/25 disabled:opacity-50"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            {voiceError ? <p className="mb-2 text-xs text-soil">{voiceError}</p> : null}
+            <p className="mb-2 text-xs text-ink/55">{t('kisan.voiceHint')}</p>
+
+            <form onSubmit={onSubmit} className="flex items-end gap-2">
+              <label htmlFor={inputId} className="sr-only">
+                {t('kisan.title')}
+              </label>
+              <textarea
+                id={inputId}
+                ref={inputRef}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void sendMessage(draft);
+                  }
+                }}
+                maxLength={800}
+                rows={2}
+                placeholder={listening ? t('kisan.listening') : t('kisan.placeholder')}
+                className="min-h-12 flex-1 resize-none rounded-2xl border border-forest/15 bg-paper px-3 py-2.5 text-sm text-ink outline-none ring-harvest/40 focus:border-leaf focus:ring-2"
+              />
+              <button
+                type="button"
+                onClick={toggleMic}
+                disabled={pending}
+                className={cx(
+                  'flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full text-xs font-bold shadow-sm transition disabled:opacity-50',
+                  listening
+                    ? 'bg-soil text-paper ring-4 ring-harvest/40'
+                    : 'bg-forest text-paper hover:brightness-110',
+                )}
+                aria-label={listening ? t('kisan.stopMicLabel') : t('kisan.micLabel')}
+                aria-pressed={listening}
+                title={listening ? t('kisan.stopMicLabel') : t('kisan.micLabel')}
+              >
+                <span className="text-lg leading-none" aria-hidden>
+                  {listening ? '■' : '🎙'}
+                </span>
+                <span className="mt-0.5 max-w-[3.2rem] truncate text-[10px] leading-tight">
+                  {listening ? t('kisan.stopMicLabel') : t('kisan.tapToTalk')}
+                </span>
+              </button>
+              <button
+                type="submit"
+                disabled={pending || !draft.trim()}
+                className="flex h-14 min-w-14 shrink-0 items-center justify-center rounded-2xl bg-leaf px-4 text-sm font-bold text-paper hover:bg-forest disabled:cursor-not-allowed disabled:bg-soil/40"
+              >
+                {t('kisan.send')}
+              </button>
+            </form>
+          </div>
         </section>
       ) : null}
 
-      <div className="relative flex justify-end">
+      {!open ? (
         <button
           type="button"
-          onClick={() => (open ? setOpen(false) : openChat())}
-          className={cx(
-            'pointer-events-auto flex items-center gap-2 rounded-full bg-forest pl-1 pr-4 py-1 shadow-[0_12px_32px_rgba(31,61,43,0.35)] transition duration-200 hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-harvest',
-            open ? '' : 'kisan-bounce',
-          )}
-          aria-expanded={open}
+          onClick={() => setOpen(true)}
+          className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-forest shadow-[0_12px_28px_rgba(31,61,43,0.32)] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-harvest sm:h-16 sm:w-16"
+          aria-expanded={false}
           aria-controls={panelId}
-          aria-label={open ? t('kisan.closeLabel') : t('kisan.openLabel')}
+          aria-label={t('kisan.openLabel')}
         >
-          <FarmerMascot size={52} />
-          <span className="text-sm font-bold text-paper">{t('kisan.title')}</span>
+          <FarmerMascot size={56} />
         </button>
-      </div>
+      ) : null}
     </div>
   );
 }

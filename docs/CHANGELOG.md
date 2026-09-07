@@ -10,6 +10,16 @@ Format: `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security`.
 
 ### Added
 
+- **API endpoint catalog** — [docs/API_ENDPOINTS.md](./API_ENDPOINTS.md) inventories all 63 product HTTP routes, Socket.io chat, outbound integrations (data.gov.in, Gemini, Supabase), rate limits, and explicit exclusions for faculty/lead review.
+
+### Changed
+
+- **API contract gaps** — documented `GET /api/v1/`, `GET /users/me` as a subsection, `GET /market/mandi/commodities`, outbound integrations appendix; marked `GET /admin/reports.csv` as not implemented (404).
+- **Register required contact fields** — **breaking:** `POST /auth/register` now requires `phone`, `state`, and `district` (1–30 / 1–100 chars). `village` stays optional. Register UI labels and HTML `required` match.
+
+### Added
+
+- **Indian languages + voice-first Kisan** — 13 locales (`en|hi|pa|bn|ta|te|mr|gu|kn|ml|or|as|ur`). Kisan panel redesigned from research: quiet circular launcher, mobile fullscreen, large mic with live transcript (review then Send), listening/speaking waveform, read-aloud + auto-read.
 - **Hindi / Punjabi i18n** — English, Hindi (हिन्दी), and Punjabi (ਪੰਜਾਬੀ) UI via header language switcher; persists in `localStorage` and syncs to `languagePref` when signed in. Register/`PATCH /users/me` accept only `en`|`hi`|`pa`. Kisan assistant accepts optional `language` (`en`|`hi`|`pa`) and replies in that language.
 - **Order timeline** — visual stepper on order detail for order status, escrow payment, and delivery logistics.
 - **Mandi compare badge** — `POST /api/v1/market/prices/compare`; marketplace listing cards show Below/Above/Matches mandi vs Agmarknet reference.
@@ -21,8 +31,11 @@ Format: `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security`.
 
 ### Fixed
 
+- **Login double-submit** — form ignored rapid re-clicks while the ~2s login request was in flight (`pendingRef` + `preventDefault`).
 - **Listing photos** — demo onion/tomato Unsplash URLs were 404; cards now fall back to local crop photos and skip the redundant Active badge.
 - **Landing discoverability** — marketplace-focused home; live mandi rates live on `/market-prices` only (header link). Audit test listings hidden from public browse.
+- **data.gov.in mandi filters** — live prices queried `filters[state.keyword]`, which always returned zero rows even with a valid `DATA_GOV_IN_API_KEY`. Filters now use `filters[state]`. Empty mandi history is `200 []` instead of `502`.
+- **Mandi page offline UX** — “Failed to fetch” mapped to a clear backend-down message; Haryana kept in the state dropdown fallback; live/history/trends load with `Promise.allSettled` so one failure does not wipe the page.
 
 ### Added (V2)
 

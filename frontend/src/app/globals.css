@@ -35,12 +35,25 @@ body {
   font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
 
-html[lang='hi'] body {
-  font-family: var(--font-noto-deva), var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+html[lang='hi'] body,
+html[lang='mr'] body {
+  font-family: var(--font-noto-deva), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
 
 html[lang='pa'] body {
-  font-family: var(--font-noto-gur), var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-noto-gur), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[lang='bn'] body,
+html[lang='as'] body,
+html[lang='ta'] body,
+html[lang='te'] body,
+html[lang='gu'] body,
+html[lang='kn'] body,
+html[lang='ml'] body,
+html[lang='or'] body,
+html[lang='ur'] body {
+  font-family: 'Nirmala UI', 'Noto Sans', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-display {
@@ -48,7 +61,17 @@ html[lang='pa'] body {
 }
 
 html[lang='hi'] .font-display,
-html[lang='pa'] .font-display {
+html[lang='pa'] .font-display,
+html[lang='bn'] .font-display,
+html[lang='ta'] .font-display,
+html[lang='te'] .font-display,
+html[lang='mr'] .font-display,
+html[lang='gu'] .font-display,
+html[lang='kn'] .font-display,
+html[lang='ml'] .font-display,
+html[lang='or'] .font-display,
+html[lang='as'] .font-display,
+html[lang='ur'] .font-display {
   font-family: inherit;
 }
 
@@ -111,4 +134,30 @@ html[lang='pa'] .font-display {
 .kisan-typing::after {
   content: '…';
   animation: kisan-dots 1.2s steps(3, end) infinite;
+}
+
+@keyframes kisan-wave {
+  0%,
+  100% {
+    height: 0.35rem;
+    opacity: 0.45;
+  }
+  50% {
+    height: 1.65rem;
+    opacity: 1;
+  }
+}
+
+.kisan-wave-bar {
+  height: 0.75rem;
+  animation: kisan-wave 0.85s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kisan-bounce,
+  .kisan-panel,
+  .kisan-wave-bar,
+  .kisan-typing::after {
+    animation: none !important;
+  }
 }

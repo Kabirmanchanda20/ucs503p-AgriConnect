@@ -7,8 +7,8 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 | **Team** | Kabir Manchanda, Manbhav Kumar Terry |
 | **Course** | UCS503P |
 | **Current week** | **Week 2** — Mon 31 Aug → Mon 7 Sep 2026 |
-| **Updated** | Sat 5 Sep 2026 |
-| **Status** | **Green** — Prototype slice + i18n on `backend_frontend` (`41455f0`); faculty demo next |
+| **Updated** | Mon 7 Sep 2026 |
+| **Status** | **Green** — Prototype demo-ready; mandi needs backend on :5001 (Haryana Potato/Onion live today) |
 
 ## Project phase snapshot
 
@@ -42,11 +42,15 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | **Done** | Guest browse + landing UX | Logo hero, public marketplace — `49a11f1` |
 | **Done** | Order timeline + mandi compare badge | `OrderTimeline`; `POST /market/prices/compare` — `49a11f1` |
 | **Done** | Verification | Backend Vitest 43/43; frontend build; i18n parity — local + `41455f0` |
-| **Working on** | Faculty Prototype demo | Walkthrough from `backend_frontend`; mandi needs `DATA_GOV_IN_API_KEY` if live feed required |
+| **Working on** | Faculty Prototype demo | Walkthrough from `backend_frontend`; Haryana Potato/Onion/Tomato have live rows today; Wheat may be empty |
+| **Working on** | Marketplace / mandi load UX | Uncommitted: backend-down message; Haryana in state fallback; Promise.allSettled on mandi page; `filters[state]` fix |
+| **Working on** | Register required fields | Uncommitted: phone, state, district required; village optional |
+| **Working on** | 10 additional UI locales | Uncommitted: bn, ta, te, mr, gu, kn, ml, or, as, ur message patches — `frontend/src/lib/i18n/messages/` |
+| **Done** | API endpoint catalog (boss review) | Uncommitted: `docs/API_ENDPOINTS.md` + contract gaps (meta, commodities, outbound) |
 | **Backlog** | Capstone — ML advisory | Price prediction, crop CV, evaluation metrics |
 | **Backlog** | Production Razorpay + webhooks | After Prototype demo |
 
-**Risks:** Mandi live feed 502 without data.gov.in API key (seeded fallback still works).
+**Risks:** Mandi page shows network error if backend (:5001) is down; Haryana only appears from API when `DATA_GOV_IN_API_KEY` is set (now also in UI fallback list). Some crop×state pairs are empty when Agmarknet has no arrivals that day.
 
 **Next (Mon 7 Sep — Week 3):** faculty demo; merge/PR `backend_frontend` → `master` if needed; plan Capstone scope.
 

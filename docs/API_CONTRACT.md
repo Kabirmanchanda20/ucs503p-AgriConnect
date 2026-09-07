@@ -10,6 +10,7 @@
 
 This is the contract between backend and frontend teammates. Mock responses below are canonical examples.
 
+**Complete endpoint catalog (every HTTP + Socket + outbound):** [API_ENDPOINTS.md](./API_ENDPOINTS.md)  
 **Status codes, approve / discard / change scenarios, and every error:** [API_STATUS_CODES.md](./API_STATUS_CODES.md)  
 **How to consume this API in Next.js:** [FRONTEND_GUIDE.md](./FRONTEND_GUIDE.md)  
 **How to implement or extend endpoints:** [BACKEND_GUIDE.md](./BACKEND_GUIDE.md)  
@@ -123,6 +124,28 @@ Error body:
 
 ---
 
+## 1b. Meta — `/api/v1/`
+
+### GET /api/v1/
+
+**Description:** API name and version probe (smoke tests / Postman).  
+**Auth:** No  
+**Roles:** public
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "name": "AgriConnect API",
+    "version": "v1"
+  }
+}
+```
+
+---
+
 ## 2. Auth
 
 Cookie set on login/register/refresh:
@@ -166,8 +189,10 @@ Access token is **only** in JSON `data.accessToken`, never in localStorage.
 | password | yes | min 8, max 128 |
 | name | yes | 1–100 chars |
 | role | yes | `FARMER` or `BUYER` only (`ADMIN` rejected) |
-| phone | no | string |
-| state, district, village | no | strings |
+| phone | yes | 1–30 chars |
+| state | yes | 1–100 chars |
+| district | yes | 1–100 chars |
+| village | no | 1–100 chars when provided |
 | languagePref | no | `en` \| `hi` \| `pa` (default `en`) |
 
 #### Response — 201
@@ -392,7 +417,17 @@ Revokes **all** refresh tokens for that user after success.
 
 ## 3. Users & profiles
 
-`GET /api/v1/users/me` is an alias of `GET /api/v1/auth/me` (same payload). Frontend may use either; **prefer `/auth/me`**.
+### GET /api/v1/users/me
+
+**Description:** Full current user payload. **Alias** of `GET /api/v1/auth/me` (same JSON).  
+**Auth:** Yes  
+**Roles:** any authenticated
+
+Frontend may call either path; **prefer `/auth/me`**.
+
+#### Response — 200
+
+Same body as [GET /api/v1/auth/me](#get-apiv1authme).
 
 ---
 
@@ -1263,13 +1298,47 @@ Prices are **₹/quintal** from mandi; `pricePerKg` is derived for charts.
 | `market` | no | APMC |
 | `from`, `to` | no | `YYYY-MM-DD` range |
 
-#### Response — 200 — daily averaged mandi modal/min/max with `avgModalPricePerKg`.
+#### Response — 200 — daily averaged mandi modal/min/max with `avgModalPricePerKg`. Empty `data: []` when Agmarknet has no arrivals for that crop/state (not an error).
+
+#### Errors
+
+- 502 `MANDI_FEED_UNAVAILABLE` — upstream feed unreachable (network/rate-limit). Missing arrivals are **200** with `[]`.
 
 ---
 
 ### GET /api/v1/market/mandi/states
 
-**Auth:** No — list states covered by the feed (Maharashtra, UP, Punjab, MP, Karnataka).
+**Auth:** No — list states covered by the feed (Punjab, Haryana with key, Maharashtra, UP, MP, Karnataka).
+
+### GET /api/v1/market/mandi/commodities
+
+**Description:** Crop / commodity names available for a state (for UI dropdowns). May include staple grain fallbacks when today’s snapshot is thin.  
+**Auth:** No
+
+#### Query
+
+| Param | Required | Description |
+|---|---|---|
+| `state` | no (default Punjab) | Indian state |
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": ["Wheat", "Onion", "Potato", "Tomato"],
+  "meta": { "stale": false }
+}
+```
+
+`meta.stale` may be `true` when the list is a staple fallback because the live snapshot for that state is missing or sparse.
+
+#### Errors
+
+| Status | Code | When |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Bad query |
+| 502 | `MANDI_FEED_UNAVAILABLE` | Upstream unreachable (not “empty list”) |
 
 ### GET /api/v1/market/mandi/markets
 
@@ -1646,11 +1715,9 @@ Query: `page`, `limit`, `actorId`, `action`
 
 ### GET /api/v1/admin/reports.csv
 
-**Optional V1.** If unimplemented, frontend must not depend on it.
+**Not implemented.** Calling this path returns **404 `NOT_FOUND`**.
 
-`Content-Type: text/csv`  
-Auth ADMIN  
-Same metrics as analytics, flattened.
+Do **not** depend on CSV export in the frontend. Use `GET /api/v1/admin/analytics` instead. Kept here only so teammates do not invent a client against a missing route.
 
 ---
 
@@ -1676,8 +1743,11 @@ Use these literals in UI development before the API exists.
 - Supabase REST `/rest/v1/*`
 - Supabase Auth
 - Direct Storage upload with service role
-- Any `/api/v2` or Socket.io events (V2)
-- ML service URLs (V3)
+- data.gov.in / Agmarknet URLs (use `/api/v1/market/mandi/*`)
+- Google Gemini URLs (use `/api/v1/assistant/*`)
+- Capstone ML service URLs (not shipped)
+
+Socket.io for **order chat** (`join:order`, `message:new`, typing) **is** in scope — see [§5 Orders](#5-orders) and [API_ENDPOINTS.md](./API_ENDPOINTS.md).
 
 ---
 
@@ -1686,3 +1756,20 @@ Use these literals in UI development before the API exists.
 `CORS_ORIGINS` includes the Next.js origin (dev: `http://localhost:3000`).  
 `credentials: true`.  
 Refresh cookie `Path=/api/v1/auth` so it is sent to refresh/logout only.
+
+---
+
+## 12. Outbound integrations (server-only)
+
+The browser never calls these. Express owns credentials and retries.
+
+| Integration | Env | Product surface | Notes |
+|---|---|---|---|
+| **data.gov.in / Agmarknet** | `DATA_GOV_IN_API_KEY` (optional for some states) | `GET /api/v1/market/mandi/*` | Live wholesale prices; empty day → `200 []`; upstream failure → `502 MANDI_FEED_UNAVAILABLE` |
+| **Google Gemini** | `GEMINI_API_KEY`, `GEMINI_MODEL` | `GET/POST /api/v1/assistant/*` | Kisan advisory; status reports offline when key missing |
+| **Supabase PostgreSQL** | `DATABASE_URL`, `DIRECT_URL` | All authenticated product data via Prisma | Not a public REST API for the app |
+| **Supabase Storage** | `SUPABASE_*` service role | `POST /listings/:id/photos` | Service role stays on the server |
+| **SMTP / console mail** | SMTP env or console | Password reset / notification delivery | Dev may log instead of send |
+| **Razorpay** (optional) | Razorpay keys | `POST /orders/:id/payment*` | Mock hold/confirm without keys; production webhooks backlog |
+
+Full inventory of product routes: [API_ENDPOINTS.md](./API_ENDPOINTS.md).

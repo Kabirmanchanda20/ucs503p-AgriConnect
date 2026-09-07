@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { APP_LOCALES } from '../../common/locales.js';
 
 const USER_MESSAGE_MAX = 800;
 const HISTORY_TURN_MAX = 4000;
@@ -24,7 +25,7 @@ export const queryAssistantBodySchema = z
   .object({
     message: z.string().trim().min(1).max(USER_MESSAGE_MAX),
     history: z.array(assistantTurnSchema).max(4).default([]),
-    language: z.enum(['en', 'hi', 'pa']).optional(),
+    language: z.enum(APP_LOCALES).optional(),
   })
   .strict();
 

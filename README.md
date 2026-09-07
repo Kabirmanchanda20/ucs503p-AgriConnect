@@ -329,7 +329,7 @@ Auth header: `Authorization: Bearer <accessToken>`. Browser calls use cookies fo
 | 503       | Database down (`/ready`)                         |
 
 
-Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every status and error: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md). Postman: `backend/postman/collection.json`.
+Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every route in one catalog: [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md). Every status and error: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md). Postman: `backend/postman/collection.json`.
 
 ### Web app routes
 
@@ -389,6 +389,7 @@ Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every status and er
 | [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md) | Setup          | Env vars, Supabase, CORS, cookies                   |
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)           | Technical      | Boundaries, request flow, security                  |
 | [docs/DATABASE_DESIGN.md](./docs/DATABASE_DESIGN.md)     | Backend        | ERD, enums, inventory rules                         |
+| [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md)         | Both           | Full catalog: HTTP, Socket, outbound                |
 | [docs/API_CONTRACT.md](./docs/API_CONTRACT.md)           | Both           | Request/response JSON                               |
 | [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md)   | Both           | Status codes, approve/discard/change                |
 | [docs/FRONTEND_GUIDE.md](./docs/FRONTEND_GUIDE.md)       | Frontend       | Client, guards, screens                             |

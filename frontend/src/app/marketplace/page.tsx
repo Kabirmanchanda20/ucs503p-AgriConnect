@@ -30,35 +30,38 @@ export default function MarketplacePage() {
   useEffect(() => {
     let cancelled = false;
     void listListings(filters)
-      .then(async (result) => {
+      .then((result) => {
         if (cancelled) return;
         const data = result.data;
         setListings(data);
         setError('');
+        setLoading(false);
         if (data.length === 0) {
           setMandiCompare({});
           return;
         }
-        try {
-          const compareResult = await compareListingPrices(
-            data.map((listing) => ({
-              id: listing.id,
-              crop: listing.crop,
-              state: listing.state,
-              pricePerUnit: listing.pricePerUnit,
-              unit: listing.unit,
-            })),
-          );
-          if (!cancelled) setMandiCompare(mandiCompareMap(compareResult.data));
-        } catch {
-          if (!cancelled) setMandiCompare({});
-        }
+        // Mandi badges are optional — do not block the listing grid on compare.
+        void compareListingPrices(
+          data.map((listing) => ({
+            id: listing.id,
+            crop: listing.crop,
+            state: listing.state,
+            pricePerUnit: listing.pricePerUnit,
+            unit: listing.unit,
+          })),
+        )
+          .then((compareResult) => {
+            if (!cancelled) setMandiCompare(mandiCompareMap(compareResult.data));
+          })
+          .catch(() => {
+            if (!cancelled) setMandiCompare({});
+          });
       })
       .catch((cause) => {
-        if (!cancelled) setError(getErrorMessage(cause, t('marketplace.loadFail')));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setError(getErrorMessage(cause, t('marketplace.loadFail')));
+          setLoading(false);
+        }
       });
     return () => {
       cancelled = true;

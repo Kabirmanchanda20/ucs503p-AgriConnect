@@ -19,9 +19,10 @@ export const MANDI_CROPS = [
   'Cotton',
 ] as const;
 
-/** States with live official mandi data (Agmarknet / data.gov.in via open API). */
+/** States with live official mandi data (Agmarknet / data.gov.in). Haryana needs DATA_GOV_IN_API_KEY. */
 export const MANDI_LIVE_STATES = [
   'Punjab',
+  'Haryana',
   'Maharashtra',
   'Uttar Pradesh',
   'Madhya Pradesh',

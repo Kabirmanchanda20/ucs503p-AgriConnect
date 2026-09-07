@@ -25,6 +25,11 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
     }
     return error.message;
   }
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) {
+    if (/failed to fetch|networkerror|load failed|econnrefused/i.test(error.message)) {
+      return 'Cannot reach the AgriConnect API. Start the backend (port 5001) and refresh.';
+    }
+    return error.message;
+  }
   return fallback;
 }

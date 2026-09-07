@@ -6,6 +6,7 @@ import { getMe, login as loginRequest, logout as logoutRequest, registerAccount 
 import { refreshAccessToken } from '@/lib/api/client';
 import { tokenStore } from '@/lib/api/token-store';
 import type { AuthUser } from '@/lib/api/types';
+import type { Locale } from '@/lib/i18n/locales';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -16,11 +17,11 @@ interface AuthContextValue {
     password: string;
     name: string;
     role: 'FARMER' | 'BUYER';
-    phone?: string;
-    state?: string;
-    district?: string;
+    phone: string;
+    state: string;
+    district: string;
     village?: string;
-    languagePref?: 'en' | 'hi' | 'pa';
+    languagePref?: Locale;
   }) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;

@@ -39,12 +39,24 @@ export function buildSystemPrompt(role: Role, language = 'en'): string {
         ? 'The user is a buyer on AgriConnect. Help them browse listings, place orders, and understand fair farm prices.'
         : 'The user is an AgriConnect admin. Help them understand how farmers and buyers use the marketplace.';
 
+  const languageLines: Record<string, string> = {
+    en: 'Reply in clear simple English unless the user writes in another language — then match their language.',
+    hi: 'Reply in clear Hindi (Devanagari script) unless the user explicitly asks for another language.',
+    pa: 'Reply in clear Punjabi (Gurmukhi script) unless the user explicitly asks for another language.',
+    bn: 'Reply in clear Bengali (Bangla script) unless the user explicitly asks for another language.',
+    ta: 'Reply in clear Tamil (Tamil script) unless the user explicitly asks for another language.',
+    te: 'Reply in clear Telugu (Telugu script) unless the user explicitly asks for another language.',
+    mr: 'Reply in clear Marathi (Devanagari script) unless the user explicitly asks for another language.',
+    gu: 'Reply in clear Gujarati (Gujarati script) unless the user explicitly asks for another language.',
+    kn: 'Reply in clear Kannada (Kannada script) unless the user explicitly asks for another language.',
+    ml: 'Reply in clear Malayalam (Malayalam script) unless the user explicitly asks for another language.',
+    or: 'Reply in clear Odia (Odia script) unless the user explicitly asks for another language.',
+    as: 'Reply in clear Assamese (Assamese/Bengali script) unless the user explicitly asks for another language.',
+    ur: 'Reply in clear Urdu (Arabic/Nastaliq script) unless the user explicitly asks for another language.',
+  };
   const languageLine =
-    language === 'hi'
-      ? 'Reply in clear Hindi (Devanagari script) unless the user explicitly asks for another language.'
-      : language === 'pa'
-        ? 'Reply in clear Punjabi (Gurmukhi script) unless the user explicitly asks for another language.'
-        : 'Reply in clear simple English unless the user writes in another language — then match their language.';
+    languageLines[language] ??
+    'Reply in clear simple English unless the user writes in another language — then match their language.';
 
   return [
     'You are Kisan, a friendly farm helper mascot for AgriConnect, a farm-to-market marketplace in India.',

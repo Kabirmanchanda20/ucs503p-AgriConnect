@@ -148,7 +148,8 @@ If `user.isSuspended`, mutating API calls return **403 `ACCOUNT_SUSPENDED`**. Sh
 |---|---|---|
 | Register / login | `app/register`, `app/login` | `POST /auth/register`, `/login` |
 | Browse crops | `app/marketplace` | `GET /listings` (public) |
-| Mandi / reference prices | `app/market-prices` | `GET /market/prices`, `/market/mandi/prices` (public) |
+| Mandi / reference prices | `app/market-prices` | `GET /market/prices`, `/market/mandi/prices` (public). Requires API on `NEXT_PUBLIC_API_BASE_URL` (default `:5001`). Empty table = no Agmarknet arrivals for that crop/state today (e.g. Haryana Wheat); try Potato/Onion. `502 MANDI_FEED_UNAVAILABLE` = feed down/rate-limited. |
+| Ask Kisan | `FarmerChatWidget` | Voice-first: quiet launcher, mobile fullscreen, large mic (transcript → review → Send), waveform states, read-aloud. `POST /assistant/query` + `language`. |
 | Listing detail | `app/listings/[id]` | `GET /listings/:id`, `GET /users/:id/public` |
 | Create listing | `app/farmer/listings/new` | `POST /listings` (draft) → `POST .../photos` → `PATCH` `{ status: "active" }` |
 | Edit listing | `app/farmer/listings/[id]/edit` | `PATCH /listings/:id`, photo add/delete |

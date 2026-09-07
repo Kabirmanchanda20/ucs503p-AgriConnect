@@ -4,6 +4,7 @@ Start here if you are joining the project or picking up work after a pause. Thes
 
 The public project overview (problem, personas, stack, architecture sketch, quick start) lives in the root [README.md](../README.md). This folder is the deeper engineering set.
 
+**Complete endpoint catalog (discovery):** [API_ENDPOINTS.md](./API_ENDPOINTS.md)  
 **Canonical API contract (request/response shapes):** [API_CONTRACT.md](./API_CONTRACT.md)  
 **Status codes, approve/discard/change scenarios, and errors:** [API_STATUS_CODES.md](./API_STATUS_CODES.md)  
 **Frontend how-to:** [FRONTEND_GUIDE.md](./FRONTEND_GUIDE.md)  
@@ -69,11 +70,12 @@ Verify backend: `npm run typecheck`, `npm run lint`, `npm test` from `backend/`.
 | 1 | This file | Map of the docs |
 | 2 | [DEVELOPMENT_SETUP.md](./DEVELOPMENT_SETUP.md) | Env vars, Docker Postgres option, CORS/cookies |
 | 3 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Boundaries: Express owns data; frontend is a client |
-| 4 | [API_CONTRACT.md](./API_CONTRACT.md) | Method, path, body, success payload |
-| 5 | [API_STATUS_CODES.md](./API_STATUS_CODES.md) | Every HTTP code, approve/discard/change, errors |
-| 6 | Role-specific guide | [FRONTEND_GUIDE.md](./FRONTEND_GUIDE.md) or [BACKEND_GUIDE.md](./BACKEND_GUIDE.md) |
-| 7 | [DATABASE_DESIGN.md](./DATABASE_DESIGN.md) | Tables, enums, order/listing state machines |
-| 8 | [CHANGELOG.md](./CHANGELOG.md) | What changed since you last pulled |
+| 4 | [API_ENDPOINTS.md](./API_ENDPOINTS.md) | Every HTTP + Socket + outbound surface (discovery) |
+| 5 | [API_CONTRACT.md](./API_CONTRACT.md) | Method, path, body, success payload |
+| 6 | [API_STATUS_CODES.md](./API_STATUS_CODES.md) | Every HTTP code, approve/discard/change, errors |
+| 7 | Role-specific guide | [FRONTEND_GUIDE.md](./FRONTEND_GUIDE.md) or [BACKEND_GUIDE.md](./BACKEND_GUIDE.md) |
+| 8 | [DATABASE_DESIGN.md](./DATABASE_DESIGN.md) | Tables, enums, order/listing state machines |
+| 9 | [CHANGELOG.md](./CHANGELOG.md) | What changed since you last pulled |
 | — | [WEEKLY_PROGRESS.md](./WEEKLY_PROGRESS.md) | Monday→Monday faculty tracker (backlog / working on / done) |
 
 Product intent lives in [AgriConnect_PRD.md](./AgriConnect_PRD.md) and [PRD_AMENDMENTS.md](./PRD_AMENDMENTS.md). [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) is historical phase planning; the code has already shipped past Phase 0.

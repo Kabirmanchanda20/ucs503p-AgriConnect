@@ -71,6 +71,7 @@ Use these `error.code` values. Do not return `200` with `{ "error": ... }`.
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | Photo not JPEG / PNG / WebP | Convert the file |
 | 429 | `RATE_LIMIT_EXCEEDED` | `/api` > 100 req/min; `/api/v1/auth` > 10 failed attempts/min | Back off; show “try again shortly” |
 | 500 | `INTERNAL_ERROR` | Unexpected / Prisma unknown / storage failure | Retry later; log `message` in non-production |
+| 502 | `MANDI_FEED_UNAVAILABLE` | Agmarknet / data.gov.in / mandi-api unreachable or rate-limited | Show `error.message`; empty arrivals are **200 []**, not 502 |
 | 503 | `NOT_READY` | `GET /ready` when Postgres is down | Do not start the frontend against this API |
 
 Prisma `P2025` (record to update not found) is mapped to **404 `NOT_FOUND`**. Malformed JSON body is **400 `INVALID_REQUEST`**.
@@ -288,7 +289,7 @@ Auth limiter: **10 failed requests / minute** → **429 `RATE_LIMIT_EXCEEDED`**.
 | HTTP | Code | Scenario |
 |---|---|---|
 | **201** | — | Farmer or buyer created; refresh cookie set; `accessToken` + `user` |
-| **400** | `VALIDATION_ERROR` | Bad email, short password, `role: ADMIN`, extra fields |
+| **400** | `VALIDATION_ERROR` | Bad email, short password, missing phone/state/district, `role: ADMIN`, extra fields |
 | **409** | `CONFLICT` | `"Email already registered"` |
 
 #### `POST /login` — Auth: No — **200**
@@ -519,6 +520,26 @@ All: Auth Yes, **ADMIN** only. Non-admin → **403 `FORBIDDEN`**. Mutations writ
 
 ---
 
+### 5.9 Market / mandi (`/api/v1/market`) — Auth: No for mandi reads
+
+| Method | Path | Success | Notes |
+|---|---|---|---|
+| GET | `/mandi/prices` | **200** | Live Agmarknet rows; empty `data: []` if that state/crop is not in today’s file |
+| GET | `/mandi/history` | **200** | Daily averages; empty `data: []` when no history (not 502) |
+| GET | `/mandi/states` | **200** | States the feed covers |
+| GET | `/mandi/commodities` | **200** | Crop names; may be staple fallback with `meta.stale` if the state is missing from today’s snapshot |
+| GET | `/mandi/markets` | **200** | APMCs in a state |
+| GET | `/prices` · `/prices/summary` | **200** | Stored `price_trends` |
+| POST | `/prices/compare` | **200** | Listing vs mandi |
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | Including empty arrays when Agmarknet has not published that state/crop yet |
+| **400** | `VALIDATION_ERROR` | Bad query (missing commodity on history, etc.) |
+| **502** | `MANDI_FEED_UNAVAILABLE` | Upstream timeout, HTTP error, or rate limit — not “no rows” |
+
+---
+
 ## 6. Frontend handling cheat sheet
 
 | You received | Do this in the UI |
@@ -535,6 +556,7 @@ All: Auth Yes, **ADMIN** only. Non-admin → **403 `FORBIDDEN`**. Mutations writ
 | **409** | “Not enough quantity left” or “email taken” |
 | **413 / 415** | Photo picker help text |
 | **429** | Disable submit briefly |
+| **502 MANDI_FEED_UNAVAILABLE** | Mandi page: show `error.message`; empty `200 []` is unpublished arrivals, not this code |
 | **5xx** | Generic retry |
 
 ---

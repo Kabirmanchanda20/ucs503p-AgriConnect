@@ -1,4 +1,5 @@
 import { apiRequest } from './client';
+import type { Locale } from '@/lib/i18n/locales';
 
 export type AssistantChatRole = 'user' | 'assistant';
 
@@ -26,7 +27,7 @@ export function getAssistantStatus() {
 export function queryAssistant(input: {
   message: string;
   history?: AssistantTurn[];
-  language?: 'en' | 'hi' | 'pa';
+  language?: Locale;
 }) {
   return apiRequest<AssistantReply>('/api/v1/assistant/query', {
     method: 'POST',

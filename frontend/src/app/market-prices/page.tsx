@@ -14,7 +14,7 @@ import {
 } from '@/lib/api/market';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
-import { MANDI_LIVE_STATES } from '@/lib/constants';
+import { MANDI_CROPS, MANDI_LIVE_STATES } from '@/lib/constants';
 import { useLocale } from '@/features/i18n/locale-context';
 
 function pickDefaultCrop(crops: string[]): string {
@@ -39,15 +39,16 @@ export default function MarketPricesPage() {
   const { t } = useLocale();
   const [liveStates, setLiveStates] = useState<string[]>([...MANDI_LIVE_STATES]);
   const [state, setState] = useState<string>(MANDI_LIVE_STATES[0]);
-  const [crop, setCrop] = useState('');
-  const [stateCrops, setStateCrops] = useState<string[]>([]);
-  const [cropsLoading, setCropsLoading] = useState(true);
+  const [crop, setCrop] = useState<string>(MANDI_CROPS[0]);
+  const [stateCrops, setStateCrops] = useState<string[]>([...MANDI_CROPS]);
+  const [cropsLoading, setCropsLoading] = useState(false);
   const [points, setPoints] = useState<PriceTrendPoint[]>([]);
   const [mandiRows, setMandiRows] = useState<MandiPriceRow[]>([]);
   const [mandiHistory, setMandiHistory] = useState<MandiHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [staleNotice, setStaleNotice] = useState('');
+  const [unpublishedNotice, setUnpublishedNotice] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -68,24 +69,30 @@ export default function MarketPricesPage() {
 
   useEffect(() => {
     let cancelled = false;
+    setCropsLoading(true);
 
     void getMandiCommodities({ state })
       .then((result) => {
         if (cancelled) return;
-        const crops = result.data;
+        const crops = result.data.length > 0 ? result.data : [...MANDI_CROPS];
         setStateCrops(crops);
-        if (crops.length === 0) {
-          setCrop('');
-          return;
-        }
+        setUnpublishedNotice(result.meta?.stale ? t('marketPrices.unpublished') : '');
         setCrop((current) => {
           if (current && crops.includes(current)) return current;
           return pickDefaultCrop(crops);
         });
-        setLoading(true);
       })
       .catch((cause) => {
-        if (!cancelled) setError(getErrorMessage(cause, 'Could not load official crop list for this state.'));
+        if (cancelled) return;
+        // Keep staple fallback so the page can still load prices.
+        setStateCrops([...MANDI_CROPS]);
+        setUnpublishedNotice('');
+        setCrop((current) =>
+          current && (MANDI_CROPS as readonly string[]).includes(current)
+            ? current
+            : pickDefaultCrop([...MANDI_CROPS]),
+        );
+        setError(getErrorMessage(cause, 'Could not load official crop list for this state.'));
       })
       .finally(() => {
         if (!cancelled) setCropsLoading(false);
@@ -94,7 +101,7 @@ export default function MarketPricesPage() {
     return () => {
       cancelled = true;
     };
-  }, [state]);
+  }, [state, t]);
 
   useEffect(() => {
     if (!crop || cropsLoading) return;
@@ -103,41 +110,43 @@ export default function MarketPricesPage() {
     const historyFrom = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
     async function load() {
-      try {
-        const [mandiRes, historyRes, pointsRes] = await Promise.all([
-          getLiveMandiPrices({ state, commodity: crop, latestOnly: true }),
-          getMandiPriceHistory({ state, commodity: crop, from: historyFrom }),
-          listPriceTrends({ crop, state, days: 90, limit: 120 }),
-        ]);
+      const [mandiSettled, historySettled, pointsSettled] = await Promise.allSettled([
+        getLiveMandiPrices({ state, commodity: crop, latestOnly: true }),
+        getMandiPriceHistory({ state, commodity: crop, from: historyFrom }),
+        listPriceTrends({ crop, state, days: 90, limit: 120 }),
+      ]);
 
-        if (cancelled) return;
+      if (cancelled) return;
 
-        setMandiRows(mandiRes.data);
-        setMandiHistory(historyRes.data);
-        setPoints(pointsRes.data.filter((point) => point.source !== 'agmarknet'));
-        setError('');
-        const isStale = Boolean(mandiRes.meta?.stale || historyRes.meta?.stale);
-        setStaleNotice(
-          isStale
-            ? 'Showing cached official mandi data while the live Agmarknet feed catches up. Prices refresh automatically.'
-            : '',
+      const mandiRes = mandiSettled.status === 'fulfilled' ? mandiSettled.value : null;
+      const historyRes = historySettled.status === 'fulfilled' ? historySettled.value : null;
+      const pointsRes = pointsSettled.status === 'fulfilled' ? pointsSettled.value : null;
+
+      setMandiRows(mandiRes?.data ?? []);
+      setMandiHistory(historyRes?.data ?? []);
+      setPoints((pointsRes?.data ?? []).filter((point) => point.source !== 'agmarknet'));
+
+      const firstFailure =
+        [mandiSettled, historySettled, pointsSettled].find((result) => result.status === 'rejected') ??
+        null;
+      if (firstFailure && firstFailure.status === 'rejected') {
+        const message = getErrorMessage(firstFailure.reason);
+        setError(
+          /rate limit/i.test(message)
+            ? 'Govt mandi API is temporarily rate-limited. Wait a few minutes and refresh, or add DATA_GOV_IN_API_KEY in backend .env for a more reliable feed.'
+            : message,
         );
-      } catch (cause) {
-        if (!cancelled) {
-          setMandiRows([]);
-          setMandiHistory([]);
-          setPoints([]);
-          setStaleNotice('');
-          const message = getErrorMessage(cause);
-          setError(
-            /rate limit/i.test(message)
-              ? 'Govt mandi API is temporarily rate-limited. Wait a few minutes and refresh, or add DATA_GOV_IN_API_KEY in backend .env for a more reliable feed.'
-              : message,
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+      } else {
+        setError('');
       }
+
+      const isStale = Boolean(mandiRes?.meta?.stale || historyRes?.meta?.stale);
+      setStaleNotice(
+        isStale
+          ? 'Showing cached official mandi data while the live Agmarknet feed catches up. Prices refresh automatically.'
+          : '',
+      );
+      setLoading(false);
     }
 
     void load();
@@ -177,6 +186,9 @@ export default function MarketPricesPage() {
       {staleNotice ? (
         <p className="rounded-xl border border-leaf/30 bg-leaf/10 px-4 py-3 text-sm text-forest">{staleNotice}</p>
       ) : null}
+      {unpublishedNotice ? (
+        <p className="rounded-xl border border-soil/30 bg-soil/10 px-4 py-3 text-sm text-forest">{unpublishedNotice}</p>
+      ) : null}
       <Card className="grid gap-3 md:grid-cols-3">
         <Field label={t('marketPrices.state')}>
           <Select
@@ -184,9 +196,9 @@ export default function MarketPricesPage() {
             onChange={(e) => {
               setError('');
               setStaleNotice('');
+              setUnpublishedNotice('');
               setCropsLoading(true);
               setLoading(true);
-              setCrop('');
               setState(e.target.value);
             }}
           >
