@@ -29,3 +29,7 @@ Thumbs.db
 .vscode/
 
 code/AgriConnect/backend/src/generated/prisma/
+
+# Stale root copies after move to code/AgriConnect/ (OneDrive may recreate them)
+/backend/
+/frontend/
