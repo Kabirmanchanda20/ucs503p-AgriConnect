@@ -1,3 +1,4 @@
+import { tt } from '@/lib/i18n/active-locale';
 import { API_BASE_URL } from '../env';
 import { ApiError } from './errors';
 import { tokenStore } from './token-store';
@@ -125,7 +126,7 @@ export async function apiRequest<T>(
     throw new ApiError(
       response.status,
       envelope?.error?.code ?? 'INTERNAL_ERROR',
-      envelope?.error?.message ?? 'Request failed',
+      envelope?.error?.message ?? tt('errors.requestFailed'),
       envelope?.error?.fields,
     );
   }
@@ -135,4 +136,54 @@ export async function apiRequest<T>(
     pagination: envelope?.pagination,
     meta: envelope?.meta,
   };
+}
+
+export async function apiRequestBlob(
+  path: string,
+  options: RequestOptions = {},
+): Promise<Blob> {
+  const { body, query, skipAuth, skipRefresh, headers, ...init } = options;
+
+  const makeRequest = async () => {
+    const token = skipAuth ? null : tokenStore.get();
+    const requestHeaders = new Headers(headers);
+    if (!requestHeaders.has('Content-Type')) {
+      requestHeaders.set('Content-Type', 'application/json');
+    }
+    if (token) {
+      requestHeaders.set('Authorization', `Bearer ${token}`);
+    }
+
+    return fetch(`${API_BASE_URL}${path}${toQuery(query)}`, {
+      ...init,
+      cache: 'no-store',
+      credentials: 'include',
+      headers: requestHeaders,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  };
+
+  let response = await makeRequest();
+
+  if (!skipRefresh && !skipAuth && response.status === 401) {
+    const envelope = await readEnvelope(response.clone());
+    if (envelope?.error?.code === 'TOKEN_EXPIRED') {
+      const nextToken = await refreshAccessToken();
+      if (nextToken) {
+        response = await makeRequest();
+      }
+    }
+  }
+
+  if (!response.ok) {
+    const envelope = await readEnvelope(response);
+    throw new ApiError(
+      response.status,
+      envelope?.error?.code ?? 'INTERNAL_ERROR',
+      envelope?.error?.message ?? tt('errors.requestFailed'),
+      envelope?.error?.fields,
+    );
+  }
+
+  return response.blob();
 }

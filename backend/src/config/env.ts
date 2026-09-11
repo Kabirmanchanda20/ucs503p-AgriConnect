@@ -61,8 +61,18 @@ const envSchema = z
       (value) => (value === '' ? undefined : value),
       z.string().min(1).default('gemini-3.6-flash'),
     ),
+    GEMINI_TTS_MODEL: optionalString,
+    /** Gemini 3 reasoning effort. `minimal` keeps chat replies fast and untruncated. */
+    GEMINI_THINKING_LEVEL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.enum(['minimal', 'low', 'medium', 'high']).default('minimal'),
+    ),
     RAZORPAY_KEY_ID: optionalString,
     RAZORPAY_KEY_SECRET: optionalString,
+    /** Shared secret from the Razorpay dashboard webhook; unset disables the webhook. */
+    RAZORPAY_WEBHOOK_SECRET: optionalString,
+    /** Comma-separated STUN/TURN URLs for in-app voice calls. Defaults to public STUN. */
+    WEBRTC_ICE_SERVERS: optionalString,
     MANDI_API_BASE_URL: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z.url().optional(),

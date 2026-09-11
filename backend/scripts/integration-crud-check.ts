@@ -57,6 +57,7 @@ async function main() {
         password,
         name: 'Audit Farmer',
         role: 'FARMER',
+        phone: '+919876543210',
         state: 'Punjab',
         district: 'Amritsar',
       }),
@@ -77,6 +78,9 @@ async function main() {
       password,
       name: 'Audit Buyer',
       role: 'BUYER',
+      phone: '+919876543211',
+      state: 'Punjab',
+      district: 'Ludhiana',
     }),
   });
   assert('register buyer', regBuyer.status === 201);

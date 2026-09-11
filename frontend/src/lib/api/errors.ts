@@ -1,3 +1,5 @@
+import { tt } from '@/lib/i18n/active-locale';
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -17,7 +19,7 @@ export function formatFieldErrors(fields?: Record<string, string[]>) {
     .join(' · ');
 }
 
-export function getErrorMessage(error: unknown, fallback = 'Something went wrong') {
+export function getErrorMessage(error: unknown, fallback?: string) {
   if (error instanceof ApiError) {
     const fieldDetail = formatFieldErrors(error.fields);
     if (fieldDetail) {
@@ -25,6 +27,11 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
     }
     return error.message;
   }
-  if (error instanceof Error) return error.message;
-  return fallback;
+  if (error instanceof Error) {
+    if (/failed to fetch|networkerror|load failed|econnrefused/i.test(error.message)) {
+      return tt('errors.network');
+    }
+    return error.message;
+  }
+  return fallback ?? tt('common.errorGeneric');
 }

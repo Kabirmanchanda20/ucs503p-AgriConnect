@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { APP_LOCALES } from '../../common/locales.js';
 
 const optionalText = (maximum: number) =>
   z.string().trim().min(1).max(maximum).optional();
@@ -7,7 +8,7 @@ export const updateMeSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
     phone: optionalText(30),
-    languagePref: z.enum(['en', 'hi', 'pa']).optional(),
+    languagePref: z.enum(APP_LOCALES).optional(),
     state: optionalText(100),
     district: optionalText(100),
     village: optionalText(100),

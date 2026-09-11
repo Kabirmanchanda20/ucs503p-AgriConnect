@@ -86,9 +86,9 @@ export async function register(
         passwordHash,
         name: input.name,
         role: input.role,
-        phone: input.phone ?? null,
-        state: input.state ?? null,
-        district: input.district ?? null,
+        phone: input.phone,
+        state: input.state,
+        district: input.district,
         village: input.village ?? null,
         languagePref: input.languagePref,
         ...(input.role === 'FARMER'

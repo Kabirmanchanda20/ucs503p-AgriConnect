@@ -96,6 +96,7 @@ export async function suspendUser(
       type: 'ACCOUNT_SUSPENDED',
       title: 'Account suspended',
       body: input.reason ?? 'Your AgriConnect account has been suspended.',
+      params: input.reason ? { reason: input.reason } : {},
       relatedEntityType: 'User',
       relatedEntityId: target.id,
     });
@@ -196,6 +197,7 @@ export async function moderateListing(
       type: 'LISTING_MODERATED',
       title: 'Listing removed',
       body: input.reason ?? 'An admin removed your listing.',
+      params: { variant: 'removed', ...(input.reason ? { reason: input.reason } : {}) },
       relatedEntityType: 'Listing',
       relatedEntityId: listing.id,
     });
@@ -242,6 +244,7 @@ export async function moderateListing(
     type: 'LISTING_MODERATED',
     title: 'Listing reinstated',
     body: input.reason ?? 'An admin reinstated your listing.',
+    params: { variant: 'reinstated', ...(input.reason ? { reason: input.reason } : {}) },
     relatedEntityType: 'Listing',
     relatedEntityId: listing.id,
   });

@@ -39,7 +39,7 @@
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"email\":\"farmer@example.com\",\"password\":\"CorrectHorse9!\",\"name\":\"Ravi Kumar\",\"role\":\"FARMER\",\"state\":\"Punjab\",\"district\":\"Ludhiana\"}" },
+            "body": { "mode": "raw", "raw": "{\"email\":\"farmer@example.com\",\"password\":\"CorrectHorse9!\",\"name\":\"Ravi Kumar\",\"role\":\"FARMER\",\"phone\":\"+919876543210\",\"state\":\"Punjab\",\"district\":\"Ludhiana\",\"village\":\"Sahnewal\"}" },
             "url": "{{baseUrl}}/api/v1/auth/register"
           }
         },
@@ -108,7 +108,88 @@
         },
         { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/orders?page=1&limit=20" } },
         { "name": "Get one", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/orders/{{orderId}}" } },
-        { "name": "Accept", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"status\":\"accepted\"}" }, "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/status" } }
+        { "name": "Accept", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"status\":\"accepted\"}" }, "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/status" } },
+        { "name": "Cancel (refunds payment)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"status\":\"cancelled\",\"cancellationReason\":\"Buyer changed plans\"}" }, "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/status" } },
+        { "name": "Logistics", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"logisticsStatus\":\"dispatched\"}" }, "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/logistics" } }
+      ]
+    },
+    {
+      "name": "Order chat",
+      "item": [
+        { "name": "List messages", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/messages?page=1&limit=50" } },
+        {
+          "name": "Send message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"body\":\"500 kg ready at 2400 per quintal, pickup tomorrow.\"}" },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/messages"
+          }
+        },
+        {
+          "name": "Send message — blocked (phone number)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"body\":\"call me on 9876543210\"}" },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/messages",
+            "description": "Expect 400 CONTACT_INFO_BLOCKED. Contact details are rejected so trades stay on-platform; use the in-app voice call instead."
+          }
+        },
+        { "name": "Mark read", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/messages/read" } }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        { "name": "Methods", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/payments/methods" } },
+        {
+          "name": "Init payment — UPI (escrow)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"method\":\"upi\"}" },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/payment",
+            "description": "BUYER only. Response mode is cod | mock | razorpay."
+          }
+        },
+        {
+          "name": "Init payment — cash on delivery",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"method\":\"cod\"}" },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/payment",
+            "description": "Skips the gateway entirely; never enters escrow."
+          }
+        },
+        {
+          "name": "Confirm held (escrow)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/payment/confirm",
+            "description": "Moves the payment into escrow. Empty body works only in mock mode (no Razorpay keys) — with keys configured, send {\"providerRef\":\"pay_xxx\"} from Checkout: the server reads that payment back from Razorpay and answers 402 PAYMENT_NOT_VERIFIED unless status, checkout id, amount, and currency all match. Idempotent when already held."
+          }
+        },
+        {
+          "name": "Razorpay webhook (signed)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-razorpay-signature", "value": "{{razorpaySignature}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_xxx\",\"status\":\"captured\",\"order_id\":\"order_xxx\",\"amount\":250000,\"currency\":\"INR\",\"notes\":{\"orderId\":\"{{orderId}}\"}}}}}"
+            },
+            "url": "{{baseUrl}}/api/v1/payments/webhook",
+            "description": "Razorpay-only route: no JWT, authenticated by x-razorpay-signature = HMAC-SHA256(raw body, RAZORPAY_WEBHOOK_SECRET) in hex. To try it by hand, set the razorpaySignature variable to that digest for this exact body (any edit changes the digest). Bad signature is 401; missing secret is 503; benign no-ops answer 200 with handled: false."
+          }
+        }
       ]
     },
     {
@@ -117,6 +198,30 @@
         { "name": "Notifications", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/notifications?page=1&limit=20" } },
         { "name": "Read all", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/notifications/read-all" } },
         { "name": "My report", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/me" } }
+      ]
+    },
+    {
+      "name": "Assistant",
+      "item": [
+        { "name": "Status", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/assistant/status" } },
+        {
+          "name": "Query",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"message\":\"How do I list wheat?\",\"history\":[],\"language\":\"pa\"}" },
+            "url": "{{baseUrl}}/api/v1/assistant/query"
+          }
+        },
+        {
+          "name": "Speak",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"text\":\"Sat sri akal ji, kirpa karke list banao.\",\"language\":\"pa\"}" },
+            "url": "{{baseUrl}}/api/v1/assistant/speak"
+          }
+        }
       ]
     },
     {

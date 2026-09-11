@@ -1,8 +1,10 @@
 import { z } from 'zod';
+import { APP_LOCALES } from '../../common/locales.js';
 
 const email = z.email().max(254).transform((value) => value.toLowerCase());
 const password = z.string().min(8).max(128);
-const optionalLocation = z.string().trim().min(1).max(100).optional();
+const requiredLocation = z.string().trim().min(1).max(100);
+const optionalVillage = z.string().trim().min(1).max(100).optional();
 
 export const registerSchema = z
   .object({
@@ -10,11 +12,11 @@ export const registerSchema = z
     password,
     name: z.string().trim().min(1).max(100),
     role: z.enum(['FARMER', 'BUYER']),
-    phone: z.string().trim().min(1).max(30).optional(),
-    state: optionalLocation,
-    district: optionalLocation,
-    village: optionalLocation,
-    languagePref: z.enum(['en', 'hi', 'pa']).default('en'),
+    phone: z.string().trim().min(1).max(30),
+    state: requiredLocation,
+    district: requiredLocation,
+    village: optionalVillage,
+    languagePref: z.enum(APP_LOCALES).default('en'),
   })
   .strict();
 

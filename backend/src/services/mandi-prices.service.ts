@@ -327,7 +327,8 @@ async function fetchDataGovMandiPrices(query: {
       format: 'json',
       limit: String(limit),
       offset: String(offset),
-      'filters[state.keyword]': query.state,
+      // data.gov.in datastore filters use the field name (`state`), not `.keyword`.
+      'filters[state]': query.state,
     });
     if (query.commodity) params.set('filters[commodity]', query.commodity);
 
@@ -860,17 +861,16 @@ export async function fetchMandiPriceHistory(query: {
 
     if (normalized.length > 0) {
       historyCache.set(key, { at: Date.now(), data: normalized });
-      return {
-        data: normalized,
-        meta: {
-          stale: false,
-          source,
-          cachedAt: new Date().toISOString(),
-        },
-      };
     }
 
-    throw new Error('No mandi history available for this crop and state.');
+    return {
+      data: normalized,
+      meta: {
+        stale: false,
+        source,
+        cachedAt: new Date().toISOString(),
+      },
+    };
   } catch (error) {
     if (cached && Date.now() - cached.at < STALE_CACHE_TTL_MS) {
       return { data: cached.data, meta: metaFromCache(cached.at, true) };

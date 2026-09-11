@@ -5,10 +5,12 @@ import { Suspense, useState } from 'react';
 import { resetPassword } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/errors';
 import { Alert, Button, Card, Field, Input, Spinner } from '@/components/ui';
+import { useLocale } from '@/features/i18n/locale-context';
 
 function ResetForm() {
   const params = useSearchParams();
   const router = useRouter();
+  const { t } = useLocale();
   const token = params.get('token') ?? '';
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -23,26 +25,26 @@ function ResetForm() {
       });
       router.replace('/login');
     } catch (cause) {
-      setError(getErrorMessage(cause, 'Reset failed'));
+      setError(getErrorMessage(cause, t('password.resetFail')));
     } finally {
       setPending(false);
     }
   }
 
   if (!token) {
-    return <Alert>This reset link is missing a token. Use the link from your email.</Alert>;
+    return <Alert>{t('password.missingToken')}</Alert>;
   }
 
   return (
     <Card className="mx-auto max-w-md">
-      <h1 className="font-display text-3xl text-forest">Choose a new password</h1>
+      <h1 className="font-display text-3xl text-forest">{t('password.resetTitle')}</h1>
       <form className="mt-6 space-y-4" action={onSubmit}>
         {error ? <Alert>{error}</Alert> : null}
-        <Field label="New password">
+        <Field label={t('password.newPassword')}>
           <Input name="password" type="password" required minLength={8} />
         </Field>
         <Button type="submit" disabled={pending} className="w-full">
-          {pending ? 'Saving…' : 'Update password'}
+          {pending ? t('password.saving') : t('password.update')}
         </Button>
       </form>
     </Card>

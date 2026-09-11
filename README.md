@@ -87,10 +87,11 @@ stateDiagram-v2
 4. Farmers create listings as **draft**, upload 1–5 photos (JPEG/PNG/WebP, ≤5 MB), then **PATCH** status to `active`.
 5. Buyers place orders against **active** listings. Quantity is decremented in a database transaction so two buyers cannot oversell.
 6. The farmer **approves** (`accepted`), **changes** (`confirmed` → `fulfilled`), or **discards** (`cancelled` + reason). Buyers may discard only from `pending`. Admins may only cancel.
-7. After **fulfilled**, buyer and farmer can rate each other; averages update on profiles.
-8. **Order-scoped chat** uses REST + Socket.io (`join:order`, `message:new`) on the order detail page.
-9. Farmers can open the **Kisan AI** widget (Gemini when `GEMINI_API_KEY` is set).
-10. In-app notifications fire on order and moderation events; the header badge polls and refreshes on mark-read.
+7. Buyers pay through AgriConnect (UPI / card / net banking / cash on delivery). Gateway payments only reach **escrow** after the server reads the payment back from Razorpay or receives the signed webhook — money is released to the farmer on `fulfilled` and refunded on cancellation.
+8. After **fulfilled**, buyer and farmer can rate each other; averages update on profiles.
+9. **Order-scoped chat** uses REST + Socket.io (`join:order`, `message:new`) on the order detail page. Chat rejects phone numbers, emails, and UPI IDs — as do order notes and listing copy, the other places the counterparty reads — and the **in-app voice call** (`call:*` events, peer-to-peer WebRTC) is how the two parties talk, so contact details never need to be shared and the trade stays on-platform.
+10. Farmers can open the **Kisan AI** widget (Gemini when `GEMINI_API_KEY` is set).
+11. In-app notifications fire on order and moderation events; the header badge polls and refreshes on mark-read.
 
 **Hard rules**
 
@@ -127,14 +128,15 @@ What V1 is **not**: a payment processor, e-NAM replacement, logistics fleet, cha
 | Profiles          | Farmer/buyer profiles, DPDP-style data export, soft-delete account                                                                             |
 | Listings          | Draft → photos → active; search/filter; view counts; expire/sold-out; farmer unpublish or delete                                               |
 | Orders            | Place order, inventory decrement, status machine, stock restore on cancel                                                                      |
-| Chat              | Order-scoped messages (REST + Socket.io); typing indicators (V2)                                                                               |
+| Chat              | Order-scoped messages (REST + Socket.io); typing indicators (V2); **contact details blocked** (phone / email / UPI / other apps) in chat, order notes, and listing copy, so trades stay on-platform |
+| Voice calls (V2)  | In-app buyer ↔ farmer voice call (peer-to-peer WebRTC, Socket.io signalling) so **no phone number is ever exchanged**; ring / accept / decline / mute / hang-up |
 | Reviews           | Ratings after `fulfilled`; `ratingAvg` on profiles and order detail                                                                            |
 | Market (V2)       | Price trends API + `/market-prices`; live Punjab/India mandi via Agmarknet/data.gov.in                                                         |
 | Buyer alerts (V2) | Crop/state alerts; `LISTING_PUBLISHED` notifications on new listings                                                                           |
 | Logistics (V2)    | Order logistics checkpoints; farmer updates on order detail                                                                                    |
-| Payments (V2)     | Escrow-style hold/release; Razorpay sandbox optional; mock without keys                                                                        |
-| Assistant         | Kisan AI widget (`GEMINI_API_KEY` optional); replies follow UI language (en/hi/pa)                                                              |
-| i18n (V2)         | English / Hindi / Punjabi UI; language switcher; profile `languagePref` sync; Devanagari & Gurmukhi fonts                                      |
+| Payments (V2)     | Methods: UPI / card / net banking / cash on delivery. Escrow hold → release on fulfilled, auto-refund on cancel. Every hold is **verified server-side** with Razorpay (read-back on confirm + signed `payment.captured` webhook), so a browser cannot mark an order paid; Razorpay sandbox optional, simulated without keys |
+| Assistant         | Kisan AI widget (`GEMINI_API_KEY` optional); replies and full read-aloud follow the selected UI language, in a polite tone |
+| i18n (V2)         | Every screen in 13 Indian languages (en, hi, pa, bn, ta, te, mr, gu, kn, ml, or, as, ur); language switcher; profile `languagePref` sync; served `<html lang>` and page metadata follow a locale cookie; dates, money, and quantities format per locale; server-written notifications and admin logs render in the reader's language from structured `params`; Urdu renders right-to-left (`dir` on `<html>`, logical spacing utilities) and every script ships its own Noto webfont; enforced by Vitest parity, render, width-budget, and hardcoded-string tests in CI |
 | Notifications     | List, mark read, mark all read; header unread badge                                                                                            |
 | Reports           | Farmer: listings / qty sold / revenue (fulfilled). Buyer: orders / spend (fulfilled)                                                           |
 | Admin             | Users (search, suspend, verify), listing moderate, analytics, activity logs                                                                    |
@@ -169,14 +171,14 @@ Names only — install current patched releases; do not copy old version pins fr
 | Auth            | **jsonwebtoken** + bcryptjs                         | Access JWT + hashed refresh tokens                    |
 | Email           | **Nodemailer**                                      | Password reset; console fallback if SMTP unset        |
 | Security        | helmet, cors allowlist, express-rate-limit          | Headers, cookies, 100 req/min API, 10 failed auth/min |
-| Real-time       | Socket.io (order chat)                              | Same host as API (`/socket.io`)                       |
+| Real-time       | Socket.io (order chat + voice call signalling)       | Same host as API (`/socket.io`)                       |
 | Logging         | pino                                                | Structured logs                                       |
 | Tests           | Vitest + Supertest                                  | `backend`                                             |
 | Local DB option | Docker Compose `postgres:16`                        | When not using cloud Postgres                         |
 | API exploration | Postman collection                                  | `backend/postman/`                                    |
 
 
-Not in product scope yet: payments/escrow, logistics tracking, separate ML service, MongoDB/Mongoose, Passport OAuth.
+Payments/escrow (with Razorpay verification and a signed webhook), logistics tracking, and in-app voice calls shipped in V2. Still out of scope: farmer payouts and settlement, a separate ML service, MongoDB/Mongoose, Passport OAuth, and video calls.
 
 
 
@@ -246,7 +248,11 @@ npm run prisma:deploy:pooler
 
 API: `http://localhost:5001`. Seeded admin is `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`.
 
-Optional: set `GEMINI_API_KEY` for live Kisan AI replies.
+Optional: set `GEMINI_API_KEY` for live Kisan AI replies and spoken answers. Pin `GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview` so read-aloud does not probe slower TTS models. `GEMINI_THINKING_LEVEL` (`minimal` \| `low` \| `medium` \| `high`, default `minimal`) caps how much the model reasons before answering — Gemini 3 bills thinking tokens against the reply budget, so `minimal` keeps answers fast and complete. Raise it to `low` for more reasoning per answer. Spoken readout clips long replies (~280 chars) so voice stays quick while the full text remains on screen.
+
+Optional payments: set `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` for sandbox checkout. With keys present, `POST /orders/:id/payment/confirm` reads the payment back from Razorpay and refuses to escrow anything the gateway does not confirm. Add `RAZORPAY_WEBHOOK_SECRET` and point a Razorpay webhook (`payment.captured`, `payment.failed`) at `POST /api/v1/payments/webhook` so a hold still lands when the buyer closes the tab mid-checkout. Without keys, payments run in simulated mode and cash on delivery works either way.
+
+Optional voice calls: `WEBRTC_ICE_SERVERS` (comma-separated STUN/TURN URLs) overrides the default public Google STUN. Add a **TURN** server for real-world use — STUN alone fails behind the symmetric NAT common on Indian mobile networks.
 
 Optional: `DATA_GOV_IN_API_KEY` (free from [data.gov.in](https://data.gov.in)) — **recommended for production** mandi prices (all states, avoids free API rate limits). Fallback: `MANDI_API_BASE_URL` (default open mandi API). `MANDI_SYNC_ENABLED=true` syncs staple crops into price trends daily (not on every server start).
 
@@ -284,7 +290,7 @@ npm test
 npm audit --audit-level=high
 ```
 
-Frontend: `npm run lint`. Confirm `/health` returns `{ "success": true, "data": { "status": "ok" } }`.
+Frontend: `npm run lint && npm run typecheck && npm run check:i18n && npm test`. Confirm `/health` returns `{ "success": true, "data": { "status": "ok" } }`.
 
 With the API running, verify frontend actions persist to Supabase:
 
@@ -305,7 +311,10 @@ npx tsx scripts/integration-crud-check.ts
 | GET                   | `/api/v1/auth/me`                                        | Any logged-in user                   |
 | GET/POST/PATCH/DELETE | `/api/v1/listings`                                       | Public browse; farmer writes         |
 | POST/GET/PATCH        | `/api/v1/orders`, `/orders/:id/status`                   | Buyer create; farmer/admin status    |
-| GET/POST              | `/api/v1/orders/:id/messages`                            | Order chat (Socket.io `message:new`) |
+| GET/POST              | `/api/v1/orders/:id/messages`                            | Order chat (Socket.io `message:new`); contact info rejected |
+| POST                  | `/api/v1/orders/:id/payment`, `/payment/confirm`         | Buyer pays; escrow hold after Razorpay verification |
+| GET                   | `/api/v1/payments/methods`                               | Payment method picker catalog        |
+| POST                  | `/api/v1/payments/webhook`                               | Razorpay only; HMAC-signed, no JWT   |
 | POST/GET              | `/api/v1/orders/:id/reviews`                             | Ratings after fulfilled              |
 | GET/POST              | `/api/v1/assistant/status`, `/assistant/query`           | Kisan AI (farmer)                    |
 | GET/PATCH/POST        | `/api/v1/notifications`                                  | Logged-in                            |
@@ -329,7 +338,7 @@ Auth header: `Authorization: Bearer <accessToken>`. Browser calls use cookies fo
 | 503       | Database down (`/ready`)                         |
 
 
-Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every status and error: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md). Postman: `backend/postman/collection.json`.
+Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every route in one catalog: [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md). Every status and error: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md). Postman: `backend/postman/collection.json`.
 
 ### Web app routes
 
@@ -372,6 +381,10 @@ Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every status and er
 | `npm run dev`             | Next.js on port 3000 |
 | `npm run build` / `start` | Production           |
 | `npm run lint`            | ESLint               |
+| `npm run typecheck`       | TypeScript, no emit  |
+| `npm run check:i18n`      | Locale key parity    |
+| `npm test`                | Vitest (i18n parity, hardcoded-string guard, width budget, Punjabi render tests) |
+| `npm run test:watch`      | Vitest in watch mode |
 
 
 
@@ -389,6 +402,7 @@ Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every status and er
 | [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md) | Setup          | Env vars, Supabase, CORS, cookies                   |
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)           | Technical      | Boundaries, request flow, security                  |
 | [docs/DATABASE_DESIGN.md](./docs/DATABASE_DESIGN.md)     | Backend        | ERD, enums, inventory rules                         |
+| [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md)         | Both           | Full catalog: HTTP, Socket, outbound                |
 | [docs/API_CONTRACT.md](./docs/API_CONTRACT.md)           | Both           | Request/response JSON                               |
 | [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md)   | Both           | Status codes, approve/discard/change                |
 | [docs/FRONTEND_GUIDE.md](./docs/FRONTEND_GUIDE.md)       | Frontend       | Client, guards, screens                             |

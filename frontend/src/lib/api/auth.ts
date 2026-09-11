@@ -1,5 +1,6 @@
 import { apiRequest } from './client';
 import type { AuthUser } from './types';
+import type { Locale } from '@/lib/i18n/locales';
 
 export interface AuthSession {
   accessToken: string;
@@ -11,11 +12,11 @@ export function registerAccount(body: {
   password: string;
   name: string;
   role: 'FARMER' | 'BUYER';
-  phone?: string;
-  state?: string;
-  district?: string;
+  phone: string;
+  state: string;
+  district: string;
   village?: string;
-  languagePref?: 'en' | 'hi' | 'pa';
+  languagePref?: Locale;
 }) {
   return apiRequest<AuthSession>('/api/v1/auth/register', {
     method: 'POST',

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Alert, Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
+import { useLocale } from '@/features/i18n/locale-context';
 import { createListing, updateListing, uploadListingPhotos } from '@/lib/api/listings';
 import { getErrorMessage } from '@/lib/api/errors';
 import { CROP_CATEGORIES, INDIAN_STATES, UNITS } from '@/lib/constants';
@@ -10,6 +11,7 @@ import type { Listing } from '@/lib/api/types';
 
 export function ListingForm({ listing }: { listing?: Listing }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
 
@@ -68,7 +70,7 @@ export function ListingForm({ listing }: { listing?: Listing }) {
 
       router.push('/farmer/listings');
     } catch (cause) {
-      setError(getErrorMessage(cause, 'Could not save listing'));
+      setError(getErrorMessage(cause, t('listing.form.fail')));
     } finally {
       setPending(false);
     }
@@ -82,43 +84,43 @@ export function ListingForm({ listing }: { listing?: Listing }) {
             <Alert>{error}</Alert>
           </div>
         ) : null}
-        <Field label="Crop">
+        <Field label={t('listing.form.crop')}>
           <Input name="crop" required defaultValue={listing?.crop} />
         </Field>
-        <Field label="Category">
+        <Field label={t('listing.form.category')}>
           <Select name="category" defaultValue={listing?.category ?? 'grains'}>
             {CROP_CATEGORIES.map((category) => (
               <option key={category} value={category}>
-                {category}
+                {t(`listing.category.${category}`)}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Variety (optional)">
+        <Field label={t('listing.form.variety')}>
           <Input name="variety" defaultValue={listing?.variety ?? ''} />
         </Field>
-        <Field label="Harvest date">
+        <Field label={t('listing.form.harvestDate')}>
           <Input name="harvestDate" type="date" required defaultValue={listing?.harvestDate?.slice(0, 10)} />
         </Field>
-        <Field label="Quantity">
+        <Field label={t('listing.form.quantity')}>
           <Input name="quantity" required defaultValue={listing?.quantity} />
         </Field>
-        <Field label="Unit">
+        <Field label={t('listing.form.unit')}>
           <Select name="unit" defaultValue={listing?.unit ?? 'kg'}>
             {UNITS.map((unit) => (
               <option key={unit} value={unit}>
-                {unit}
+                {t(`units.${unit}`)}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Price per unit (INR)">
+        <Field label={t('listing.form.pricePerUnit')}>
           <Input name="pricePerUnit" required defaultValue={listing?.pricePerUnit} />
         </Field>
-        <Field label="Minimum order quantity">
+        <Field label={t('listing.form.minimumOrderQuantity')}>
           <Input name="minimumOrderQuantity" required defaultValue={listing?.minimumOrderQuantity} />
         </Field>
-        <Field label="State">
+        <Field label={t('listing.form.state')}>
           <Select name="state" required defaultValue={listing?.state ?? 'Punjab'}>
             {INDIAN_STATES.map((state) => (
               <option key={state} value={state}>
@@ -127,23 +129,23 @@ export function ListingForm({ listing }: { listing?: Listing }) {
             ))}
           </Select>
         </Field>
-        <Field label="District">
+        <Field label={t('listing.form.district')}>
           <Input name="district" required defaultValue={listing?.district} />
         </Field>
-        <Field label="Village (optional)">
+        <Field label={t('listing.form.village')}>
           <Input name="village" defaultValue={listing?.village ?? ''} />
         </Field>
         <label className="flex items-center gap-3 pt-8 text-base font-semibold text-forest">
           <input type="checkbox" name="perishable" defaultChecked={listing?.perishable} className="h-5 w-5" />
-          This crop is perishable
+          {t('listing.form.perishable')}
         </label>
         <div className="md:col-span-2">
-          <Field label="Description">
+          <Field label={t('listing.form.description')}>
             <Textarea name="description" defaultValue={listing?.description ?? ''} />
           </Field>
         </div>
         <div className="md:col-span-2">
-          <Field label="Photos (JPEG, PNG, or WebP, max 5)">
+          <Field label={t('listing.form.photos')}>
             <Input name="files" type="file" accept="image/jpeg,image/png,image/webp" multiple />
           </Field>
         </div>
@@ -154,11 +156,15 @@ export function ListingForm({ listing }: { listing?: Listing }) {
             className="h-5 w-5"
             defaultChecked={listing?.status === 'active'}
           />
-          {listing ? 'Keep published (active)' : 'Publish now (needs at least one photo)'}
+          {listing ? t('listing.form.keepPublished') : t('listing.form.publishNow')}
         </label>
         <div className="md:col-span-2">
           <Button type="submit" disabled={pending}>
-            {pending ? 'Saving…' : listing ? 'Save listing' : 'Create listing'}
+            {pending
+              ? t('listing.form.saving')
+              : listing
+                ? t('listing.form.save')
+                : t('listing.form.create')}
           </Button>
         </div>
       </form>

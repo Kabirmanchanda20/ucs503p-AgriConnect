@@ -16,10 +16,14 @@ import {
   DEFAULT_LOCALE,
   LOCALE_STORAGE_KEY,
   type Locale,
+  localeDirection,
   type MessageKey,
   normalizeLocale,
+  setActiveLocale,
   translate,
 } from '@/lib/i18n';
+
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 interface LocaleContextValue {
   locale: Locale;
@@ -62,6 +66,15 @@ function writeStoredLocale(next: Locale) {
   window.dispatchEvent(new Event(LOCALE_EVENT));
 }
 
+/** The root layout reads this cookie so the served HTML carries the right `lang`. */
+function writeLocaleCookie(next: Locale) {
+  try {
+    document.cookie = `${LOCALE_STORAGE_KEY}=${next}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
+  } catch {
+    // ignore
+  }
+}
+
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const { user, refreshUser } = useAuth();
   const storedLocale = useSyncExternalStore(
@@ -78,9 +91,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     (user ? profileLocale ?? storedLocale : storedLocale) ??
     DEFAULT_LOCALE;
 
+  // Keep the DOM, the cookie, and the non-hook `tt()` helper on the same locale.
+  setActiveLocale(locale);
+
   useEffect(() => {
     document.documentElement.lang = locale;
+    document.documentElement.dir = localeDirection(locale);
     document.documentElement.dataset.locale = locale;
+    writeLocaleCookie(locale);
   }, [locale]);
 
   const setLocale = useCallback(

@@ -4,30 +4,40 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
 import { OrderTimeline } from '@/features/orders/OrderTimeline';
+import { OrderCallPanel } from '@/features/calls/OrderCallPanel';
 import { OrderChat } from '@/features/messages/OrderChat';
+import { OrderPaymentPanel } from '@/features/payments/OrderPaymentPanel';
 import { OrderReviewSection } from '@/features/reviews/OrderReviewSection';
 import { useAuth } from '@/features/auth/auth-context';
+import { useLocale } from '@/features/i18n/locale-context';
 import { Alert, Badge, Button, Card, Field, Spinner, Textarea } from '@/components/ui';
-import { getOrder, updateOrderStatus, updateOrderLogistics, initOrderPayment, confirmOrderPaymentHeld } from '@/lib/api/orders';
+import { getOrder, updateOrderStatus, updateOrderLogistics } from '@/lib/api/orders';
 import { getErrorMessage } from '@/lib/api/errors';
-import { formatDate, formatMoney, formatQty, titleCase } from '@/lib/format';
+import { formatDate, formatMoney, formatQty } from '@/lib/format';
+import type { MessageKey } from '@/lib/i18n';
 import type { Order, OrderStatus } from '@/lib/api/types';
 
 function nextActions(order: Order, userId: string, role: string) {
-  const actions: Array<{ status: OrderStatus; label: string; needsReason?: boolean }> = [];
+  const actions: Array<{ status: OrderStatus; labelKey: MessageKey; needsReason?: boolean }> = [];
   if (role === 'FARMER' && order.farmerId === userId) {
-    if (order.status === 'pending') actions.push({ status: 'accepted', label: 'Accept order' });
-    if (order.status === 'accepted') actions.push({ status: 'confirmed', label: 'Confirm' });
-    if (order.status === 'confirmed') actions.push({ status: 'fulfilled', label: 'Mark fulfilled' });
+    if (order.status === 'pending') {
+      actions.push({ status: 'accepted', labelKey: 'order.actions.accept' });
+    }
+    if (order.status === 'accepted') {
+      actions.push({ status: 'confirmed', labelKey: 'order.actions.confirm' });
+    }
+    if (order.status === 'confirmed') {
+      actions.push({ status: 'fulfilled', labelKey: 'order.actions.fulfil' });
+    }
     if (['pending', 'accepted', 'confirmed'].includes(order.status)) {
-      actions.push({ status: 'cancelled', label: 'Cancel', needsReason: true });
+      actions.push({ status: 'cancelled', labelKey: 'order.actions.cancel', needsReason: true });
     }
   }
   if (role === 'BUYER' && order.buyerId === userId && order.status === 'pending') {
-    actions.push({ status: 'cancelled', label: 'Cancel order', needsReason: true });
+    actions.push({ status: 'cancelled', labelKey: 'order.actions.cancelOrder', needsReason: true });
   }
   if (role === 'ADMIN' && ['pending', 'accepted', 'confirmed'].includes(order.status)) {
-    actions.push({ status: 'cancelled', label: 'Admin cancel', needsReason: true });
+    actions.push({ status: 'cancelled', labelKey: 'order.actions.adminCancel', needsReason: true });
   }
   return actions;
 }
@@ -35,6 +45,7 @@ function nextActions(order: Order, userId: string, role: string) {
 function OrderDetail() {
   const params = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { locale, t } = useLocale();
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -69,13 +80,22 @@ function OrderDetail() {
   const actions = nextActions(order, user.id, user.role);
   const counterparty =
     user.id === order.buyerId
-      ? { name: order.farmer?.name ?? 'Farmer', id: order.farmerId }
-      : { name: order.buyer?.name ?? 'Buyer', id: order.buyerId };
+      ? { name: order.farmer?.name ?? t('order.farmer'), id: order.farmerId }
+      : { name: order.buyer?.name ?? t('order.buyer'), id: order.buyerId };
   const counterpartyRating =
     user.id === order.buyerId ? order.farmer?.ratingAvg : order.buyer?.ratingAvg;
   const chatDisabled = order.status === 'cancelled';
   const isFarmer = user.role === 'FARMER' && order.farmerId === user.id;
   const isBuyer = user.role === 'BUYER' && order.buyerId === user.id;
+  // Fulfilling releases escrow, so warn the farmer when there is no escrow to release.
+  // Cash on delivery is collected in person and never holds anything.
+  const escrowWarning =
+    isFarmer &&
+    actions.some((action) => action.status === 'fulfilled') &&
+    order.payment?.status !== 'held' &&
+    order.payment?.method !== 'cod';
+  // Admins can read the thread for moderation but never join a call.
+  const canCall = isFarmer || isBuyer;
 
   async function advanceLogistics(status: 'dispatched' | 'in_transit' | 'delivered') {
     setPending(true);
@@ -90,69 +110,58 @@ function OrderDetail() {
     }
   }
 
-  async function startPayment() {
-    setPending(true);
-    setError('');
-    try {
-      const { data } = await initOrderPayment(order!.id);
-      if (data.mode === 'mock') {
-        await confirmOrderPaymentHeld(order!.id);
-        const refreshed = await getOrder(order!.id);
-        setOrder(refreshed.data);
-        setError(data.message ?? 'Payment simulated (escrow hold).');
-      } else {
-        setError(`Razorpay order ${data.razorpayOrderId ?? ''} created — complete checkout in Razorpay widget.`);
-      }
-    } catch (cause) {
-      setError(getErrorMessage(cause));
-    } finally {
-      setPending(false);
-    }
+  async function refreshOrder() {
+    const refreshed = await getOrder(order!.id);
+    setOrder(refreshed.data);
   }
+
+  const unit = t(`units.${order.unit}`);
 
   return (
     <div className="space-y-6">
     <Card className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-4xl text-forest">
-          {order.listing?.crop ?? 'Order'}
+          {order.listing?.crop ?? t('order.titleFallback')}
         </h1>
-        <Badge>{titleCase(order.status)}</Badge>
+        <Badge>{t(`order.status.${order.status}`)}</Badge>
       </div>
       <p>
-        {formatQty(order.quantity, order.unit)} at {formatMoney(order.pricePerUnit)} / {order.unit}
+        {t('order.quantityLine', {
+          qty: formatQty(order.quantity, unit, locale),
+          price: formatMoney(order.pricePerUnit, locale),
+          unit,
+        })}
       </p>
-      <p className="text-2xl font-bold text-forest">{formatMoney(order.priceTotal)}</p>
-      <p>Delivery: {order.deliveryMode}</p>
-      <p>Placed {formatDate(order.createdAt)}</p>
-      {order.notes ? <p>Notes: {order.notes}</p> : null}
-      {order.cancellationReason ? <p>Cancelled: {order.cancellationReason}</p> : null}
+      <p className="text-2xl font-bold text-forest">{formatMoney(order.priceTotal, locale)}</p>
+      <p>{t('order.deliveryLine', { mode: t(`order.deliveryMode.${order.deliveryMode}`) })}</p>
+      <p>{t('order.placedLine', { date: formatDate(order.createdAt, locale) })}</p>
+      {order.notes ? <p>{t('order.notesLine', { notes: order.notes })}</p> : null}
+      {order.cancellationReason ? (
+        <p>{t('order.cancelledLine', { reason: order.cancellationReason })}</p>
+      ) : null}
       <OrderTimeline order={order} />
       {error ? <Alert>{error}</Alert> : null}
-      {isBuyer && order.status !== 'cancelled' && !order.payment ? (
-        <Button type="button" disabled={pending} onClick={() => void startPayment()}>
-          Pay & hold in escrow
-        </Button>
-      ) : null}
       {isFarmer && order.deliveryMode === 'delivery' && order.status !== 'cancelled' ? (
         <div className="flex flex-wrap gap-2">
           {order.logisticsStatus === 'none' ? (
             <Button type="button" disabled={pending} onClick={() => void advanceLogistics('dispatched')}>
-              Mark dispatched
+              {t('order.actions.dispatch')}
             </Button>
           ) : null}
           {order.logisticsStatus === 'dispatched' ? (
             <Button type="button" disabled={pending} onClick={() => void advanceLogistics('in_transit')}>
-              In transit
+              {t('order.actions.transit')}
             </Button>
           ) : null}
           {['dispatched', 'in_transit'].includes(order.logisticsStatus ?? 'none') ? (
             <Button type="button" disabled={pending} onClick={() => void advanceLogistics('delivered')}>
-              Mark delivered
+              {t('order.actions.deliver')}
             </Button>
           ) : null}
         </div>
       ) : null}
+      {escrowWarning ? <Alert>{t('order.escrowNotHeld')}</Alert> : null}
       <div className="flex flex-col gap-3">
         {actions.map((action) =>
           action.needsReason ? (
@@ -161,11 +170,11 @@ function OrderDetail() {
               className="space-y-2 rounded-xl border border-forest/10 p-3"
               action={(form) => void changeStatus(action.status, form)}
             >
-              <Field label="Cancellation reason">
+              <Field label={t('order.cancellationReason')}>
                 <Textarea name="cancellationReason" required />
               </Field>
               <Button type="submit" variant="danger" disabled={pending}>
-                {action.label}
+                {t(action.labelKey)}
               </Button>
             </form>
           ) : (
@@ -175,18 +184,27 @@ function OrderDetail() {
               disabled={pending}
               onClick={() => void changeStatus(action.status)}
             >
-              {action.label}
+              {t(action.labelKey)}
             </Button>
           ),
         )}
       </div>
     </Card>
 
+    <OrderPaymentPanel order={order} isBuyer={isBuyer} onUpdated={refreshOrder} />
+
+    {canCall ? (
+      <OrderCallPanel
+        orderId={order.id}
+        counterpartyName={counterparty.name}
+        disabled={chatDisabled}
+      />
+    ) : null}
+
     <OrderChat orderId={order.id} userId={user.id} disabled={chatDisabled} />
 
     <p className="text-sm text-ink/60">
-      Order chat messages the buyer or farmer on this order. For general farm help, use{' '}
-      <strong>Ask Kisan</strong> button at the bottom-right.
+      {t('order.footerHint', { call: t('order.call.title'), kisan: t('kisan.title') })}
     </p>
 
     {order.status === 'fulfilled' ? (

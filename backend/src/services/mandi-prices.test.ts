@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DATA_GOV_EXTRA_STATES,
   filterToLatestArrivalDay,
+  isMandiApiSupportedState,
+  isMandiLiveState,
+  MANDI_API_SUPPORTED_STATES,
   normalizeArrivalDate,
   type MandiPriceRow,
 } from '../services/mandi-prices.service.js';
@@ -28,6 +32,24 @@ function row(arrivalDate: string, commodity = 'Wheat'): MandiPriceRow {
 describe('normalizeArrivalDate', () => {
   it('converts DD/MM/YYYY from data.gov.in to ISO', () => {
     expect(normalizeArrivalDate('02/09/2026')).toBe('2026-09-02');
+  });
+});
+
+describe('mandi live state coverage', () => {
+  it('covers free-API states without data.gov.in key', () => {
+    for (const state of MANDI_API_SUPPORTED_STATES) {
+      expect(isMandiApiSupportedState(state)).toBe(true);
+      expect(isMandiLiveState(state)).toBe(true);
+    }
+  });
+
+  it('lists Haryana as a data.gov.in extra state', () => {
+    expect(DATA_GOV_EXTRA_STATES).toContain('Haryana');
+    expect(isMandiApiSupportedState('Haryana')).toBe(false);
+  });
+
+  it('rejects unknown states on the free API list', () => {
+    expect(isMandiApiSupportedState('Goa')).toBe(false);
   });
 });
 

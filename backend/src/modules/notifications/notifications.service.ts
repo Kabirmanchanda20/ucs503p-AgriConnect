@@ -3,6 +3,18 @@ import { AppError } from '../../common/app-error.js';
 import { getPrismaClient } from '../../config/db.js';
 import type { ListNotificationsQuery } from './notifications.schema.js';
 
+/** `params` is only usable as a translation payload when it is a flat object. */
+function serializeParams(
+  params: Prisma.NotificationGetPayload<object>['params'],
+): Record<string, string | number> | null {
+  if (typeof params !== 'object' || params === null || Array.isArray(params)) return null;
+  const entries = Object.entries(params).filter(
+    (entry): entry is [string, string | number] =>
+      typeof entry[1] === 'string' || typeof entry[1] === 'number',
+  );
+  return Object.fromEntries(entries);
+}
+
 function serializeNotification(
   notification: Prisma.NotificationGetPayload<object>,
 ) {
@@ -11,6 +23,7 @@ function serializeNotification(
     type: notification.type,
     title: notification.title,
     body: notification.body,
+    params: serializeParams(notification.params),
     readAt: notification.readAt?.toISOString() ?? null,
     relatedEntityType: notification.relatedEntityType,
     relatedEntityId: notification.relatedEntityId,

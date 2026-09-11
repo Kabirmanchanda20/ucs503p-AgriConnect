@@ -5,6 +5,7 @@ import type { Role } from '../generated/prisma/client.js';
 import { getPrismaClient } from './db.js';
 import { getEnv } from './env.js';
 import { logger } from './logger.js';
+import { registerCallHandlers } from '../modules/calls/calls.gateway.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 
 interface SocketUser {
@@ -102,6 +103,8 @@ export function initSocketIO(server: HttpServer): Server {
         appSocket.to(`order:${orderId}`).emit('typing', { orderId, userId: user.id });
       }
     });
+
+    registerCallHandlers(appSocket, user);
   });
 
   logger.info('Socket.io initialized');

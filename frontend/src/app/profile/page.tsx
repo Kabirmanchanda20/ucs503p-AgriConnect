@@ -137,7 +137,7 @@ function ProfileForm() {
                 <Select name="buyerType" defaultValue={user.buyerProfile?.buyerType ?? 'trader'}>
                   {BUYER_TYPES.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {t(`profile.buyerTypes.${type}`)}
                     </option>
                   ))}
                 </Select>

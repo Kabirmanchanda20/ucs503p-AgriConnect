@@ -1,12 +1,15 @@
 import type { Prisma, Role } from '../../generated/prisma/client.js';
 import { AppError } from '../../common/app-error.js';
 import { moneyString, quantityString, roundMoney, toDecimal } from '../../common/decimal.js';
+import { assertNoContactInfo } from '../../common/contact-guard.js';
 import { getPrismaClient } from '../../config/db.js';
 import {
   createNotification,
   createNotifications,
 } from '../../services/notification.service.js';
 import { recordPriceTrend } from '../../services/price-trend.service.js';
+import { PAYMENT_METHOD_LABELS } from '../payments/payments.schema.js';
+import { refundHeldPaymentForOrder } from '../payments/payments.service.js';
 import { listingStatusAfterQuantity, restoreListingStock } from './inventory.js';
 import { canTransitionOrder } from './order-state-machine.js';
 import type {
@@ -41,7 +44,19 @@ const orderInclude = {
       farmerProfile: { select: { ratingAvg: true } },
     },
   },
-  payment: { select: { id: true, status: true, provider: true, amount: true } },
+  payment: {
+    select: {
+      id: true,
+      status: true,
+      provider: true,
+      amount: true,
+      method: true,
+      failureReason: true,
+      heldAt: true,
+      releasedAt: true,
+      refundedAt: true,
+    },
+  },
 } satisfies Prisma.OrderInclude;
 
 interface AuthenticatedActor {
@@ -75,6 +90,14 @@ function serializeOrder(
           status: order.payment.status,
           provider: order.payment.provider,
           amount: moneyString(order.payment.amount),
+          method: order.payment.method,
+          methodLabel: order.payment.method
+            ? PAYMENT_METHOD_LABELS[order.payment.method]
+            : null,
+          failureReason: order.payment.failureReason,
+          heldAt: order.payment.heldAt?.toISOString() ?? null,
+          releasedAt: order.payment.releasedAt?.toISOString() ?? null,
+          refundedAt: order.payment.refundedAt?.toISOString() ?? null,
         }
       : null,
     listing: order.listing,
@@ -102,6 +125,8 @@ export async function createOrder(buyerId: string, input: CreateOrderInput) {
   if (quantity.lessThanOrEqualTo(0)) {
     throw new AppError(400, 'INVALID_REQUEST', 'Quantity must be greater than zero');
   }
+  // The farmer reads these notes, so they are the same off-platform channel as chat.
+  assertNoContactInfo(input.notes, 'notes');
 
   const created = await getPrismaClient().$transaction(async (transaction) => {
     const listing = await transaction.listing.findFirst({
@@ -175,6 +200,11 @@ export async function createOrder(buyerId: string, input: CreateOrderInput) {
         type: 'ORDER_PLACED',
         title: 'New order',
         body: `A buyer ordered ${quantityString(quantity)} ${listing.unit} of ${listing.crop}.`,
+        params: {
+          qty: quantityString(quantity),
+          unit: listing.unit,
+          crop: listing.crop,
+        },
         relatedEntityType: 'Order',
         relatedEntityId: order.id,
       },
@@ -271,6 +301,8 @@ export async function updateOrderStatus(
 
     if (input.status === 'cancelled') {
       await restoreListingStock(transaction, order.listingId, order.quantity);
+      // A cancelled order must never keep the buyer's money in escrow.
+      await refundHeldPaymentForOrder(transaction, order.id);
     }
 
     const next = await transaction.order.update({
@@ -291,11 +323,35 @@ export async function updateOrderStatus(
         type: 'ORDER_STATUS_CHANGED' as const,
         title: 'Order status updated',
         body: `Order status changed from ${order.status} to ${input.status}.`,
+        params: { variant: 'status', from: order.status, to: input.status },
         relatedEntityType: 'Order',
         relatedEntityId: order.id,
       })),
       transaction,
     );
+
+    // Escrow is opt-in and only the buyer can start it, so acceptance is where they get
+    // asked. Skipped once the money is in (or back out), and for cash on delivery, which
+    // never enters escrow.
+    const payment = next.payment;
+    const awaitingEscrow =
+      payment?.method !== 'cod' &&
+      !['held', 'released', 'refunded'].includes(payment?.status ?? '');
+    if ((input.status === 'accepted' || input.status === 'confirmed') && awaitingEscrow) {
+      const amount = moneyString(next.priceTotal);
+      await createNotification(
+        {
+          userId: order.buyerId,
+          type: 'ORDER_STATUS_CHANGED',
+          title: 'Payment needed',
+          body: `Pay ₹${amount} to hold this order in escrow.`,
+          params: { variant: 'payment', amount },
+          relatedEntityType: 'Order',
+          relatedEntityId: order.id,
+        },
+        transaction,
+      );
+    }
 
     if (input.status === 'fulfilled') {
       const listing = await transaction.listing.findUnique({
@@ -380,6 +436,7 @@ export async function updateOrderLogistics(
         type: 'ORDER_STATUS_CHANGED',
         title: 'Delivery update',
         body: `Your order is now: ${logisticsStatus.replace('_', ' ')}.`,
+        params: { variant: 'logistics', status: logisticsStatus },
         relatedEntityType: 'Order',
         relatedEntityId: order.id,
       },

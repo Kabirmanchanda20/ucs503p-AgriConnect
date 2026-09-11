@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
 import { ListingCard } from '@/components/listing-card';
 import { Alert, Button, Card, Field, Select, Spinner } from '@/components/ui';
+import { useLocale } from '@/features/i18n/locale-context';
 import { listListings } from '@/lib/api/listings';
 import { moderateListing } from '@/lib/api/admin';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { Listing, ListingStatus } from '@/lib/api/types';
 
 function AdminListings() {
+  const { t } = useLocale();
   const [listings, setListings] = useState<Listing[] | null>(null);
   const [error, setError] = useState('');
   const [status, setStatus] = useState<ListingStatus>('active');
@@ -43,7 +45,7 @@ function AdminListings() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-display text-4xl text-forest">Listing moderation</h1>
+      <h1 className="font-display text-4xl text-forest">{t('admin.moderationTitle')}</h1>
       <Card>
         <form
           className="flex flex-wrap gap-3"
@@ -53,17 +55,17 @@ function AdminListings() {
             reload(next);
           }}
         >
-          <Field label="Status">
+          <Field label={t('common.status')}>
             <Select name="status" defaultValue={status}>
-              <option value="active">active</option>
-              <option value="draft">draft</option>
-              <option value="sold_out">sold_out</option>
-              <option value="expired">expired</option>
-              <option value="removed">removed</option>
+              <option value="active">{t('listing.status.active')}</option>
+              <option value="draft">{t('listing.status.draft')}</option>
+              <option value="sold_out">{t('listing.status.sold_out')}</option>
+              <option value="expired">{t('listing.status.expired')}</option>
+              <option value="removed">{t('listing.status.removed')}</option>
             </Select>
           </Field>
           <Button className="mt-7" type="submit">
-            Filter
+            {t('common.filter')}
           </Button>
         </form>
       </Card>
@@ -74,10 +76,10 @@ function AdminListings() {
             <ListingCard listing={listing} />
             <div className="flex gap-2">
               <Button type="button" variant="danger" onClick={() => void moderate(listing.id, 'removed')}>
-                Remove
+                {t('common.remove')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => void moderate(listing.id, 'active')}>
-                Reinstate
+                {t('admin.reinstate')}
               </Button>
             </div>
           </div>

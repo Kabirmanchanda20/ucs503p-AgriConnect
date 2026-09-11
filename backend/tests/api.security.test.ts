@@ -50,6 +50,24 @@ describe('health endpoint', () => {
       .send({ listingId: '11111111-1111-4111-8111-111111111111', quantity: '1', deliveryMode: 'pickup' });
     expect(response.status).toBe(401);
   });
+
+  it('rejects a malformed JSON body with 400 INVALID_REQUEST', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Content-Type', 'application/json')
+      .send('{"email":');
+    expect(response.status).toBe(400);
+    expect(jsonBody(response)).toMatchObject({ error: { code: 'INVALID_REQUEST' } });
+  });
+
+  it('rejects a body over the 10 kb JSON limit with 413, not 500', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ email: 'a@b.com', password: 'x'.repeat(20_000) }));
+    expect(response.status).toBe(413);
+    expect(jsonBody(response)).toMatchObject({ error: { code: 'PAYLOAD_TOO_LARGE' } });
+  });
 });
 
 describe('token helpers', () => {

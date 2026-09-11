@@ -17,6 +17,10 @@ import {
   initOrderPaymentController,
 } from '../payments/payments.controller.js';
 import {
+  confirmPaymentBodySchema,
+  initPaymentBodySchema,
+} from '../payments/payments.schema.js';
+import {
   createOrderController,
   getOrderController,
   listOrdersController,
@@ -64,14 +68,14 @@ ordersRouter.post(
   '/:id/payment',
   roleGuard('BUYER'),
   requireActiveAccount,
-  validate({ params: orderIdParamsSchema }),
+  validate({ params: orderIdParamsSchema, body: initPaymentBodySchema }),
   initOrderPaymentController,
 );
 ordersRouter.post(
   '/:id/payment/confirm',
   roleGuard('BUYER'),
   requireActiveAccount,
-  validate({ params: orderIdParamsSchema }),
+  validate({ params: orderIdParamsSchema, body: confirmPaymentBodySchema }),
   confirmPaymentHeldController,
 );
 

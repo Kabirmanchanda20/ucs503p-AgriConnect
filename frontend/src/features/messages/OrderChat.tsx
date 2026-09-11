@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, cx } from '@/components/ui';
+import { useLocale } from '@/features/i18n/locale-context';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { Message } from '@/lib/api/messages';
 import {
@@ -21,6 +22,7 @@ export function OrderChat({
   userId: string;
   disabled?: boolean;
 }) {
+  const { t } = useLocale();
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
@@ -91,18 +93,21 @@ export function OrderChat({
   return (
     <Card className="space-y-3">
       <div>
-        <h2 className="font-display text-2xl text-forest">Order chat</h2>
-        <p className="text-sm text-ink/60">Message the other party in real time.</p>
+        <h2 className="font-display text-2xl text-forest">{t('order.chat.title')}</h2>
+        <p className="text-sm text-ink/60">{t('order.chat.subtitle')}</p>
       </div>
+      <p className="rounded-xl bg-harvest/15 px-3 py-2 text-xs text-soil">
+        {t('order.chat.guard', { call: t('order.call.title') })}
+      </p>
       {error ? <Alert>{error}</Alert> : null}
       <div
         ref={listRef}
         className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-forest/10 bg-field p-3"
       >
         {loading ? (
-          <p className="text-sm text-ink/60">Loading messages…</p>
+          <p className="text-sm text-ink/60">{t('order.chat.loading')}</p>
         ) : messages.length === 0 ? (
-          <p className="text-sm text-ink/60">No messages yet. Start the conversation.</p>
+          <p className="text-sm text-ink/60">{t('order.chat.empty')}</p>
         ) : (
           messages.map((message) => {
             const mine = message.senderId === userId;
@@ -128,10 +133,10 @@ export function OrderChat({
         )}
       </div>
       {typingUserId ? (
-        <p className="text-xs text-ink/60">Other party is typing…</p>
+        <p className="text-xs text-ink/60">{t('order.chat.typing')}</p>
       ) : null}
       {disabled ? (
-        <p className="text-sm text-ink/60">Chat is closed for cancelled orders.</p>
+        <p className="text-sm text-ink/60">{t('order.chat.closed')}</p>
       ) : (
         <form onSubmit={onSubmit} className="flex gap-2">
           <input
@@ -141,11 +146,11 @@ export function OrderChat({
               emitTyping(orderId);
             }}
             maxLength={2000}
-            placeholder="Type a message…"
+            placeholder={t('order.chat.placeholder')}
             className="min-h-12 flex-1 rounded-xl border border-forest/15 bg-paper px-4 text-sm outline-none ring-harvest/40 focus:border-leaf focus:ring-2"
           />
           <Button type="submit" disabled={pending || !draft.trim()}>
-            Send
+            {t('order.chat.send')}
           </Button>
         </form>
       )}

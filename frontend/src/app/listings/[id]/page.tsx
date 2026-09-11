@@ -3,19 +3,21 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
+import { useLocale } from '@/features/i18n/locale-context';
 import { Alert, Badge, Button, Card, Field, Input, Select, Spinner, Textarea } from '@/components/ui';
 import { ListingPhoto } from '@/components/listing-photo';
 import { StarDisplay } from '@/components/star-rating';
 import { createOrder } from '@/lib/api/orders';
 import { getListing } from '@/lib/api/listings';
 import { getErrorMessage } from '@/lib/api/errors';
-import { formatDate, formatMoney, formatQty, titleCase } from '@/lib/format';
+import { formatDate, formatMoney, formatQty } from '@/lib/format';
 import type { Listing } from '@/lib/api/types';
 
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { locale, t } = useLocale();
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -23,14 +25,15 @@ export default function ListingDetailPage() {
   useEffect(() => {
     void getListing(params.id)
       .then((result) => setListing(result.data))
-      .catch((cause) => setError(getErrorMessage(cause, 'Listing not found')));
-  }, [params.id]);
+      .catch((cause) => setError(getErrorMessage(cause, t('listing.notFound'))));
+  }, [params.id, t]);
 
   if (error) return <Alert>{error}</Alert>;
   if (!listing) return <Spinner />;
 
   const photo = listing.photos[0]?.publicUrl;
   const canOrder = user?.role === 'BUYER' && listing.status === 'active' && !user.isSuspended;
+  const unit = t(`units.${listing.unit}`);
 
   const currentListing = listing;
 
@@ -46,7 +49,7 @@ export default function ListingDetailPage() {
       });
       router.push(`/orders/${data.id}`);
     } catch (cause) {
-      setError(getErrorMessage(cause, 'Could not place order'));
+      setError(getErrorMessage(cause, t('listing.place.fail')));
     } finally {
       setPending(false);
     }
@@ -60,9 +63,9 @@ export default function ListingDetailPage() {
         </div>
         <div className="space-y-3 p-6">
           <div className="flex flex-wrap gap-2">
-            <Badge tone="good">{titleCase(listing.status)}</Badge>
-            {listing.perishable ? <Badge tone="gold">Perishable</Badge> : null}
-            {listing.farmer?.verified ? <Badge>Verified farmer</Badge> : null}
+            <Badge tone="good">{t(`listing.status.${listing.status}`)}</Badge>
+            {listing.perishable ? <Badge tone="gold">{t('listing.perishable')}</Badge> : null}
+            {listing.farmer?.verified ? <Badge>{t('listing.verifiedFarmer')}</Badge> : null}
           </div>
           <h1 className="font-display text-4xl text-forest">{listing.crop}</h1>
           <p className="text-ink/70">
@@ -70,17 +73,19 @@ export default function ListingDetailPage() {
             {listing.district}, {listing.state}
           </p>
           <p className="text-2xl font-bold text-forest">
-            {formatMoney(listing.pricePerUnit)} / {listing.unit}
+            {formatMoney(listing.pricePerUnit, locale)} / {unit}
           </p>
           <p>
-            Available {formatQty(listing.quantity, listing.unit)} · Minimum order{' '}
-            {formatQty(listing.minimumOrderQuantity, listing.unit)}
+            {t('listing.availableLine', {
+              qty: formatQty(listing.quantity, unit, locale),
+              min: formatQty(listing.minimumOrderQuantity, unit, locale),
+            })}
           </p>
-          <p>Harvest date {formatDate(listing.harvestDate)}</p>
+          <p>{t('listing.harvestLine', { date: formatDate(listing.harvestDate, locale) })}</p>
           {listing.description ? <p className="text-ink/80">{listing.description}</p> : null}
           {listing.farmer ? (
             <p className="text-sm text-ink/60">
-              Sold by {listing.farmer.farmName || listing.farmer.name}
+              {t('listing.soldBy', { name: listing.farmer.farmName || listing.farmer.name })}
               {' · '}
               <StarDisplay value={listing.farmer.ratingAvg} />
             </p>
@@ -89,34 +94,34 @@ export default function ListingDetailPage() {
       </Card>
 
       <Card>
-        <h2 className="font-display text-2xl text-forest">Place an order</h2>
+        <h2 className="font-display text-2xl text-forest">{t('listing.place.title')}</h2>
         {!user ? (
-          <p className="mt-3 text-ink/70">Log in as a buyer to order this listing.</p>
+          <p className="mt-3 text-ink/70">{t('listing.place.loginPrompt')}</p>
         ) : user.role !== 'BUYER' ? (
-          <p className="mt-3 text-ink/70">Only buyer accounts can place orders.</p>
+          <p className="mt-3 text-ink/70">{t('listing.place.buyerOnly')}</p>
         ) : listing.status !== 'active' ? (
-          <p className="mt-3 text-ink/70">This listing is not open for orders.</p>
+          <p className="mt-3 text-ink/70">{t('listing.place.notOpen')}</p>
         ) : (
           <form className="mt-4 space-y-4" action={placeOrder}>
             {error ? <Alert>{error}</Alert> : null}
-            <Field label={`Quantity (${listing.unit})`}>
+            <Field label={t('listing.place.quantity', { unit })}>
               <Input
                 name="quantity"
                 required
                 defaultValue={listing.minimumOrderQuantity}
               />
             </Field>
-            <Field label="Delivery">
+            <Field label={t('listing.place.delivery')}>
               <Select name="deliveryMode" defaultValue="pickup">
-                <option value="pickup">I will pick up</option>
-                <option value="delivery">Ask farmer to deliver</option>
+                <option value="pickup">{t('listing.place.pickupOption')}</option>
+                <option value="delivery">{t('listing.place.deliveryOption')}</option>
               </Select>
             </Field>
-            <Field label="Notes (optional)">
+            <Field label={t('listing.place.notes')}>
               <Textarea name="notes" />
             </Field>
             <Button type="submit" disabled={pending || !canOrder} className="w-full">
-              {pending ? 'Placing order…' : 'Place order'}
+              {pending ? t('listing.place.submitting') : t('listing.place.submit')}
             </Button>
           </form>
         )}

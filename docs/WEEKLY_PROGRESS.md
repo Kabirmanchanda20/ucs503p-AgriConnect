@@ -6,9 +6,9 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 |---|---|
 | **Team** | Kabir Manchanda, Manbhav Kumar Terry |
 | **Course** | UCS503P |
-| **Current week** | **Week 2** — Mon 31 Aug → Mon 7 Sep 2026 |
-| **Updated** | Sat 5 Sep 2026 |
-| **Status** | **Green** — Prototype slice + i18n on `backend_frontend` (`41455f0`); faculty demo next |
+| **Current week** | **Week 3** — Mon 7 Sep → Mon 14 Sep 2026 |
+| **Updated** | Fri 11 Sep 2026 |
+| **Status** | **Green** — Prototype slice verified locally (138 backend + 128 frontend tests, lint/typecheck/i18n, both smoke suites) and being pushed to `origin/backend_frontend` then `master` |
 
 ## Project phase snapshot
 
@@ -17,12 +17,47 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | Phase | Theme | Status | Notes |
 |---|---|---|---|
 | **Lab** | Functional CRUD marketplace | Complete (Week 1) | Auth/RBAC, listings, orders, admin, notifications, reports — see Archive |
-| **Prototype** | Real-time, production-shaped system | Complete (Week 2) | Chat, mandi, logistics, payments, alerts, Docker/CI, i18n — on `backend_frontend` |
+| **Prototype** | Real-time, production-shaped system | Complete (Week 2–3) | Chat, calls, mandi, logistics, escrow payments + webhook, 13-locale UI, contact guard — see board |
 | **Capstone** | AI-assisted advisory platform | Not started | CV/NLP advisory, ML price prediction, optional IoT/traceability |
 
-## Board — week 2
+## Board — week 3
 
-**Focus:** faculty demo from **`backend_frontend`**; then plan Capstone.
+**Focus:** faculty demo from `master`; then Capstone scope.
+
+| | Task | Notes |
+|---|---|---|
+| **Working on** | Faculty Prototype demo | Walkthrough after merge to `master`; Haryana Potato/Onion/Tomato have live rows; Wheat may be empty |
+| **Done** | Commit + push Prototype slice | Local verify: 138 backend / 128 frontend tests; smoke antibypass + calls; push `backend_frontend` → merge `master` |
+| **Done** | Payment methods + gateway escrow | UPI/card/netbanking/COD; Razorpay verify on confirm; signed webhook; buyer payment nudge; unpaid-fulfill warning |
+| **Done** | Anti-bypass contact guard | Chat, order notes, listing description/variety/village → 400 `CONTACT_INFO_BLOCKED` |
+| **Done** | In-app voice calls | WebRTC + Socket.io; 45s ring timeout; smoke:calls 13/13 |
+| **Done** | 13-locale UI + frontend tests | 477 keys × 13; Vitest screens/parity/width budget; header/RTL/webfonts |
+| **Done** | Faster Kisan talk | Pinned TTS model + minimal thinking; ~45-word replies; ~280-char speak clip |
+| **Done** | Edge-case hardening | Body-parser 413 mapping; webhook match by checkout id; socket token refresh; COD switchable |
+| **Done** | Natural orders list | Smoke junk cleaned; active statuses sort above cancelled |
+| **Blocked** | — | None |
+| **Backlog** | Native-speaker pass on the ten new dictionaries | Machine-translated today |
+| **Backlog** | Capstone — ML advisory | Price prediction, crop CV, evaluation metrics |
+| **Backlog** | Farmer payouts / settlement | Escrow holds and refunds are done; paying the farmer out through Razorpay is not |
+| **Backlog** | TURN server for calls | Public STUN only today, so calls behind strict NATs may fail to connect |
+| **Backlog** | Contact blocking on review comments | Chat, order notes, and listing copy are scanned; review comments are the last free-text field still unscanned |
+| **Backlog** | Razorpay webhook tunnel for local demos | Checkout works without it; webhook needs a public HTTPS URL |
+
+**Risks:** Locale dictionaries still need a native-speaker pass. Voice calls are single-process + public STUN (TURN still backlog). Review comments are the last unscanned free-text field.
+
+**Next week:** faculty demo, Capstone scope, optional TURN + farmer payouts.
+
+---
+
+## Archive
+
+### Week 2 — Mon 31 Aug → Mon 7 Sep 2026
+
+| | |
+|---|---|
+| **Milestone** | **Prototype** — real-time, production-shaped system |
+| **Status** | **Green** — Prototype demo-ready; anti-bypass chat guard, in-app voice calls, and payment methods verified against the live API |
+| **Closed** | Mon 7 Sep 2026 |
 
 | | Task | Notes |
 |---|---|---|
@@ -42,17 +77,14 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | **Done** | Guest browse + landing UX | Logo hero, public marketplace — `49a11f1` |
 | **Done** | Order timeline + mandi compare badge | `OrderTimeline`; `POST /market/prices/compare` — `49a11f1` |
 | **Done** | Verification | Backend Vitest 43/43; frontend build; i18n parity — local + `41455f0` |
-| **Working on** | Faculty Prototype demo | Walkthrough from `backend_frontend`; mandi needs `DATA_GOV_IN_API_KEY` if live feed required |
-| **Backlog** | Capstone — ML advisory | Price prediction, crop CV, evaluation metrics |
-| **Backlog** | Production Razorpay + webhooks | After Prototype demo |
+| **Done** | API endpoint catalog (boss review) | `docs/API_ENDPOINTS.md` + contract gaps (meta, commodities, outbound) |
+| **Done** | Marketplace / mandi load UX | Backend-down message; Haryana in state fallback; `Promise.allSettled` on mandi page; `filters[state]` fix |
+| **Done** | Register required fields | Phone, state, district required; village optional |
+| **Done** | Localize every screen end to end | Orders, listings, marketplace, dashboards, mandi table, admin, alerts, password, badges, ratings, logo, metadata; `tt()` for non-React modules; locale-aware money/qty/date; `agriconnect.locale` cookie drives `<html lang>` |
 
-**Risks:** Mandi live feed 502 without data.gov.in API key (seeded fallback still works).
-
-**Next (Mon 7 Sep — Week 3):** faculty demo; merge/PR `backend_frontend` → `master` if needed; plan Capstone scope.
+**Carried into Week 3:** the whole uncommitted Prototype slice (voice calls, payment methods + escrow refunds, contact guard, 13-locale translation, frontend test layer, localized notifications, RLS) plus the faculty demo.
 
 ---
-
-## Archive
 
 ### Week 1 — Mon 24 Aug → Mon 31 Aug 2026
 
@@ -72,4 +104,4 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 
 ---
 
-_When Week 3 starts (Mon 7 Sep): archive Week 2 board here, then open Week 3 with fresh **Working on** rows._
+_When Week 4 starts (Mon 14 Sep): archive the Week 3 board here, then open Week 4 with fresh **Working on** rows._

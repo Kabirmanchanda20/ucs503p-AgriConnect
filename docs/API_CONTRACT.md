@@ -10,6 +10,7 @@
 
 This is the contract between backend and frontend teammates. Mock responses below are canonical examples.
 
+**Complete endpoint catalog (every HTTP + Socket + outbound):** [API_ENDPOINTS.md](./API_ENDPOINTS.md)  
 **Status codes, approve / discard / change scenarios, and every error:** [API_STATUS_CODES.md](./API_STATUS_CODES.md)  
 **How to consume this API in Next.js:** [FRONTEND_GUIDE.md](./FRONTEND_GUIDE.md)  
 **How to implement or extend endpoints:** [BACKEND_GUIDE.md](./BACKEND_GUIDE.md)  
@@ -57,11 +58,13 @@ Paginated responses:
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | Zod failed |
 | 400 | `INVALID_REQUEST` | Illegal state transition or business rule |
+| 400 | `CONTACT_INFO_BLOCKED` | Chat message, order notes, or listing copy carried a phone, email, UPI id, or off-platform handle |
 | 401 | `UNAUTHORIZED` | No access token |
 | 401 | `TOKEN_EXPIRED` | Access JWT expired — client must refresh |
 | 401 | `TOKEN_INVALID` | Tampered / wrong secret |
 | 401 | `REFRESH_TOKEN_INVALID` | Missing, expired, reused, or rotated refresh |
 | 401 | `INVALID_CREDENTIALS` | Login failed (generic) |
+| 402 | `PAYMENT_NOT_VERIFIED` | Razorpay does not confirm the payment the client sent for escrow |
 | 403 | `FORBIDDEN` | Wrong role |
 | 403 | `ACCOUNT_SUSPENDED` | Suspended user on a mutating route |
 | 404 | `NOT_FOUND` | Missing or not owned (IDOR-safe) |
@@ -70,7 +73,9 @@ Paginated responses:
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | Bad image MIME |
 | 429 | `RATE_LIMIT_EXCEEDED` | Too many requests |
 | 500 | `INTERNAL_ERROR` | Unexpected |
-| 503 | `NOT_READY` | `/ready` when DB down |
+| 502 | `PAYMENT_UNAVAILABLE` | Razorpay unreachable, timed out, or rejected the request |
+| 502 | `MANDI_FEED_UNAVAILABLE` | Agmarknet / data.gov.in feed unreachable or rate-limited |
+| 503 | `NOT_READY` | `/ready` when DB down, or webhook secret not configured |
 
 Error body:
 
@@ -123,6 +128,28 @@ Error body:
 
 ---
 
+## 1b. Meta — `/api/v1/`
+
+### GET /api/v1/
+
+**Description:** API name and version probe (smoke tests / Postman).  
+**Auth:** No  
+**Roles:** public
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "name": "AgriConnect API",
+    "version": "v1"
+  }
+}
+```
+
+---
+
 ## 2. Auth
 
 Cookie set on login/register/refresh:
@@ -166,8 +193,10 @@ Access token is **only** in JSON `data.accessToken`, never in localStorage.
 | password | yes | min 8, max 128 |
 | name | yes | 1–100 chars |
 | role | yes | `FARMER` or `BUYER` only (`ADMIN` rejected) |
-| phone | no | string |
-| state, district, village | no | strings |
+| phone | yes | 1–30 chars |
+| state | yes | 1–100 chars |
+| district | yes | 1–100 chars |
+| village | no | 1–100 chars when provided |
 | languagePref | no | `en` \| `hi` \| `pa` (default `en`) |
 
 #### Response — 201
@@ -392,7 +421,17 @@ Revokes **all** refresh tokens for that user after success.
 
 ## 3. Users & profiles
 
-`GET /api/v1/users/me` is an alias of `GET /api/v1/auth/me` (same payload). Frontend may use either; **prefer `/auth/me`**.
+### GET /api/v1/users/me
+
+**Description:** Full current user payload. **Alias** of `GET /api/v1/auth/me` (same JSON).  
+**Auth:** Yes  
+**Roles:** any authenticated
+
+Frontend may call either path; **prefer `/auth/me`**.
+
+#### Response — 200
+
+Same body as [GET /api/v1/auth/me](#get-apiv1authme).
 
 ---
 
@@ -673,6 +712,10 @@ Cancels pending orders; removes active listings (`removed`); revokes refresh tok
 
 If `status` is `active` with zero photos → 400 `INVALID_REQUEST` (`"Active listings require at least one photo"`). Client should create as `draft`, upload photos, then PATCH status to `active`.
 
+`description`, `variety`, and `village` are scanned for contact details → 400
+`CONTACT_INFO_BLOCKED` with `error.fields` naming the field
+(see [contact-info blocking](#contact-info-blocking-anti-disintermediation)).
+
 403 `ACCOUNT_SUSPENDED` if suspended.
 
 ---
@@ -731,6 +774,10 @@ Body: any subset of create fields except identity. Cannot change `farmerProfileI
 Cannot PATCH another farmer’s listing (404).
 
 If setting `status: "active"`, photo count must be ≥ 1.
+
+`description`, `variety`, and `village` are scanned for contact details → 400
+`CONTACT_INFO_BLOCKED` (see [contact-info blocking](#contact-info-blocking-anti-disintermediation)),
+so an edit cannot smuggle a phone number back into a published listing.
 
 #### Response — 200 — full listing.
 
@@ -839,6 +886,28 @@ If listing is `active` and this was the last photo → listing forced to `draft`
 }
 ```
 
+`payment` is `null` until the buyer starts a payment, then:
+
+```json
+{
+  "payment": {
+    "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "status": "held",
+    "provider": "razorpay",
+    "amount": "2500.00",
+    "method": "upi",
+    "methodLabel": "UPI",
+    "failureReason": null,
+    "heldAt": "2026-08-18T10:00:00.000Z",
+    "releasedAt": null,
+    "refundedAt": null
+  }
+}
+```
+
+See [Payment methods and escrow lifecycle](#payment-methods-and-escrow-lifecycle) for the
+status meanings.
+
 ---
 
 ### POST /api/v1/orders
@@ -863,6 +932,7 @@ If listing is `active` and this was the last photo → listing forced to `draft`
 #### Errors
 
 - 400 `INVALID_REQUEST` — quantity < MOQ, listing not active, buyer ordering own produce (if same email somehow — farmers cannot be buyers in V1)
+- 400 `CONTACT_INFO_BLOCKED` — `notes` carried a phone number, email, UPI id, or off-platform handle. The farmer reads these notes, so they get the same scan as chat (see [contact-info blocking](#contact-info-blocking-anti-disintermediation)). The order is **not created**
 - 409 `CONFLICT` — insufficient remaining quantity
 - 403 `ACCOUNT_SUSPENDED`
 - 404 listing not found / not active (treat inactive as 404 for buyers)
@@ -944,6 +1014,12 @@ On `cancelled` from `pending`/`accepted`/`confirmed`: restore reserved quantity 
 
 Notifies both parties (`ORDER_STATUS_CHANGED`).
 
+On `accepted` and on `confirmed`, the **buyer** also gets a second `ORDER_STATUS_CHANGED` with
+`params.variant: "payment"` asking them to pay — escrow is opt-in and only the buyer can start
+it. Skipped when the payment is already `held` / `released` / `refunded`, and for `cod`, which
+never enters escrow. `fulfilled` is **not** blocked by an unpaid order; the farmer's order page
+warns instead.
+
 ---
 
 ### GET /api/v1/orders/:id/messages
@@ -991,7 +1067,60 @@ Notifies both parties (`ORDER_STATUS_CHANGED`).
 #### Errors
 
 - 400 `INVALID_REQUEST` — order is `cancelled`
+- 400 `CONTACT_INFO_BLOCKED` — the message contains contact details (see below)
 - 404 — order not found or not a participant
+
+#### Contact-info blocking (anti-disintermediation)
+
+AgriConnect rejects text that would move the trade off the platform. The write is
+**rejected outright** — nothing is stored and no notification is sent. Parties talk using the
+[in-app voice call](#in-app-voice-calls-socketio) instead, so a phone number is never needed.
+
+The same scan runs on every free-text field the counterparty reads:
+
+| Endpoint | Fields scanned |
+|---|---|
+| `POST /api/v1/orders/:id/messages` | `body` |
+| `POST /api/v1/orders` | `notes` |
+| `POST /api/v1/listings`, `PATCH /api/v1/listings/:id` | `description`, `variety`, `village` |
+
+Outside chat the error also carries `error.fields` keyed by the offending field, so a form can
+highlight the input:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CONTACT_INFO_BLOCKED",
+    "message": "Phone numbers cannot be shared here. Buyers and farmers talk on the in-app voice call.",
+    "fields": {
+      "notes": ["Phone numbers cannot be shared here. Buyers and farmers talk on the in-app voice call."]
+    }
+  }
+}
+```
+
+Blocked content:
+
+| Category | Examples caught |
+|---|---|
+| Phone numbers | `9876543210`, `+91 98765 43210`, `9-8-7-6-5-4-3-2-1-0`, `nine eight seven…`, `nau aath saat…`, `98o6543210`, landlines like `0161 2345678` |
+| Emails | `kabir@example.com`, `kabir (at) example (dot) com` |
+| UPI IDs | `farmer99@oksbi`, `name@paytm`, `name@ybl` |
+| Off-platform contact | `whatsapp`, `telegram`, `gpay`, `phonepe`, `instagram`, `my number is…`, `call me on…` |
+
+Prices and quantities are unaffected — `1000 kg at 2500 per quintal` and
+`Rates this week: 1000 2500 3000 4000` both send normally.
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CONTACT_INFO_BLOCKED",
+    "message": "Phone numbers cannot be shared in order chat. Use the in-app voice call instead."
+  }
+}
+```
 
 ---
 
@@ -1015,6 +1144,61 @@ Notifies both parties (`ORDER_STATUS_CHANGED`).
 - **Join room:** emit `join:order` with `orderId` (ack returns `{ ok: true }`)
 - **Receive:** listen for `message:new` (same shape as REST message object)
 - **Typing (V2):** emit `typing:start` with `{ orderId }`; counterparty receives `typing` with `{ orderId, userId }`
+
+---
+
+### In-app voice calls (Socket.io)
+
+Buyers and farmers speak to each other without exchanging phone numbers. Audio is
+**peer-to-peer WebRTC**; the server only relays SDP offers/answers and ICE candidates
+and never carries or records audio. Calls are **not persisted** — there is no call log table.
+
+- **Path / auth:** same `/socket.io` connection and JWT handshake as chat
+- **Participants:** order buyer and farmer only. `ADMIN` is rejected with `FORBIDDEN`
+- **One live call per order**, tracked in memory on the API process
+- Suspended accounts and cancelled orders cannot start a call
+
+#### Client → server
+
+| Event | Payload | Ack | Notes |
+|---|---|---|---|
+| `call:invite` | `{ orderId }` | `{ ok, callId, iceServers }` or `{ ok: false, error, code }` | Rings the counterparty in the order room |
+| `call:accept` | `{ orderId, callId }` | `{ ok, iceServers }` | Callee only |
+| `call:decline` | `{ orderId, callId }` | — | Clears the call |
+| `call:end` | `{ orderId, callId }` | — | Either party |
+| `call:signal` | `{ orderId, callId, description?, candidate? }` | — | Relayed verbatim to the other party |
+
+#### Server → client
+
+| Event | Payload |
+|---|---|
+| `call:incoming` | `{ orderId, callId, from: { id, name } }` |
+| `call:accepted` | `{ orderId, callId }` |
+| `call:declined` | `{ orderId, callId, byUserId }` |
+| `call:ended` | `{ orderId, callId, byUserId, durationSeconds }` |
+| `call:signal` | `{ orderId, callId, fromUserId, description, candidate }` |
+
+`call:incoming` deliberately carries only the caller's **name** — never a phone number.
+
+#### Handshake order
+
+1. Caller emits `call:invite` and holds the returned `callId`.
+2. Callee receives `call:incoming` and emits `call:accept`.
+3. Caller receives `call:accepted`, then sends its SDP **offer** via `call:signal`.
+4. Callee answers with its SDP **answer**; both trickle ICE candidates over `call:signal`.
+5. Either side emits `call:end`; a disconnect ends the call automatically.
+
+#### Ack error codes
+
+- `VALIDATION_ERROR` — missing or malformed `orderId`
+- `CONFLICT` — a call is already in progress on this order
+- `NOT_FOUND` — unknown order, or a `callId` the caller is not part of
+- `FORBIDDEN` — admin attempted to join
+- `ACCOUNT_SUSPENDED` — suspended account attempted to call
+- `INVALID_REQUEST` — order is `cancelled`
+
+STUN/TURN servers come from `WEBRTC_ICE_SERVERS` (comma-separated) and default to
+public Google STUN. Add a TURN server for callers behind strict NATs.
 
 ---
 
@@ -1044,62 +1228,149 @@ Notifies buyer (`ORDER_STATUS_CHANGED`).
 
 ---
 
+### Payment methods and escrow lifecycle
+
+| Method | Value | Gateway | Escrow |
+|---|---|---|---|
+| UPI | `upi` | Razorpay | Yes |
+| Credit / debit card | `card` | Razorpay | Yes |
+| Net banking | `netbanking` | Razorpay | Yes |
+| Cash on delivery | `cod` | none (`provider: "cash"`) | **No** — collected in person |
+
+`PaymentStatus` flow: `pending → authorized → held → released`, with `refunded` on
+cancellation and `failed` on gateway failure.
+
+- **`held`** — money is in escrow; the farmer is not paid yet. Reached either by
+  [confirm](#post-apiv1ordersidpaymentconfirm) after Razorpay verification, or by the
+  [signed webhook](#post-apiv1paymentswebhook) — whichever arrives first; the other is a no-op.
+- **`released`** — set automatically when the order becomes `fulfilled`.
+- **`refunded`** — set automatically when the order is `cancelled` from `pending`,
+  `authorized`, or `held`. A cancelled order never keeps the buyer's money.
+- **`cod`** never reaches `held`; nothing is escrowed and confirm is rejected.
+
+One payment per order (`payments.orderId` is unique). Re-initiating replaces the method
+while the payment is still `pending`, `authorized`, or `failed`.
+
+---
+
+### GET /api/v1/payments/methods
+
+**Description:** Catalog the checkout UI renders as the method picker.
+**Auth:** Yes  
+**Roles:** any authenticated user
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": [
+    { "method": "upi", "label": "UPI", "escrow": true },
+    { "method": "card", "label": "Credit / debit card", "escrow": true },
+    { "method": "netbanking", "label": "Net banking", "escrow": true },
+    { "method": "cod", "label": "Cash on delivery", "escrow": false }
+  ]
+}
+```
+
+---
+
 ### POST /api/v1/orders/:id/payment
 
-**Description:** Buyer initiates escrow-style payment for an order.
+**Description:** Buyer initiates payment for an order using a chosen method.
 **Auth:** Yes (active account)  
 **Roles:** BUYER
 
+#### Request
+
+```json
+{ "method": "upi" }
+```
+
+`method` is required — one of `upi`, `card`, `netbanking`, `cod`. Unknown keys are rejected.
+
 #### Response — 201
 
-**Mock mode** (no Razorpay keys):
+`mode` tells the client what to do next: `cod` (nothing), `mock` (call confirm directly),
+or `razorpay` (open Checkout, then call confirm with the payment id).
+
+**Cash on delivery:**
 
 ```json
 {
   "success": true,
   "data": {
-    "paymentId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
     "orderId": "66666666-6666-4666-8666-666666666666",
-    "amount": "2500.00",
-    "currency": "INR",
+    "method": "cod",
+    "methodLabel": "Cash on delivery",
+    "provider": "cash",
     "status": "pending",
-    "mode": "mock",
-    "message": "Razorpay keys are not configured..."
-  }
-}
-```
-
-**Razorpay sandbox** (`RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` set):
-
-```json
-{
-  "success": true,
-  "data": {
-    "paymentId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-    "orderId": "66666666-6666-4666-8666-666666666666",
     "amount": "2500.00",
     "currency": "INR",
-    "status": "authorized",
-    "mode": "razorpay",
-    "razorpayOrderId": "order_xxx",
-    "keyId": "rzp_test_xxx"
+    "failureReason": null,
+    "heldAt": null,
+    "releasedAt": null,
+    "refundedAt": null,
+    "mode": "cod",
+    "message": "Cash on delivery selected. Pay the farmer when the produce arrives — escrow does not apply."
   }
 }
 ```
+
+**Mock mode** (no Razorpay keys): same shape with `"method": "upi"`, `"provider": "razorpay"`,
+`"mode": "mock"`, and a message explaining that the payment is simulated.
+
+**Razorpay sandbox** (`RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` set): same shape with
+`"status": "authorized"`, `"mode": "razorpay"`, plus `"razorpayOrderId": "order_xxx"` and
+`"keyId": "rzp_test_xxx"` for the Checkout widget.
 
 #### Errors
 
+- 400 `VALIDATION_ERROR` — missing or unknown `method`
 - 400 `INVALID_REQUEST` — order `cancelled`
-- 404
-- 502 `PAYMENT_UNAVAILABLE` — Razorpay API error
+- 403 `FORBIDDEN` — not a BUYER
+- 404 — order not found or not the buyer's order
+- 409 `CONFLICT` — payment already `held`, `released`, or `refunded`
+- 502 `PAYMENT_UNAVAILABLE` — Razorpay API error or gateway unreachable
 
 ---
 
 ### POST /api/v1/orders/:id/payment/confirm
 
-**Description:** Mark payment as **held** (mock confirm or after Razorpay checkout). On order `fulfilled`, server releases held payment to `released`.
+**Description:** Move an authorized payment into **escrow** (`held`) — called after
+Razorpay Checkout succeeds, or directly in mock mode. On order `fulfilled` the server
+releases the held payment to `released`.
 **Auth:** Yes (active account)  
 **Roles:** BUYER
+
+#### Request
+
+```json
+{ "providerRef": "pay_xxx" }
+```
+
+`providerRef` is the Razorpay **payment** id returned by Checkout.
+
+- **Razorpay live** (both keys set): `providerRef` is **required**. The server reads the
+  payment back from Razorpay and only escrows it when the gateway agrees — see below.
+- **Mock mode / COD**: body may be omitted.
+
+#### Server-side verification (live gateway only)
+
+The browser says *which* payment to check, never *whether* it succeeded. Before anything
+is escrowed the server calls Razorpay `GET /v1/payments/{providerRef}` and requires all of:
+
+| Check | Requirement |
+|---|---|
+| Status | `captured` or `authorized` |
+| Checkout | `order_id` matches the `razorpayOrderId` stored when the payment was initiated |
+| Amount | equals the order total in paise |
+| Currency | `INR` |
+
+A failed check writes `status: "failed"` with a `failureReason` and answers **402
+`PAYMENT_NOT_VERIFIED`**; the buyer must start a new payment. If Razorpay cannot be
+reached the payment is left untouched and the call answers **502** so a retry is safe.
 
 #### Response — 200
 
@@ -1108,15 +1379,81 @@ Notifies buyer (`ORDER_STATUS_CHANGED`).
   "success": true,
   "data": {
     "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "orderId": "66666666-6666-4666-8666-666666666666",
+    "method": "upi",
+    "methodLabel": "UPI",
+    "provider": "razorpay",
     "status": "held",
-    "heldAt": "2026-08-18T10:00:00.000Z"
+    "amount": "2500.00",
+    "currency": "INR",
+    "failureReason": null,
+    "heldAt": "2026-08-18T10:00:00.000Z",
+    "releasedAt": null,
+    "refundedAt": null
   }
 }
 ```
 
+Idempotent: confirming an already-`held` payment returns 200 with the same body.
+
 #### Errors
 
-- 404 — payment not found
+- 400 `VALIDATION_ERROR` — `providerRef` missing while the live gateway is configured
+- 400 `INVALID_REQUEST` — method is `cod` (collected on delivery, cannot be escrowed), or the payment `failed`
+- 402 `PAYMENT_NOT_VERIFIED` — Razorpay reports the payment as unpaid, for another checkout, or for a different amount
+- 403 `FORBIDDEN` — not a BUYER
+- 404 — order or payment not found
+- 409 `CONFLICT` — payment already `released` or `refunded`, or never started at the gateway
+- 502 `PAYMENT_UNAVAILABLE` — Razorpay unreachable while verifying
+
+---
+
+### POST /api/v1/payments/webhook
+
+**Description:** Razorpay server-to-server notification. This is the authoritative payment
+signal — it still arrives when the buyer closes the tab before the confirm call.
+**Auth:** **None** (no JWT). Trust comes from the HMAC signature over the raw body.
+**Roles:** —
+
+Configure it in Razorpay Dashboard → Settings → Webhooks with events `payment.captured`
+and `payment.failed`, and set the same secret as `RAZORPAY_WEBHOOK_SECRET`.
+
+#### Request
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+| `x-razorpay-signature` | `HMAC-SHA256(raw body, RAZORPAY_WEBHOOK_SECRET)` in hex |
+
+The body is Razorpay's standard event envelope; the server reads `event` and
+`payload.payment.entity` (including `notes.orderId`, which is set at initiation).
+
+This route is parsed with `express.raw` rather than `express.json`, because the signature
+covers the exact bytes Razorpay sent.
+
+#### Response — 200
+
+Always 200 once the signature is valid — any other status makes Razorpay retry. `handled`
+says whether our payment record actually changed.
+
+```json
+{
+  "success": true,
+  "data": { "received": true, "handled": true, "reason": "Payment held in escrow" }
+}
+```
+
+`handled: false` with a reason covers benign cases: unhandled event, payment already
+`held`/`released`/`refunded`, unknown order, or a payload that does not match the stored
+checkout and amount (same rules as the confirm table above).
+
+`payment.captured` escrows the payment; `payment.failed` marks it `failed` with the
+gateway's description.
+
+#### Errors
+
+- 401 `UNAUTHORIZED` — missing, malformed, or wrong `x-razorpay-signature`
+- 503 `NOT_READY` — `RAZORPAY_WEBHOOK_SECRET` is not configured
 
 ---
 
@@ -1263,13 +1600,47 @@ Prices are **₹/quintal** from mandi; `pricePerKg` is derived for charts.
 | `market` | no | APMC |
 | `from`, `to` | no | `YYYY-MM-DD` range |
 
-#### Response — 200 — daily averaged mandi modal/min/max with `avgModalPricePerKg`.
+#### Response — 200 — daily averaged mandi modal/min/max with `avgModalPricePerKg`. Empty `data: []` when Agmarknet has no arrivals for that crop/state (not an error).
+
+#### Errors
+
+- 502 `MANDI_FEED_UNAVAILABLE` — upstream feed unreachable (network/rate-limit). Missing arrivals are **200** with `[]`.
 
 ---
 
 ### GET /api/v1/market/mandi/states
 
-**Auth:** No — list states covered by the feed (Maharashtra, UP, Punjab, MP, Karnataka).
+**Auth:** No — list states covered by the feed (Punjab, Haryana with key, Maharashtra, UP, MP, Karnataka).
+
+### GET /api/v1/market/mandi/commodities
+
+**Description:** Crop / commodity names available for a state (for UI dropdowns). May include staple grain fallbacks when today’s snapshot is thin.  
+**Auth:** No
+
+#### Query
+
+| Param | Required | Description |
+|---|---|---|
+| `state` | no (default Punjab) | Indian state |
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": ["Wheat", "Onion", "Potato", "Tomato"],
+  "meta": { "stale": false }
+}
+```
+
+`meta.stale` may be `true` when the list is a staple fallback because the live snapshot for that state is missing or sparse.
+
+#### Errors
+
+| Status | Code | When |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Bad query |
+| 502 | `MANDI_FEED_UNAVAILABLE` | Upstream unreachable (not “empty list”) |
 
 ### GET /api/v1/market/mandi/markets
 
@@ -1412,6 +1783,7 @@ When a farmer **publishes** a listing, matching buyers receive `LISTING_PUBLISHE
       "type": "ORDER_PLACED",
       "title": "New order",
       "body": "Aman Singh ordered 100 kg of Wheat.",
+      "params": { "qty": "100", "unit": "kg", "crop": "Wheat" },
       "readAt": null,
       "relatedEntityType": "Order",
       "relatedEntityId": "66666666-6666-4666-8666-666666666666",
@@ -1421,6 +1793,26 @@ When a farmer **publishes** a listing, matching buyers receive `LISTING_PUBLISHE
   "pagination": { "total": 1, "page": 1, "limit": 20, "totalPages": 1 }
 }
 ```
+
+#### `params` — localizable copy
+
+`title` and `body` are stored in English at creation time. `params` carries the values behind
+that sentence so the client can rebuild it in the reader's language
+(`frontend/src/features/notifications/notification-copy.ts`). It is `null` for rows created
+before the `notification_params` migration, and clients must fall back to `title` / `body`
+whenever it is `null` or the `type` is unknown. Values are always flat strings or numbers.
+
+| `type` | `params` | Notes |
+|---|---|---|
+| `ORDER_PLACED` | `qty`, `unit`, `crop` | — |
+| `ORDER_STATUS_CHANGED` | `variant: "status"`, `from`, `to` | `from` / `to` are `OrderStatus` values |
+| `ORDER_STATUS_CHANGED` | `variant: "logistics"`, `status` | `status` is a `LogisticsStatus` value |
+| `ORDER_STATUS_CHANGED` | `variant: "payment"`, `amount` | Buyer only: the order was accepted or confirmed and still has no escrow. `amount` is the order total as a money string |
+| `MESSAGE_RECEIVED` | `preview` | Buyer/farmer text, rendered verbatim |
+| `LISTING_PUBLISHED` | `crop`, `district`, `state`, `price`, `unit`, `farmer` | — |
+| `LISTING_EXPIRING` | `crop`, `days` | — |
+| `ACCOUNT_SUSPENDED` | `reason` (optional) | Admin-written text, rendered verbatim |
+| `LISTING_MODERATED` | `variant: "removed" \| "reinstated"`, `reason` (optional) | — |
 
 ---
 
@@ -1513,7 +1905,7 @@ When a farmer **publishes** a listing, matching buyers receive `LISTING_PUBLISHE
 
 **Description:** Ask Kisan (role-aware Gemini chatbot).
 **Auth:** Yes  
-**Rate limit:** 20 requests / minute
+**Rate limit:** 60 requests / minute (shared across `/assistant/*`, since one chat turn uses `status` + `query` + `speak`)
 
 #### Request
 
@@ -1525,7 +1917,7 @@ When a farmer **publishes** a listing, matching buyers receive `LISTING_PUBLISHE
 }
 ```
 
-`message` max **800** characters. Each `history` turn max **4000** characters (longer turns are clipped); up to **4** prior turns. Optional `language`: `en` | `hi` | `pa` — Kisan replies in that language (defaults to English).
+`message` max **800** characters. Each `history` turn max **4000** characters (longer turns are clipped); up to **4** prior turns. Optional `language`: `en` \| `hi` \| `pa` \| `bn` \| `ta` \| `te` \| `mr` \| `gu` \| `kn` \| `ml` \| `or` \| `as` \| `ur` — Kisan replies politely in that language's native script (defaults to English). If Gemini answers in the wrong script, the API rewrites once before returning. The chat widget reads the full reply via `POST /assistant/speak`.
 
 #### Response — 200
 
@@ -1538,6 +1930,38 @@ When a farmer **publishes** a listing, matching buyers receive `LISTING_PUBLISHE
   }
 }
 ```
+
+---
+
+### POST /api/v1/assistant/speak
+
+**Description:** Synthesize the Kisan reply as spoken audio in the selected language (Gemini TTS). Returns a complete WAV file so the browser is not limited to English system voices or short cut-off utterances.
+**Auth:** Yes (active account)  
+**Rate limit:** 60 requests / minute (shared with `/assistant/*`). Identical `text` + `language` is served from a short-lived audio cache, so re-tapping read-aloud does not re-synthesize.
+
+#### Request
+
+```json
+{
+  "text": "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ਜੀ, ਕਿਰਪਾ ਕਰਕੇ ਲਿਸਟ ਬਣਾਓ।",
+  "language": "pa"
+}
+```
+
+`text` max **2500** characters. Optional `language`: same 13 locales as `/query` (default English).
+
+#### Response — 200
+
+`Content-Type: audio/wav` (raw WAV bytes, not the JSON envelope).
+
+| HTTP | Code | When |
+|---|---|---|
+| **200** | — | WAV body |
+| **400** | `VALIDATION_ERROR` | Empty / oversized text, invalid language |
+| **401** | `UNAUTHORIZED` / `TOKEN_*` | Missing or bad access token |
+| **403** | `ACCOUNT_SUSPENDED` | Suspended account |
+| **429** | `RATE_LIMIT_EXCEEDED` | Assistant limiter |
+| **502** | `ASSISTANT_UNAVAILABLE` | Missing `GEMINI_API_KEY`, TTS model error, or empty audio |
 
 ---
 
@@ -1646,11 +2070,9 @@ Query: `page`, `limit`, `actorId`, `action`
 
 ### GET /api/v1/admin/reports.csv
 
-**Optional V1.** If unimplemented, frontend must not depend on it.
+**Not implemented.** Calling this path returns **404 `NOT_FOUND`**.
 
-`Content-Type: text/csv`  
-Auth ADMIN  
-Same metrics as analytics, flattened.
+Do **not** depend on CSV export in the frontend. Use `GET /api/v1/admin/analytics` instead. Kept here only so teammates do not invent a client against a missing route.
 
 ---
 
@@ -1676,8 +2098,11 @@ Use these literals in UI development before the API exists.
 - Supabase REST `/rest/v1/*`
 - Supabase Auth
 - Direct Storage upload with service role
-- Any `/api/v2` or Socket.io events (V2)
-- ML service URLs (V3)
+- data.gov.in / Agmarknet URLs (use `/api/v1/market/mandi/*`)
+- Google Gemini URLs (use `/api/v1/assistant/*`)
+- Capstone ML service URLs (not shipped)
+
+Socket.io for **order chat** (`join:order`, `message:new`, typing) and **in-app voice calls** (`call:*`) **is** in scope — see [§5 Orders](#5-orders) and [API_ENDPOINTS.md](./API_ENDPOINTS.md).
 
 ---
 
@@ -1686,3 +2111,21 @@ Use these literals in UI development before the API exists.
 `CORS_ORIGINS` includes the Next.js origin (dev: `http://localhost:3000`).  
 `credentials: true`.  
 Refresh cookie `Path=/api/v1/auth` so it is sent to refresh/logout only.
+
+---
+
+## 12. Outbound integrations (server-only)
+
+The browser never calls these. Express owns credentials and retries.
+
+| Integration | Env | Product surface | Notes |
+|---|---|---|---|
+| **data.gov.in / Agmarknet** | `DATA_GOV_IN_API_KEY` (optional for some states) | `GET /api/v1/market/mandi/*` | Live wholesale prices; empty day → `200 []`; upstream failure → `502 MANDI_FEED_UNAVAILABLE` |
+| **Google Gemini** | `GEMINI_API_KEY`, `GEMINI_MODEL`, optional `GEMINI_TTS_MODEL`, `GEMINI_THINKING_LEVEL` | `GET/POST /api/v1/assistant/*` | Kisan advisory + spoken replies; status reports offline when key missing |
+| **Supabase PostgreSQL** | `DATABASE_URL`, `DIRECT_URL` | All authenticated product data via Prisma | Not a public REST API for the app |
+| **Supabase Storage** | `SUPABASE_*` service role | `POST /listings/:id/photos` | Service role stays on the server |
+| **SMTP / console mail** | SMTP env or console | Password reset / notification delivery | Dev may log instead of send |
+| **Razorpay** (optional) | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | `POST /orders/:id/payment*`, inbound `POST /payments/webhook` | UPI / card / net banking. Creates the order, then **reads the payment back** before escrowing it; signed webhook is authoritative. Mock hold/confirm without keys; COD never calls the gateway |
+| **STUN (public Google)** | `WEBRTC_ICE_SERVERS` (optional override) | Socket.io `call:*` events | NAT discovery for in-app voice calls; media is peer-to-peer, never proxied by us |
+
+Full inventory of product routes: [API_ENDPOINTS.md](./API_ENDPOINTS.md).

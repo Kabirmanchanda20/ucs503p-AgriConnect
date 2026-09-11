@@ -55,6 +55,12 @@ export function createApp(): express.Express {
     }),
   );
   app.use(cookieParser());
+  // Razorpay signs the exact bytes it sends, so the webhook must reach the handler
+  // unparsed. This has to sit above express.json to win the route.
+  app.use(
+    '/api/v1/payments/webhook',
+    express.raw({ type: 'application/json', limit: '64kb' }),
+  );
   app.use(express.json({ limit: '10kb' }));
   app.use(express.urlencoded({ extended: true, limit: '10kb' }));
   app.use(pinoHttp({ logger }));
@@ -94,9 +100,10 @@ export function createApp(): express.Express {
     },
   });
 
+  // A single Kisan turn costs /status + /query + /speak, so the budget covers ~20 questions.
   const assistantLimiter = rateLimit({
     windowMs: 60_000,
-    limit: 20,
+    limit: 60,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     skip: skipInTests,

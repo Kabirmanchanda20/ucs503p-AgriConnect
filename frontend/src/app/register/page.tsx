@@ -28,9 +28,9 @@ function RegisterForm() {
         password: String(form.get('password') ?? ''),
         name: String(form.get('name') ?? ''),
         role: String(form.get('role')) === 'BUYER' ? 'BUYER' : 'FARMER',
-        phone: String(form.get('phone') || '') || undefined,
-        state: String(form.get('state') || '') || undefined,
-        district: String(form.get('district') || '') || undefined,
+        phone: String(form.get('phone') ?? ''),
+        state: String(form.get('state') ?? ''),
+        district: String(form.get('district') ?? ''),
         village: String(form.get('village') || '') || undefined,
         languagePref: locale,
       });
@@ -64,10 +64,10 @@ function RegisterForm() {
           <Input name="password" type="password" required minLength={8} />
         </Field>
         <Field label={t('register.phone')}>
-          <Input name="phone" />
+          <Input name="phone" type="tel" required minLength={1} maxLength={30} />
         </Field>
         <Field label={t('register.state')}>
-          <Select name="state" defaultValue="">
+          <Select name="state" defaultValue="" required>
             <option value="">{t('register.selectState')}</option>
             {INDIAN_STATES.map((state) => (
               <option key={state} value={state}>
@@ -77,10 +77,10 @@ function RegisterForm() {
           </Select>
         </Field>
         <Field label={t('register.district')}>
-          <Input name="district" />
+          <Input name="district" required minLength={1} maxLength={100} />
         </Field>
         <Field label={t('register.village')}>
-          <Input name="village" />
+          <Input name="village" maxLength={100} />
         </Field>
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? t('register.submitting') : t('register.submit')}

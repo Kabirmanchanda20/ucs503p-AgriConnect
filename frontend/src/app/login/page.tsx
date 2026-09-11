@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { dashboardPath, useAuth } from '@/features/auth/auth-context';
 import { GuestOnly } from '@/features/auth/guards';
 import { useLocale } from '@/features/i18n/locale-context';
@@ -15,10 +15,16 @@ function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
 
-  async function onSubmit(form: FormData) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pendingRef.current) return;
+    pendingRef.current = true;
     setError('');
     setPending(true);
+
+    const form = new FormData(event.currentTarget);
     try {
       const user = await login(
         String(form.get('email') ?? ''),
@@ -27,7 +33,7 @@ function LoginForm() {
       router.replace(dashboardPath(user.role));
     } catch (cause) {
       setError(getErrorMessage(cause, t('login.fail')));
-    } finally {
+      pendingRef.current = false;
       setPending(false);
     }
   }
@@ -48,7 +54,7 @@ function LoginForm() {
           {t('login.password')}: <code className="text-xs">Demo@AgriConnect1</code>
         </p>
       </Card>
-      <form className="mt-6 space-y-4" action={onSubmit}>
+      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
         {error ? <Alert>{error}</Alert> : null}
         <Field label={t('login.email')}>
           <Input name="email" type="email" required autoComplete="email" />

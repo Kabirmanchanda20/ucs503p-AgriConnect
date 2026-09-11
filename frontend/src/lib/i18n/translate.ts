@@ -43,11 +43,7 @@ export function translate(
   return text;
 }
 
-/** Unit-test helper: every locale must define the same leaf keys as English. */
-export function collectMessageKeys(
-  tree: Record<string, unknown>,
-  prefix = '',
-): string[] {
+export function collectMessageKeys(tree: Record<string, unknown>, prefix = ''): string[] {
   const keys: string[] = [];
   for (const [key, value] of Object.entries(tree)) {
     const path = prefix ? `${prefix}.${key}` : key;
