@@ -113,6 +113,7 @@ sendPaginated(response, rows, pagination);
 - Refresh: opaque token in HttpOnly cookie, `Path=/api/v1/auth`, 7 days, rotation + reuse detection.
 - CORS: `CORS_ORIGINS` must include `http://localhost:3000` with `credentials: true`.
 - Rate limits (`app.ts`): 100 req/min on `/api`; 10 **failed** req/min on `/api/v1/auth`; 60 req/min on `/api/v1/assistant` (one Kisan turn spends `status` + `query` + `speak`).
+- **Grounded Kisan** (`modules/assistant/`): `queryAssistant` classifies → legacy `queryAssistantChat` \| `answerGrounded` (knowledge pack + top-k) \| escalate to `AdvisoryEscalation`. Seeded `AGRONOMIST` via `prisma/seed.ts`. Queue: `GET/PATCH /api/v1/agronomist/escalations`. Offline eval: `npm run eval:grounded`.
 
 Suspended users can refresh and read `/auth/me`. They cannot hit routes with `requireActiveAccount`.
 

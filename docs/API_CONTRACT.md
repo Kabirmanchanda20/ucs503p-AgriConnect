@@ -1903,7 +1903,15 @@ whenever it is `null` or the `type` is unknown. Values are always flat strings o
 
 ### POST /api/v1/assistant/query
 
-**Description:** Ask Kisan (role-aware Gemini chatbot).
+**Description:** Ask Kisan. Same widget/endpoint as before — Capstone **Grounded Kisan** upgrades this path in place (not a second chatbot). Routing:
+
+| Route | When | Behaviour |
+|---|---|---|
+| **legacy chat** | Marketplace / app how-to | Existing Gemini chat (`source: gemini` \| `local`, `mode: chat`) |
+| **grounded** | Crop cards, PM-Kisan / PMFBY / MSP, weather rules | Retrieve top-k curated chunks, answer with citations (`source: grounded` \| `local`, `mode: grounded`) |
+| **escalate** | Pesticide dose / medical-adjacent, or low retrieval confidence | Creates `AdvisoryEscalation`, notifies seeded `AGRONOMIST` (`source: escalated`, `mode: escalated`) |
+| **refuse** | Grounded intent but empty retrieval | No invented answer (`source: refused`, `mode: refused`) |
+
 **Auth:** Yes  
 **Rate limit:** 60 requests / minute (shared across `/assistant/*`, since one chat turn uses `status` + `query` + `speak`)
 
@@ -1911,25 +1919,60 @@ whenever it is `null` or the `type` is unknown. Values are always flat strings o
 
 ```json
 {
-  "message": "How do I list wheat?",
+  "message": "What is PM-Kisan?",
   "history": [{ "role": "user", "content": "Hi" }, { "role": "assistant", "content": "Namaste!" }],
   "language": "hi"
 }
 ```
 
-`message` max **800** characters. Each `history` turn max **4000** characters (longer turns are clipped); up to **4** prior turns. Optional `language`: `en` \| `hi` \| `pa` \| `bn` \| `ta` \| `te` \| `mr` \| `gu` \| `kn` \| `ml` \| `or` \| `as` \| `ur` — Kisan replies politely in that language's native script (defaults to English). If Gemini answers in the wrong script, the API rewrites once before returning. The chat widget reads the full reply via `POST /assistant/speak`.
+`message` max **800** characters. Each `history` turn max **4000** characters (longer turns are clipped); up to **4** prior turns. Optional `language`: `en` \| `hi` \| `pa` \| `bn` \| `ta` \| `te` \| `mr` \| `gu` \| `kn` \| `ml` \| `or` \| `as` \| `ur` — Kisan replies politely in that language's native script (defaults to English). If Gemini answers in the wrong script, the API rewrites once before returning. The chat widget reads the full reply via `POST /assistant/speak`. Optional `OPENWEATHER_API_KEY` injects a Delhi-area live sample into weather evidence; curated weather rules still apply without it.
 
-#### Response — 200
+#### Response — 200 (legacy)
 
 ```json
 {
   "success": true,
   "data": {
     "reply": "Create a draft listing, add photos, then publish.",
-    "source": "gemini"
+    "source": "gemini",
+    "mode": "chat"
   }
 }
 ```
+
+#### Response — 200 (grounded)
+
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "PM-Kisan pays eligible landholding farmers in installments [1]…",
+    "source": "grounded",
+    "mode": "grounded",
+    "citations": [
+      { "id": "scheme-pm-kisan", "title": "PM-Kisan — what it is", "source": "PM-Kisan one-pager (curated summary)" }
+    ]
+  }
+}
+```
+
+#### Response — 200 (escalated)
+
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "This needs a human agronomist…",
+    "source": "escalated",
+    "mode": "escalated",
+    "escalated": true,
+    "escalationId": "uuid",
+    "escalationReason": "pesticide_dose"
+  }
+}
+```
+
+`source` / `mode` also include `refused` when retrieval is empty. Eval harness: `npm run eval:grounded` in `backend/` (~30 labelled questions; reports correct-escalation rate).
 
 ---
 
@@ -1962,6 +2005,73 @@ whenever it is `null` or the `type` is unknown. Values are always flat strings o
 | **403** | `ACCOUNT_SUSPENDED` | Suspended account |
 | **429** | `RATE_LIMIT_EXCEEDED` | Assistant limiter |
 | **502** | `ASSISTANT_UNAVAILABLE` | Missing `GEMINI_API_KEY`, TTS model error, or empty audio |
+
+---
+
+### GET /api/v1/weather
+
+**Description:** Live weather + **5-day** outlook for the signed-in user's profile location (`district` / `state` / `village` geocoded via OpenWeather). Falls back to Delhi only if the profile has no geocodable place.
+**Auth:** Yes  
+**Query:** optional `language` (same 13 locales as Kisan)
+
+#### Response — 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "place": "Ludhiana",
+    "profilePlace": "Ludhiana, Punjab",
+    "description": "overcast clouds",
+    "tempC": 31.2,
+    "humidity": 58,
+    "rainOutlook": "Rain likely in the next 24–48 hours…",
+    "alertLine": "Live weather near Ludhiana…",
+    "days": [
+      { "date": "2026-09-12", "tempMinC": 24.1, "tempMaxC": 33.0, "description": "light rain", "rainMm": 1.7 }
+    ],
+    "source": "OpenWeatherMap (profile location)",
+    "fetchedAt": "2026-09-11T08:00:00.000Z"
+  }
+}
+```
+
+| HTTP | Code | When |
+|---|---|---|
+| **200** | — | Snapshot |
+| **401** | `UNAUTHORIZED` | No token |
+| **503** | `WEATHER_UNAVAILABLE` | Missing `OPENWEATHER_API_KEY` or upstream failure |
+
+---
+
+## 7b. Agronomist (Grounded Kisan escalations)
+
+
+Human experts with role **`AGRONOMIST`** (seeded only — not available at self-registration). Admins may also call these routes.
+
+### GET /api/v1/agronomist/escalations
+
+**Auth:** Yes · Roles: `AGRONOMIST`, `ADMIN`  
+**Query:** optional `status` = `pending` \| `claimed` \| `resolved`  
+**200:** array of escalations (farmer contact fields included for follow-up).
+
+### PATCH /api/v1/agronomist/escalations/:id
+
+**Auth:** Yes · Roles: `AGRONOMIST`, `ADMIN`  
+
+```json
+{ "status": "resolved", "resolution": "Confirm with KVK; do not spray before rain." }
+```
+
+`resolved` requires `resolution`. Sets `assignedToId` to the caller. Farmer gets `ADVISORY_ESCALATION` notification on resolve.
+
+| HTTP | Code | When |
+|---|---|---|
+| **200** | — | Updated row |
+| **400** | `VALIDATION_ERROR` | Missing resolution on resolve |
+| **401** | `UNAUTHORIZED` | No token |
+| **403** | `FORBIDDEN` | Not agronomist/admin |
+| **404** | `NOT_FOUND` | Unknown id |
 
 ---
 

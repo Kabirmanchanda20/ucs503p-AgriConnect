@@ -37,6 +37,14 @@ export const gu = withEnglishFallback({
   shell: {
     signedIn: '{email} તરીકે સાઇન ઇન, હોમ {path}',
   },
+  weather: {
+    aria: 'પ્રાદેશિક હવામાન આગાહી',
+    unavailable: 'હવામાન ઉપલબ્ધ નથી',
+    regionalNote: 'ખેતર અલગ હોય તો સ્થાનિક IMDથી ખાતરી કરો.',
+    locationFromProfile: 'તમારી પ્રોફાઇલ મુજબ: {place}',
+    fiveDayTitle: 'આગામી ૫ દિવસ',
+    closeDetails: 'બંધ',
+  },
   rating: {
     none: 'હજી કોઈ રેટિંગ નથી',
     outOfFive: '5 માંથી',

@@ -21,6 +21,7 @@ export const queryAssistantController = asyncHandler(async (request, response) =
       message: body.message,
       history: body.history,
       role: request.user.role,
+      userId: request.user.id,
       language: body.language,
     }),
   );

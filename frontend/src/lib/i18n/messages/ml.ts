@@ -38,6 +38,14 @@ export const ml = withEnglishFallback({
   shell: {
     signedIn: '{email} ആയി സൈൻ ഇൻ ചെയ്തു, ഹോം {path}',
   },
+  weather: {
+    aria: 'പ്രാദേശിക കാലാവസ്ഥാ പ്രവചനം',
+    unavailable: 'കാലാവസ്ഥ ലഭ്യമല്ല',
+    regionalNote: 'വയൽ വ്യത്യസ്തമെങ്കിൽ പ്രാദേശിക IMD കൊണ്ട് ഉറപ്പാക്കുക.',
+    locationFromProfile: 'നിങ്ങളുടെ പ്രൊഫൈൽ അനുസരിച്ച്: {place}',
+    fiveDayTitle: 'അടുത്ത 5 ദിവസം',
+    closeDetails: 'അടയ്ക്കുക',
+  },
   rating: {
     none: 'ഇതുവരെ റേറ്റിംഗുകളില്ല',
     outOfFive: '5-ൽ',

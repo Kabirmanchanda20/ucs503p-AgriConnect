@@ -8,9 +8,20 @@ export interface AssistantTurn {
   content: string;
 }
 
+export interface AssistantCitation {
+  id: string;
+  title: string;
+  source: string;
+}
+
 export interface AssistantReply {
   reply: string;
-  source: 'gemini' | 'local';
+  source: 'gemini' | 'local' | 'grounded' | 'escalated' | 'refused';
+  mode?: 'chat' | 'grounded' | 'escalated' | 'refused';
+  citations?: AssistantCitation[];
+  escalated?: boolean;
+  escalationId?: string;
+  escalationReason?: string;
 }
 
 export interface AssistantStatus {

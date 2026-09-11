@@ -38,6 +38,14 @@ export const assamese = withEnglishFallback({
   shell: {
     signedIn: '{email} হিচাপে ছাইন ইন, হ’ম {path}',
   },
+  weather: {
+    aria: 'আঞ্চলিক বতৰৰ পূৰ্বাভাস',
+    unavailable: 'বতৰ উপলব্ধ নহয়',
+    regionalNote: 'খেতি বেলেগ হলে স্থানীয় IMDৰে নিশ্চিত কৰক।',
+    locationFromProfile: 'আপোনাৰ প্ৰফাইল অনুসৰি: {place}',
+    fiveDayTitle: 'পৰৱৰ্তী ৫ দিন',
+    closeDetails: 'বন্ধ',
+  },
   rating: {
     none: 'এতিয়ালৈকে কোনো ৰেটিং নাই',
     outOfFive: '5ৰ ভিতৰত',

@@ -38,6 +38,14 @@ export const or = withEnglishFallback({
   shell: {
     signedIn: '{email} ଭାବେ ସାଇନ୍ ଇନ୍, ହୋମ୍ {path}',
   },
+  weather: {
+    aria: 'ଆଞ୍ଚଳିକ ପାଣିପାଗ ପୂର୍ବାନୁମାନ',
+    unavailable: 'ପାଣିପାଗ ନାହିଁ',
+    regionalNote: 'ଖେତ ଅଲଗା ହେଲେ ସ୍ଥାନୀୟ IMD ରେ ନିଶ୍ଚିତ କରନ୍ତୁ।',
+    locationFromProfile: 'ଆପଣଙ୍କ ପ୍ରୋଫାଇଲ ଅନୁଯାୟୀ: {place}',
+    fiveDayTitle: 'ପରବର୍ତ୍ତୀ ୫ ଦିନ',
+    closeDetails: 'ବନ୍ଦ',
+  },
   rating: {
     none: 'ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ରେଟିଂ ନାହିଁ',
     outOfFive: '5 ମଧ୍ୟରୁ',

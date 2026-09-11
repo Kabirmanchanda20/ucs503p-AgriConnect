@@ -90,7 +90,7 @@ stateDiagram-v2
 7. Buyers pay through AgriConnect (UPI / card / net banking / cash on delivery). Gateway payments only reach **escrow** after the server reads the payment back from Razorpay or receives the signed webhook — money is released to the farmer on `fulfilled` and refunded on cancellation.
 8. After **fulfilled**, buyer and farmer can rate each other; averages update on profiles.
 9. **Order-scoped chat** uses REST + Socket.io (`join:order`, `message:new`) on the order detail page. Chat rejects phone numbers, emails, and UPI IDs — as do order notes and listing copy, the other places the counterparty reads — and the **in-app voice call** (`call:*` events, peer-to-peer WebRTC) is how the two parties talk, so contact details never need to be shared and the trade stays on-platform.
-10. Farmers can open the **Kisan AI** widget (Gemini when `GEMINI_API_KEY` is set).
+10. Farmers can open the **Kisan AI** widget (Gemini when `GEMINI_API_KEY` is set). Capstone Grounded Kisan upgrades the same chat: curated crop/scheme/weather answers with citations, refuse-when-empty, and escalation to a seeded agronomist for high-stakes asks.
 11. In-app notifications fire on order and moderation events; the header badge polls and refreshes on mark-read.
 
 **Hard rules**
@@ -135,7 +135,7 @@ What V1 is **not**: a payment processor, e-NAM replacement, logistics fleet, cha
 | Buyer alerts (V2) | Crop/state alerts; `LISTING_PUBLISHED` notifications on new listings                                                                           |
 | Logistics (V2)    | Order logistics checkpoints; farmer updates on order detail                                                                                    |
 | Payments (V2)     | Methods: UPI / card / net banking / cash on delivery. Escrow hold → release on fulfilled, auto-refund on cancel. Every hold is **verified server-side** with Razorpay (read-back on confirm + signed `payment.captured` webhook), so a browser cannot mark an order paid; Razorpay sandbox optional, simulated without keys |
-| Assistant         | Kisan AI widget (`GEMINI_API_KEY` optional); replies and full read-aloud follow the selected UI language, in a polite tone |
+| Assistant         | Kisan AI widget (`GEMINI_API_KEY` optional); marketplace chat unchanged; crop/scheme/weather uses Grounded RAG with citations; pesticide/medical asks escalate to seeded `AGRONOMIST`; optional `OPENWEATHER_API_KEY` |
 | i18n (V2)         | Every screen in 13 Indian languages (en, hi, pa, bn, ta, te, mr, gu, kn, ml, or, as, ur); language switcher; profile `languagePref` sync; served `<html lang>` and page metadata follow a locale cookie; dates, money, and quantities format per locale; server-written notifications and admin logs render in the reader's language from structured `params`; Urdu renders right-to-left (`dir` on `<html>`, logical spacing utilities) and every script ships its own Noto webfont; enforced by Vitest parity, render, width-budget, and hardcoded-string tests in CI |
 | Notifications     | List, mark read, mark all read; header unread badge                                                                                            |
 | Reports           | Farmer: listings / qty sold / revenue (fulfilled). Buyer: orders / spend (fulfilled)                                                           |
@@ -248,7 +248,7 @@ npm run prisma:deploy:pooler
 
 API: `http://localhost:5001`. Seeded admin is `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`.
 
-Optional: set `GEMINI_API_KEY` for live Kisan AI replies and spoken answers. Pin `GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview` so read-aloud does not probe slower TTS models. `GEMINI_THINKING_LEVEL` (`minimal` \| `low` \| `medium` \| `high`, default `minimal`) caps how much the model reasons before answering — Gemini 3 bills thinking tokens against the reply budget, so `minimal` keeps answers fast and complete. Raise it to `low` for more reasoning per answer. Spoken readout clips long replies (~280 chars) so voice stays quick while the full text remains on screen.
+Optional: set `GEMINI_API_KEY` for live Kisan AI replies and spoken answers. Pin `GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview` so read-aloud does not probe slower TTS models. `GEMINI_THINKING_LEVEL` (`minimal` \| `low` \| `medium` \| `high`, default `minimal`) caps how much the model reasons before answering — Gemini 3 bills thinking tokens against the reply budget, so `minimal` keeps answers fast and complete. Raise it to `low` for more reasoning per answer. Spoken readout clips long replies (~280 chars) so voice stays quick while the full text remains on screen. Seeded agronomist (not self-registerable): `AGRONOMIST_SEED_EMAIL` / `AGRONOMIST_SEED_PASSWORD`. Optional `OPENWEATHER_API_KEY` for live weather snippets beside curated rules. Offline grounded eval: `cd backend && npm run eval:grounded`.
 
 Optional payments: set `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` for sandbox checkout. With keys present, `POST /orders/:id/payment/confirm` reads the payment back from Razorpay and refuses to escrow anything the gateway does not confirm. Add `RAZORPAY_WEBHOOK_SECRET` and point a Razorpay webhook (`payment.captured`, `payment.failed`) at `POST /api/v1/payments/webhook` so a hold still lands when the buyer closes the tab mid-checkout. Without keys, payments run in simulated mode and cash on delivery works either way.
 
@@ -316,7 +316,9 @@ npx tsx scripts/integration-crud-check.ts
 | GET                   | `/api/v1/payments/methods`                               | Payment method picker catalog        |
 | POST                  | `/api/v1/payments/webhook`                               | Razorpay only; HMAC-signed, no JWT   |
 | POST/GET              | `/api/v1/orders/:id/reviews`                             | Ratings after fulfilled              |
-| GET/POST              | `/api/v1/assistant/status`, `/assistant/query`           | Kisan AI (farmer)                    |
+| GET/POST              | `/api/v1/assistant/status`, `/assistant/query`           | Kisan AI (legacy + grounded)         |
+| GET                   | `/api/v1/weather`                                        | Header live weather + rain outlook   |
+| GET/PATCH             | `/api/v1/agronomist/escalations`                         | Agronomist advisory queue            |
 | GET/PATCH/POST        | `/api/v1/notifications`                                  | Logged-in                            |
 | GET                   | `/api/v1/reports/me`                                     | Farmer or buyer                      |
 | GET/PATCH             | `/api/v1/admin/*`                                        | Admin only                           |

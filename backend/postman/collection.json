@@ -205,11 +205,29 @@
       "item": [
         { "name": "Status", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/assistant/status" } },
         {
-          "name": "Query",
+          "name": "Query (marketplace — legacy chat)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\"message\":\"How do I list wheat?\",\"history\":[],\"language\":\"pa\"}" },
+            "url": "{{baseUrl}}/api/v1/assistant/query"
+          }
+        },
+        {
+          "name": "Query (grounded — PM-Kisan)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"message\":\"What is PM-Kisan and how do I register?\",\"history\":[],\"language\":\"en\"}" },
+            "url": "{{baseUrl}}/api/v1/assistant/query"
+          }
+        },
+        {
+          "name": "Query (escalate — pesticide dose)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"message\":\"How many ml chlorpyrifos per litre for cotton?\",\"history\":[],\"language\":\"en\"}" },
             "url": "{{baseUrl}}/api/v1/assistant/query"
           }
         },
@@ -220,6 +238,33 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\"text\":\"Sat sri akal ji, kirpa karke list banao.\",\"language\":\"pa\"}" },
             "url": "{{baseUrl}}/api/v1/assistant/speak"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agronomist",
+      "item": [
+        {
+          "name": "List escalations",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/agronomist/escalations" }
+        },
+        {
+          "name": "Claim escalation",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"status\":\"claimed\"}" },
+            "url": "{{baseUrl}}/api/v1/agronomist/escalations/{{escalationId}}"
+          }
+        },
+        {
+          "name": "Resolve escalation",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"status\":\"resolved\",\"resolution\":\"Use label rate after KVK confirmation; do not spray before rain.\"}" },
+            "url": "{{baseUrl}}/api/v1/agronomist/escalations/{{escalationId}}"
           }
         }
       ]

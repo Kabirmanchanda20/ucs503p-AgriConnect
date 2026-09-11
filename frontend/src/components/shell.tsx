@@ -9,6 +9,7 @@ import { dashboardPath, useAuth } from '@/features/auth/auth-context';
 import { useLocale } from '@/features/i18n/locale-context';
 import { LanguageSwitcher } from '@/features/i18n/language-switcher';
 import { FarmerChatWidget } from '@/features/assistant/FarmerChatWidget';
+import { HeaderWeather } from '@/features/weather/HeaderWeather';
 import { Logo } from '@/components/logo';
 import { cx } from '@/components/ui';
 import type { MessageKey } from '@/lib/i18n';
@@ -113,6 +114,14 @@ function roleNav(
       </>
     );
   }
+  if (role === 'AGRONOMIST') {
+    return (
+      <>
+        <NavLink href="/notifications">{t('nav.notifications')}</NavLink>
+        <NavLink href="/marketplace">{t('nav.browse')}</NavLink>
+      </>
+    );
+  }
   return (
     <>
       <NavLink href="/marketplace">{t('nav.browseProduce')}</NavLink>
@@ -164,6 +173,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <HeaderWeather />
             <LanguageSwitcher />
             {!user ? (
               <>

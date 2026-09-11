@@ -37,6 +37,14 @@ export const kn = withEnglishFallback({
   shell: {
     signedIn: '{email} ಆಗಿ ಸೈನ್ ಇನ್ ಆಗಿದೆ, ಮುಖಪುಟ {path}',
   },
+  weather: {
+    aria: 'ಪ್ರಾದೇಶಿಕ ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ',
+    unavailable: 'ಹವಾಮಾನ ಲಭ್ಯವಿಲ್ಲ',
+    regionalNote: 'ಹೊಲ ಬೇರೆಯಾದರೆ ಸ್ಥಳೀಯ IMD ಮೂಲಕ ದೃಢಪಡಿಸಿ.',
+    locationFromProfile: 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪ್ರಕಾರ: {place}',
+    fiveDayTitle: 'ಮುಂದಿನ 5 ದಿನಗಳು',
+    closeDetails: 'ಮುಚ್ಚಿ',
+  },
   rating: {
     none: 'ಇನ್ನೂ ರೇಟಿಂಗ್ ಇಲ್ಲ',
     outOfFive: '5 ರಲ್ಲಿ',

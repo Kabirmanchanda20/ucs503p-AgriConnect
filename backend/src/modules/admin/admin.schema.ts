@@ -7,7 +7,7 @@ const pagination = {
 
 export const adminUsersQuerySchema = z
   .object({
-    role: z.enum(['FARMER', 'BUYER', 'ADMIN']).optional(),
+    role: z.enum(['FARMER', 'BUYER', 'ADMIN', 'AGRONOMIST']).optional(),
     q: z.string().trim().min(1).max(100).optional(),
     suspended: z
       .enum(['true', 'false'])

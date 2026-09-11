@@ -35,6 +35,14 @@ export const en = {
   shell: {
     signedIn: 'Signed in as {email}, home {path}',
   },
+  weather: {
+    aria: 'Regional weather forecast',
+    unavailable: 'Weather offline',
+    regionalNote: 'Confirm with local IMD if your field differs.',
+    locationFromProfile: 'Based on your profile: {place}',
+    fiveDayTitle: 'Next 5 days',
+    closeDetails: 'Close',
+  },
   rating: {
     none: 'No ratings yet',
     outOfFive: 'out of 5',

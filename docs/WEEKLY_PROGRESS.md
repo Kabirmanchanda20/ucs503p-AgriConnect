@@ -8,7 +8,7 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 | **Course** | UCS503P |
 | **Current week** | **Week 3** — Mon 7 Sep → Mon 14 Sep 2026 |
 | **Updated** | Fri 11 Sep 2026 |
-| **Status** | **Green** — Prototype slice verified locally (138 backend + 128 frontend tests, lint/typecheck/i18n, both smoke suites) and being pushed to `origin/backend_frontend` then `master` |
+| **Status** | **Green** — Capstone Grounded Kisan shipping to `backend_frontend` → `master` |
 
 ## Project phase snapshot
 
@@ -18,7 +18,7 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 |---|---|---|---|
 | **Lab** | Functional CRUD marketplace | Complete (Week 1) | Auth/RBAC, listings, orders, admin, notifications, reports — see Archive |
 | **Prototype** | Real-time, production-shaped system | Complete (Week 2–3) | Chat, calls, mandi, logistics, escrow payments + webhook, 13-locale UI, contact guard — see board |
-| **Capstone** | AI-assisted advisory platform | Not started | CV/NLP advisory, ML price prediction, optional IoT/traceability |
+| **Capstone** | AI-assisted advisory platform | In progress | Grounded Kisan RAG + AGRONOMIST + profile weather (shipping) |
 
 ## Board — week 3
 
@@ -26,7 +26,8 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 
 | | Task | Notes |
 |---|---|---|
-| **Working on** | Faculty Prototype demo | Walkthrough after merge to `master`; Haryana Potato/Onion/Tomato have live rows; Wheat may be empty |
+| **Working on** | Faculty Prototype demo | Walkthrough from `master`; Haryana Potato/Onion/Tomato have live rows; Wheat may be empty |
+| **Done** | Grounded Kisan (RAG) Capstone §8.2 | Same widget; curated pack + cite/refuse; `AGRONOMIST` + escalations; profile weather + 5-day; `eval:grounded` 30/30 |
 | **Done** | Commit + push Prototype slice | Local verify: 138 backend / 128 frontend tests; smoke antibypass + calls; push `backend_frontend` → merge `master` |
 | **Done** | Payment methods + gateway escrow | UPI/card/netbanking/COD; Razorpay verify on confirm; signed webhook; buyer payment nudge; unpaid-fulfill warning |
 | **Done** | Anti-bypass contact guard | Chat, order notes, listing description/variety/village → 400 `CONTACT_INFO_BLOCKED` |
@@ -37,15 +38,15 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | **Done** | Natural orders list | Smoke junk cleaned; active statuses sort above cancelled |
 | **Blocked** | — | None |
 | **Backlog** | Native-speaker pass on the ten new dictionaries | Machine-translated today |
-| **Backlog** | Capstone — ML advisory | Price prediction, crop CV, evaluation metrics |
+| **Backlog** | Capstone — ML price / crop CV | Still backlog after Grounded Kisan |
 | **Backlog** | Farmer payouts / settlement | Escrow holds and refunds are done; paying the farmer out through Razorpay is not |
 | **Backlog** | TURN server for calls | Public STUN only today, so calls behind strict NATs may fail to connect |
 | **Backlog** | Contact blocking on review comments | Chat, order notes, and listing copy are scanned; review comments are the last free-text field still unscanned |
 | **Backlog** | Razorpay webhook tunnel for local demos | Checkout works without it; webhook needs a public HTTPS URL |
 
-**Risks:** Locale dictionaries still need a native-speaker pass. Voice calls are single-process + public STUN (TURN still backlog). Review comments are the last unscanned free-text field.
+**Risks:** Locale dictionaries still need a native-speaker pass. Voice calls are single-process + public STUN (TURN still backlog).
 
-**Next week:** faculty demo, Capstone scope, optional TURN + farmer payouts.
+**Next week:** faculty Prototype + Grounded Kisan demo; optional TURN + farmer payouts.
 
 ---
 

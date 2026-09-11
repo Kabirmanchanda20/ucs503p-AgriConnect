@@ -100,5 +100,6 @@ export function useAuth() {
 export function dashboardPath(role: AuthUser['role']) {
   if (role === 'FARMER') return '/farmer';
   if (role === 'BUYER') return '/buyer';
+  if (role === 'AGRONOMIST') return '/notifications';
   return '/admin';
 }
