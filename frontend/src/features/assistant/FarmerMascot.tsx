@@ -1,7 +1,8 @@
 'use client';
 
-import { cx } from '@/components/ui';
+import Image from 'next/image';
 import { useState } from 'react';
+import { cx } from '@/components/ui';
 
 export function FarmerMascot({
   className,
@@ -31,12 +32,11 @@ export function FarmerMascot({
           K
         </span>
       ) : (
-        <img
+        <Image
           src="/kisan-mascot.png"
           alt={title}
           width={size}
           height={size}
-          decoding="async"
           onError={() => setImgError(true)}
           className="h-full w-full object-cover object-[center_18%]"
         />

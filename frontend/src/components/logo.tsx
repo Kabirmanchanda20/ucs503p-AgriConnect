@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { cx } from '@/components/ui';
 import { useLocale } from '@/features/i18n/locale-context';
@@ -40,14 +41,13 @@ export function Logo({ variant = 'header', className, linked = true }: LogoProps
     variant === 'header' ? (
       <HeaderWordmark />
     ) : (
-      // Plain img keeps PNG alpha intact and avoids stale /_next/image cache.
-      <img
+      <Image
         src="/logo.png"
         alt={t('brand.logoAlt')}
         width={LOGO_WIDTH}
         height={LOGO_HEIGHT}
-        decoding="async"
-        fetchPriority="high"
+        priority
+        sizes="(max-width: 640px) 280px, (max-width: 768px) 380px, 500px"
         className={cx(
           'h-auto w-full max-w-[280px] object-contain object-left drop-shadow-sm sm:max-w-[380px] md:max-w-[500px]',
           className,
