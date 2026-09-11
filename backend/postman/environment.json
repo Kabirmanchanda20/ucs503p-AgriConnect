@@ -7,7 +7,8 @@
     { "key": "listingId", "value": "", "enabled": true },
     { "key": "orderId", "value": "", "enabled": true },
     { "key": "notificationId", "value": "", "enabled": true },
-    { "key": "userId", "value": "", "enabled": true }
+    { "key": "userId", "value": "", "enabled": true },
+    { "key": "razorpaySignature", "value": "", "enabled": true }
   ],
   "_postman_variable_scope": "environment"
 }

@@ -1,3 +1,5 @@
+import { tt } from '@/lib/i18n/active-locale';
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -17,7 +19,7 @@ export function formatFieldErrors(fields?: Record<string, string[]>) {
     .join(' · ');
 }
 
-export function getErrorMessage(error: unknown, fallback = 'Something went wrong') {
+export function getErrorMessage(error: unknown, fallback?: string) {
   if (error instanceof ApiError) {
     const fieldDetail = formatFieldErrors(error.fields);
     if (fieldDetail) {
@@ -27,9 +29,9 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
   }
   if (error instanceof Error) {
     if (/failed to fetch|networkerror|load failed|econnrefused/i.test(error.message)) {
-      return 'Cannot reach the AgriConnect API. Start the backend (port 5001) and refresh.';
+      return tt('errors.network');
     }
     return error.message;
   }
-  return fallback;
+  return fallback ?? tt('common.errorGeneric');
 }

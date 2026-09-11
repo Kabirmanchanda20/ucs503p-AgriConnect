@@ -90,6 +90,36 @@ export interface Listing {
   updatedAt: string;
 }
 
+export type PaymentMethod = 'upi' | 'card' | 'netbanking' | 'cod';
+
+export type PaymentStatus =
+  | 'pending'
+  | 'authorized'
+  | 'held'
+  | 'released'
+  | 'refunded'
+  | 'failed';
+
+export interface OrderPayment {
+  id: string;
+  status: PaymentStatus;
+  provider: string;
+  amount: string;
+  method: PaymentMethod | null;
+  methodLabel: string | null;
+  failureReason: string | null;
+  heldAt: string | null;
+  releasedAt: string | null;
+  refundedAt: string | null;
+}
+
+export interface PaymentMethodOption {
+  method: PaymentMethod;
+  label: string;
+  /** UPI / card / net banking hold funds in escrow; cash on delivery does not. */
+  escrow: boolean;
+}
+
 export interface Order {
   id: string;
   listingId: string;
@@ -107,12 +137,7 @@ export interface Order {
   dispatchedAt?: string | null;
   inTransitAt?: string | null;
   logisticsDeliveredAt?: string | null;
-  payment?: {
-    id: string;
-    status: string;
-    provider: string;
-    amount: string;
-  } | null;
+  payment?: OrderPayment | null;
   listing?: Pick<Listing, 'id' | 'crop' | 'status' | 'photos'>;
   buyer?: { id: string; name: string; ratingAvg?: string | number | null };
   farmer?: { id: string; name: string; ratingAvg?: string | number | null };
@@ -125,6 +150,8 @@ export interface NotificationItem {
   type: string;
   title: string;
   body: string;
+  /** Values behind title/body so the client can render them in the reader's language. */
+  params?: Record<string, string | number> | null;
   readAt: string | null;
   createdAt: string;
 }

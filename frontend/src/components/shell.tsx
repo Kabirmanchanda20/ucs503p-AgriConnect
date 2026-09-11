@@ -13,6 +13,9 @@ import { Logo } from '@/components/logo';
 import { cx } from '@/components/ui';
 import type { MessageKey } from '@/lib/i18n';
 
+const SCROLLBAR_HIDDEN =
+  '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
 /** Dashboard roots match exactly; other nav items match their subtree (not sibling routes). */
 function isNavActive(pathname: string, href: string): boolean {
   if (pathname === href) return true;
@@ -29,19 +32,49 @@ function isNavActive(pathname: string, href: string): boolean {
   return true;
 }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavLink({
+  href,
+  className,
+  label,
+  children,
+}: {
+  href: string;
+  className?: string;
+  /** Accessible name when `children` is an icon rather than text. */
+  label?: string;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const active = isNavActive(pathname, href);
   return (
     <Link
       href={href}
+      aria-label={label}
       className={cx(
         'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition',
         active ? 'bg-paper/15 text-paper' : 'text-paper/80 hover:bg-paper/10 hover:text-paper',
+        className,
       )}
     >
       {children}
     </Link>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M10 2.75a4.6 4.6 0 0 0-4.6 4.6v2.4L4.1 12.4h11.8L14.6 9.75v-2.4A4.6 4.6 0 0 0 10 2.75Z" />
+      <path d="M8.1 15.1a1.95 1.95 0 0 0 3.8 0" />
+    </svg>
   );
 }
 
@@ -116,9 +149,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-full bg-field">
       <header className="border-b border-paper/10 bg-forest text-paper">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-4 md:gap-6">
+          <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-6">
             <Logo variant="header" />
-            <nav className="hidden items-center gap-0.5 md:flex" aria-label={t('nav.primaryNav')}>
+            {/* Scrolls instead of spilling over the right cluster when a locale's labels
+                are wider than English — Tamil, Kannada, and Malayalam are ~20% wider. */}
+            <nav
+              className={cx(
+                'hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto lg:flex',
+                SCROLLBAR_HIDDEN,
+              )}
+              aria-label={t('nav.primaryNav')}
+            >
               {links}
             </nav>
           </div>
@@ -141,11 +182,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {t('nav.suspended')}
                   </span>
                 ) : null}
-                <NavLink href="/notifications">
-                  {t('nav.alerts')}
-                  {unread ? ` (${unread})` : ''}
+                <NavLink
+                  href="/notifications"
+                  label={t('nav.notifications')}
+                  className="relative px-2"
+                >
+                  <BellIcon />
+                  {unread ? (
+                    <span className="absolute -end-0.5 -top-0.5 min-w-4 rounded-full bg-harvest px-1 text-[10px] font-bold leading-4 text-forest">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  ) : null}
                 </NavLink>
-                <NavLink href="/profile">{user.name.split(' ')[0]}</NavLink>
+                <NavLink href="/profile" className="max-w-[7rem] truncate">
+                  {user.name.split(' ')[0]}
+                </NavLink>
                 <button
                   type="button"
                   onClick={() => void logout()}
@@ -158,7 +209,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav
-          className="flex gap-1 overflow-x-auto border-t border-paper/10 px-4 py-1.5 [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
+          className={cx(
+            'flex gap-1 overflow-x-auto border-t border-paper/10 px-4 py-1.5 lg:hidden',
+            SCROLLBAR_HIDDEN,
+          )}
           aria-label={t('nav.primaryNav')}
         >
           {links}
@@ -171,7 +225,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       {ready && user ? (
         <>
-          <p className="sr-only">Signed in as {user.email}, home {dashboardPath(user.role)}</p>
+          <p className="sr-only">
+            {t('shell.signedIn', { email: user.email, path: dashboardPath(user.role) })}
+          </p>
           <FarmerChatWidget role={user.role} name={user.name} />
         </>
       ) : null}

@@ -68,6 +68,14 @@ export async function notifyBuyersOfPublishedListing(listing: {
     type: 'LISTING_PUBLISHED' as const,
     title,
     body,
+    params: {
+      crop: listing.crop,
+      district: listing.district,
+      state: listing.state,
+      price: listing.pricePerUnit.toString(),
+      unit: listing.unit,
+      farmer: listing.farmerName,
+    },
     relatedEntityType: 'Listing',
     relatedEntityId: listing.id,
   }));
@@ -99,6 +107,7 @@ export async function notifyFarmerListingExpiring(listing: {
     type: 'LISTING_EXPIRING',
     title,
     body,
+    params: { crop: listing.crop, days: daysLeft },
     relatedEntityType: 'Listing',
     relatedEntityId: listing.id,
   });

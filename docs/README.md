@@ -117,8 +117,10 @@ Also useful and present in this repo:
 | Farmer/buyer reports | Shipped | `/api/v1/reports/me` |
 | Admin users, moderate, analytics, logs | Shipped | `/api/v1/admin/*` |
 | Admin CSV export | Not implemented | Do not call `GET /api/v1/admin/reports.csv` |
-| Socket.io / realtime | V2 | Do not implement |
-| Payments / reviews / ML | V2–V3 | Do not implement |
+| Socket.io / realtime | Shipped (V2) | Order chat + voice calls on `/socket.io` |
+| Reviews | Shipped | `/api/v1/orders/:id/reviews`, `/api/v1/users/:id/reviews` |
+| Payments / escrow | Shipped (V2) | `/api/v1/orders/:id/payment*`, `/api/v1/payments/*` (incl. signed Razorpay webhook) |
+| ML advisory | V3 | Do not implement |
 
 ---
 

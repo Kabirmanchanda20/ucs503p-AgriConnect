@@ -1,4 +1,4 @@
-import { apiRequest } from './client';
+import { apiRequest, apiRequestBlob } from './client';
 import type { Locale } from '@/lib/i18n/locales';
 
 export type AssistantChatRole = 'user' | 'assistant';
@@ -34,6 +34,16 @@ export function queryAssistant(input: {
     body: {
       message: input.message,
       history: input.history ?? [],
+      language: input.language,
+    },
+  });
+}
+
+export function speakAssistant(input: { text: string; language?: Locale }) {
+  return apiRequestBlob('/api/v1/assistant/speak', {
+    method: 'POST',
+    body: {
+      text: input.text,
       language: input.language,
     },
   });

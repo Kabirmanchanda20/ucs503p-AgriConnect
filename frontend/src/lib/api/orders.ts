@@ -1,5 +1,12 @@
 import { apiRequest } from './client';
-import type { DeliveryMode, Order, OrderStatus } from './types';
+import type {
+  DeliveryMode,
+  Order,
+  OrderPayment,
+  OrderStatus,
+  PaymentMethod,
+  PaymentMethodOption,
+} from './types';
 
 export function createOrder(body: {
   listingId: string;
@@ -38,23 +45,30 @@ export function updateOrderLogistics(
   });
 }
 
-export function initOrderPayment(id: string) {
-  return apiRequest<{
-    paymentId: string;
-    orderId: string;
-    amount: string;
-    currency: string;
-    status: string;
-    mode: 'mock' | 'razorpay';
-    message?: string;
-    razorpayOrderId?: string;
-    keyId?: string;
-  }>(`/api/v1/orders/${id}/payment`, { method: 'POST' });
+export interface InitPaymentResult extends OrderPayment {
+  orderId: string;
+  currency: string;
+  /** `cod` skips the gateway, `mock` runs when Razorpay keys are absent. */
+  mode: 'cod' | 'mock' | 'razorpay';
+  message?: string;
+  razorpayOrderId?: string;
+  keyId?: string;
 }
 
-export function confirmOrderPaymentHeld(id: string) {
-  return apiRequest<{ id: string; status: string; heldAt: string | null }>(
+export function listPaymentMethods() {
+  return apiRequest<PaymentMethodOption[]>('/api/v1/payments/methods');
+}
+
+export function initOrderPayment(id: string, body: { method: PaymentMethod }) {
+  return apiRequest<InitPaymentResult>(`/api/v1/orders/${id}/payment`, {
+    method: 'POST',
+    body,
+  });
+}
+
+export function confirmOrderPaymentHeld(id: string, body: { providerRef?: string } = {}) {
+  return apiRequest<OrderPayment & { orderId: string; currency: string }>(
     `/api/v1/orders/${id}/payment/confirm`,
-    { method: 'POST' },
+    { method: 'POST', body },
   );
 }

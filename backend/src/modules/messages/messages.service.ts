@@ -1,7 +1,9 @@
 import type { Prisma, Role } from '../../generated/prisma/client.js';
 import { AppError } from '../../common/app-error.js';
+import { contactViolationMessage, scanForContactInfo } from '../../common/contact-guard.js';
 import { emitOrderMessage } from '../../config/socket.js';
 import { getPrismaClient } from '../../config/db.js';
+import { logger } from '../../config/logger.js';
 import { createNotification } from '../../services/notification.service.js';
 import type { CreateMessageInput, ListMessagesQuery } from './messages.schema.js';
 
@@ -91,7 +93,18 @@ export async function createMessage(
     throw new AppError(400, 'INVALID_REQUEST', 'Cannot message on a cancelled order');
   }
 
+  const scan = scanForContactInfo(input.body);
+  if (scan.blocked) {
+    logger.warn(
+      { orderId, senderId: actor.id, violations: scan.violations },
+      'Blocked contact-info exchange in order chat',
+    );
+    throw new AppError(400, 'CONTACT_INFO_BLOCKED', contactViolationMessage(scan.violations));
+  }
+
   const recipientId = actor.id === order.buyerId ? order.farmerId : order.buyerId;
+
+  const preview = input.body.length > 80 ? `${input.body.slice(0, 77)}…` : input.body;
 
   const message = await getPrismaClient().$transaction(async (transaction) => {
     const created = await transaction.message.create({
@@ -108,7 +121,8 @@ export async function createMessage(
         userId: recipientId,
         type: 'MESSAGE_RECEIVED',
         title: 'New message',
-        body: input.body.length > 80 ? `${input.body.slice(0, 77)}…` : input.body,
+        body: preview,
+        params: { preview },
         relatedEntityType: 'Order',
         relatedEntityId: orderId,
       },

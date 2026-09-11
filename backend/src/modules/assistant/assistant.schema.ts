@@ -29,5 +29,13 @@ export const queryAssistantBodySchema = z
   })
   .strict();
 
+export const speakAssistantBodySchema = z
+  .object({
+    text: z.string().trim().min(1).max(2500),
+    language: z.enum(APP_LOCALES).optional(),
+  })
+  .strict();
+
 export type QueryAssistantBody = z.infer<typeof queryAssistantBodySchema>;
+export type SpeakAssistantBody = z.infer<typeof speakAssistantBodySchema>;
 export type AssistantTurn = z.infer<typeof assistantTurnSchema>;

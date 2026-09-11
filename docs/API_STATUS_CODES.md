@@ -58,23 +58,30 @@ Use these `error.code` values. Do not return `200` with `{ "error": ... }`.
 | 400 | `VALIDATION_ERROR` | Zod failed on body, query, or params; missing photo files; invalid UUID param | Show `error.fields` or `error.message`; do not retry the same payload |
 | 400 | `INVALID_REQUEST` | Illegal state transition, business rule, malformed JSON, public listing filter not allowed | Change the action (wrong status, missing photos, missing cancellation reason) |
 | 400 | `CONFIRM_TEXT_MISMATCH` | `DELETE /users/me` without `{ "confirm": "DELETE" }` | Require the user to type `DELETE` |
+| 400 | `CONTACT_INFO_BLOCKED` | A phone number, email, UPI ID, or off-platform app name in chat `body`, order `notes`, or listing `description` / `variety` / `village` | Show `error.message` (and highlight `error.fields` outside chat); point the user at the in-app voice call. Do not retry the same text |
 | 401 | `UNAUTHORIZED` | Missing `Authorization: Bearer` on a protected route | Send the user to login |
 | 401 | `TOKEN_EXPIRED` | Access JWT expired | Call `POST /auth/refresh` (the frontend client does this automatically) then retry |
 | 401 | `TOKEN_INVALID` | Tampered, wrong secret, or bad claims | Clear session; login again |
 | 401 | `REFRESH_TOKEN_INVALID` | Missing, expired, reused, or rotated refresh cookie | Clear session; login again |
 | 401 | `INVALID_CREDENTIALS` | Wrong email/password **or** account lockout (same message) | Show generic login error; wait 15 minutes if locked after 5 failures |
+| 402 | `PAYMENT_NOT_VERIFIED` | `POST /orders/:id/payment/confirm` sent a `providerRef` that Razorpay reports as unpaid, for another checkout, or for a different amount | Show `error.message`; the payment is now `failed`, so start a new payment. Never retry the same reference |
 | 403 | `FORBIDDEN` | Wrong role, IDOR-safe hide is **not** this (that is 404), admin self-suspend, admin self-delete | Hide the control in UI; do not retry |
 | 403 | `ACCOUNT_SUSPENDED` | Suspended user on a **mutating** route (`requireActiveAccount`) | Show suspended screen; GET `/auth/me` still works |
 | 404 | `NOT_FOUND` | Missing resource, wrong id, or “not yours” (IDOR-safe). Also unknown routes | Treat as gone; do not leak existence |
-| 409 | `CONFLICT` | Duplicate email, oversell (`quantity` too high), Prisma unique clash (`P2002`) | Change email or reduce order quantity |
+| 409 | `CONFLICT` | Duplicate email, oversell (`quantity` too high), payment already `held`/`released`/`refunded`, Prisma unique clash (`P2002`) | Change email, reduce order quantity, or stop re-paying a settled order |
 | 413 | `PAYLOAD_TOO_LARGE` | Listing photo > 5 MB, or JSON body > 10 kb | Compress image / shrink body |
-| 415 | `UNSUPPORTED_MEDIA_TYPE` | Photo not JPEG / PNG / WebP | Convert the file |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | Photo not JPEG / PNG / WebP, or a body charset / `Content-Encoding` the parser cannot read | Convert the file; send UTF-8 JSON |
 | 429 | `RATE_LIMIT_EXCEEDED` | `/api` > 100 req/min; `/api/v1/auth` > 10 failed attempts/min | Back off; show “try again shortly” |
 | 500 | `INTERNAL_ERROR` | Unexpected / Prisma unknown / storage failure | Retry later; log `message` in non-production |
 | 502 | `MANDI_FEED_UNAVAILABLE` | Agmarknet / data.gov.in / mandi-api unreachable or rate-limited | Show `error.message`; empty arrivals are **200 []**, not 502 |
-| 503 | `NOT_READY` | `GET /ready` when Postgres is down | Do not start the frontend against this API |
+| 502 | `PAYMENT_UNAVAILABLE` | Razorpay rejected the order create, or the gateway was unreachable / timed out (15 s) | Show `error.message`; let the buyer retry or pick another method |
+| 503 | `NOT_READY` | `GET /ready` when Postgres is down, or `POST /payments/webhook` without `RAZORPAY_WEBHOOK_SECRET` | Do not start the frontend against this API; configure the webhook secret |
 
 Prisma `P2025` (record to update not found) is mapped to **404 `NOT_FOUND`**. Malformed JSON body is **400 `INVALID_REQUEST`**.
+
+The 400 / 413 / 415 body rows above are produced by body-parser *before* any route runs, so they
+can come back from **any** endpoint that takes a body — including one that would otherwise have
+answered 401.
 
 ---
 
@@ -415,12 +422,15 @@ Increments `viewCount` for non-owners.
 | **201** | — | Always created as **draft** |
 | **400** | `VALIDATION_ERROR` | Schema (crop, unit, harvestDate, MOQ > qty, …) |
 | **400** | `INVALID_REQUEST` | Client sent `status: "active"` |
+| **400** | `CONTACT_INFO_BLOCKED` | Contact details in `description`, `variety`, or `village`. **Nothing is stored**; `error.fields` names the field |
 | **404** | `NOT_FOUND` | Farmer profile missing |
 | **403** | `FORBIDDEN` / `ACCOUNT_SUSPENDED` | Wrong role / suspended |
 
 #### `PATCH /:id` — FARMER owner — **200**
 
-See §4.2. Also **400** if activating without photos/stock/MOQ.
+See §4.2. Also **400** if activating without photos/stock/MOQ, and **400
+`CONTACT_INFO_BLOCKED`** if an edit puts contact details into `description`, `variety`, or
+`village` — a published listing cannot be edited into a phone-number billboard.
 
 #### `DELETE /:id` — FARMER owner — **200**
 
@@ -460,6 +470,7 @@ All routes: Auth Yes.
 | **201** | — | `status: pending`; listing qty decremented; may set listing `sold_out`; farmer notified `ORDER_PLACED` |
 | **400** | `VALIDATION_ERROR` | Bad UUID, qty format, `deliveryMode` not `pickup`/`delivery` |
 | **400** | `INVALID_REQUEST` | Qty ≤ 0, below MOQ, or buyer is the listing owner |
+| **400** | `CONTACT_INFO_BLOCKED` | Contact details in `notes` (the farmer reads them). **No order is created**; `error.fields.notes` explains why |
 | **404** | `NOT_FOUND` | Listing missing or not `active` |
 | **409** | `CONFLICT` | `"Insufficient remaining quantity"` (race or oversell) |
 | **403** | `FORBIDDEN` / `ACCOUNT_SUSPENDED` | Not a buyer / suspended |
@@ -471,6 +482,102 @@ Buyer sees own purchases; farmer sees incoming; admin sees all. Optional `status
 #### `GET /:id` — party or admin — **200** / **404**
 
 #### `PATCH /:id/status` — see **§4.1** (approve / discard / change)
+
+#### `PATCH /:id/logistics` — FARMER (order seller), active account — **200**
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | `none → dispatched → in_transit → delivered` |
+| **400** | `INVALID_REQUEST` | Illegal transition, or order `cancelled` |
+| **403** | `FORBIDDEN` | Not the farmer on this order |
+| **404** | `NOT_FOUND` | Missing / not yours |
+
+#### `GET /:id/messages` — party or admin — **200** paginated
+
+#### `POST /:id/messages` — party or admin, active account — **201**
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **201** | — | Stored; `message:new` pushed to room `order:{id}`; counterparty notified `MESSAGE_RECEIVED` |
+| **400** | `VALIDATION_ERROR` | Empty body or > 2000 chars |
+| **400** | `INVALID_REQUEST` | Order is `cancelled` |
+| **400** | `CONTACT_INFO_BLOCKED` | Phone number, email, UPI ID, or off-platform app name in `body`. **Nothing is stored and no notification is sent** |
+| **404** | `NOT_FOUND` | Missing / not a participant |
+
+#### `POST /:id/messages/read` — party or admin, active account — **200** `{ orderId, markedRead }`
+
+#### `POST /:id/payment` — BUYER (order owner), active account — **201**
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **201** | — | Payment created/reset for the chosen method. `mode`: `cod` \| `mock` \| `razorpay` |
+| **400** | `VALIDATION_ERROR` | `method` missing, not one of `upi`/`card`/`netbanking`/`cod`, or unknown extra key |
+| **400** | `INVALID_REQUEST` | Order is `cancelled` |
+| **403** | `FORBIDDEN` / `ACCOUNT_SUSPENDED` | Not a buyer / suspended |
+| **404** | `NOT_FOUND` | Order missing or not this buyer's |
+| **409** | `CONFLICT` | Payment already `held`, `released`, or `refunded` |
+| **502** | `PAYMENT_UNAVAILABLE` | Razorpay error, or gateway unreachable / 15 s timeout |
+
+#### `POST /:id/payment/confirm` — BUYER (order owner), active account — **200**
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | Payment moved to `held` (escrow). Idempotent when already `held` |
+| **400** | `VALIDATION_ERROR` | `providerRef` blank or > 200 chars, unknown extra key, or **missing while Razorpay keys are configured** |
+| **400** | `INVALID_REQUEST` | Method is `cod` (collected on delivery), or payment `failed` |
+| **402** | `PAYMENT_NOT_VERIFIED` | Razorpay reports the payment as not `captured`/`authorized`, belonging to another checkout, a different amount, or a non-INR currency. Payment is set to `failed` |
+| **403** | `FORBIDDEN` / `ACCOUNT_SUSPENDED` | Not a buyer / suspended |
+| **404** | `NOT_FOUND` | Order or payment missing |
+| **409** | `CONFLICT` | Payment already `released` or `refunded`, or it has no gateway checkout to verify against |
+| **502** | `PAYMENT_UNAVAILABLE` | Razorpay unreachable while verifying — payment untouched, safe to retry |
+
+**Verification.** With live keys the server calls Razorpay `GET /v1/payments/{providerRef}`
+and only escrows the payment when status, checkout id, amount, and currency all match.
+The browser is never trusted to report success.
+
+**Escrow side effects.** Order → `fulfilled` releases a `held` payment (`released`).
+Order → `cancelled` refunds a `pending` / `authorized` / `held` payment (`refunded`) inside
+the same transaction, so a cancelled order never keeps the buyer's money.
+
+---
+
+### 5.5b Payments (`/api/v1/payments`)
+
+#### `GET /methods` — any authenticated user — **200**
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | Four methods with `label` and `escrow` flag; `cod` is the only `escrow: false` |
+| **401** | `UNAUTHORIZED` | No bearer token |
+
+#### `POST /webhook` — Razorpay only, **no JWT** — **200**
+
+Signature over the raw body is the authentication. Anything other than 200 makes Razorpay
+retry, so business no-ops still answer 200 with `handled: false` and a reason.
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | Signature valid. `handled: true` when the payment was escrowed (`payment.captured`) or marked `failed` (`payment.failed`) |
+| **200** | — | `handled: false` — unhandled event, unreadable payload, unknown order, payment already `held`/`released`/`refunded`, or payload not matching the stored checkout / amount |
+| **401** | `UNAUTHORIZED` | Missing, malformed, or wrong `x-razorpay-signature` |
+| **503** | `NOT_READY` | `RAZORPAY_WEBHOOK_SECRET` not configured |
+
+---
+
+### 5.5c Realtime voice calls (Socket.io `call:*`)
+
+Not HTTP — acks carry `{ ok: false, error, code }` instead of a status code.
+
+| Ack `code` | Scenario |
+|---|---|
+| `VALIDATION_ERROR` | Missing / malformed `orderId` |
+| `CONFLICT` | A call is already live on this order |
+| `NOT_FOUND` | Unknown order, or a `callId` the caller is not part of |
+| `FORBIDDEN` | `ADMIN` tried to join a call |
+| `ACCOUNT_SUSPENDED` | Suspended account tried to call |
+| `INVALID_REQUEST` | Order is `cancelled` |
+
+Handshake and event payloads: [API_CONTRACT.md](./API_CONTRACT.md#in-app-voice-calls-socketio).
 
 ---
 
@@ -540,6 +647,34 @@ All: Auth Yes, **ADMIN** only. Non-admin → **403 `FORBIDDEN`**. Mutations writ
 
 ---
 
+### 5.10 Assistant / Kisan (`/api/v1/assistant`) — Auth: Yes
+
+Shared limiter: **60 / minute** → **429 `RATE_LIMIT_EXCEEDED`** (one chat turn spends `status` + `query` + `speak`). Suspended users: **403 `ACCOUNT_SUSPENDED`** on query/speak.
+
+#### `GET /status`
+
+| HTTP | When |
+|---|---|
+| **200** | `{ configured, connected, model, source }` |
+
+#### `POST /query`
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | `{ reply, source }` in the requested `language` script |
+| **400** | `VALIDATION_ERROR` | Empty message, invalid language, too much history |
+| **502** | `ASSISTANT_UNAVAILABLE` | Gemini down / missing key handled as local English-or-locale stub when key missing. Raised only after one automatic retry (30 s timeout each) |
+
+#### `POST /speak`
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | Raw `audio/wav` (not JSON). Full reply in the selected language |
+| **400** | `VALIDATION_ERROR` | Empty / oversized `text`, invalid language |
+| **502** | `ASSISTANT_UNAVAILABLE` | No `GEMINI_API_KEY`, TTS model missing, or empty audio |
+
+---
+
 ## 6. Frontend handling cheat sheet
 
 | You received | Do this in the UI |
@@ -553,10 +688,14 @@ All: Auth Yes, **ADMIN** only. Non-admin → **403 `FORBIDDEN`**. Mutations writ
 | **403 FORBIDDEN** | Hide the button; send user to their dashboard |
 | **403 ACCOUNT_SUSPENDED** | Dedicated suspended page |
 | **404** | Not found page (do not say “you don’t own this”) |
-| **409** | “Not enough quantity left” or “email taken” |
+| **400 CONTACT_INFO_BLOCKED** | Order chat: show `error.message` in the chat `Alert`, keep the draft so the user can edit it, and point at the **Voice call** panel. Order form and listing form: show it against the field in `error.fields` (`notes`, `description`, `variety`, `village`) and keep the rest of the form filled in |
+| **409** | “Not enough quantity left”, “email taken”, or “payment already settled” |
 | **413 / 415** | Photo picker help text |
 | **429** | Disable submit briefly |
 | **502 MANDI_FEED_UNAVAILABLE** | Mandi page: show `error.message`; empty `200 []` is unpublished arrivals, not this code |
+| **502 ASSISTANT_UNAVAILABLE** | Kisan: show the localized `kisan.errorUnreachable` (the server message is English); read-aloud falls back to the browser voice |
+| **402 PAYMENT_NOT_VERIFIED** | Checkout: show `error.message`, refresh the order (payment is now `failed`), and offer to start a new payment |
+| **502 PAYMENT_UNAVAILABLE** | Checkout: show `error.message` and let the buyer retry or pick another method |
 | **5xx** | Generic retry |
 
 ---

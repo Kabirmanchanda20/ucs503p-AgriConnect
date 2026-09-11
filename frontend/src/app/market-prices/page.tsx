@@ -16,15 +16,18 @@ import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
 import { MANDI_CROPS, MANDI_LIVE_STATES } from '@/lib/constants';
 import { useLocale } from '@/features/i18n/locale-context';
+import { mandiCropKey, unitKey } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
 
 function pickDefaultCrop(crops: string[]): string {
   const wheat = crops.find((crop) => crop.toLowerCase() === 'wheat');
   return wheat ?? crops[0] ?? '';
 }
 
-function formatArrivalLabel(date: string): string {
-  return new Intl.DateTimeFormat('en-IN', {
+function formatArrivalLabel(date: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(`${locale}-IN`, {
     timeZone: 'Asia/Kolkata',
+    numberingSystem: 'latn',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -36,12 +39,14 @@ function getTodayIST(): string {
 }
 
 export default function MarketPricesPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [liveStates, setLiveStates] = useState<string[]>([...MANDI_LIVE_STATES]);
   const [state, setState] = useState<string>(MANDI_LIVE_STATES[0]);
   const [crop, setCrop] = useState<string>(MANDI_CROPS[0]);
   const [stateCrops, setStateCrops] = useState<string[]>([...MANDI_CROPS]);
-  const [cropsLoading, setCropsLoading] = useState(false);
+  // Starts true: the first crop list is fetched on mount. Later switches flip it in the
+  // Select handler, so the fetch effect never has to set it synchronously.
+  const [cropsLoading, setCropsLoading] = useState(true);
   const [points, setPoints] = useState<PriceTrendPoint[]>([]);
   const [mandiRows, setMandiRows] = useState<MandiPriceRow[]>([]);
   const [mandiHistory, setMandiHistory] = useState<MandiHistoryPoint[]>([]);
@@ -69,7 +74,6 @@ export default function MarketPricesPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setCropsLoading(true);
 
     void getMandiCommodities({ state })
       .then((result) => {
@@ -92,7 +96,7 @@ export default function MarketPricesPage() {
             ? current
             : pickDefaultCrop([...MANDI_CROPS]),
         );
-        setError(getErrorMessage(cause, 'Could not load official crop list for this state.'));
+        setError(getErrorMessage(cause, t('marketPrices.cropListFailed')));
       })
       .finally(() => {
         if (!cancelled) setCropsLoading(false);
@@ -131,21 +135,13 @@ export default function MarketPricesPage() {
         null;
       if (firstFailure && firstFailure.status === 'rejected') {
         const message = getErrorMessage(firstFailure.reason);
-        setError(
-          /rate limit/i.test(message)
-            ? 'Govt mandi API is temporarily rate-limited. Wait a few minutes and refresh, or add DATA_GOV_IN_API_KEY in backend .env for a more reliable feed.'
-            : message,
-        );
+        setError(/rate limit/i.test(message) ? t('marketPrices.rateLimited') : message);
       } else {
         setError('');
       }
 
       const isStale = Boolean(mandiRes?.meta?.stale || historyRes?.meta?.stale);
-      setStaleNotice(
-        isStale
-          ? 'Showing cached official mandi data while the live Agmarknet feed catches up. Prices refresh automatically.'
-          : '',
-      );
+      setStaleNotice(isStale ? t('marketPrices.stale') : '');
       setLoading(false);
     }
 
@@ -154,10 +150,22 @@ export default function MarketPricesPage() {
     return () => {
       cancelled = true;
     };
-  }, [state, crop, cropsLoading]);
+  }, [state, crop, cropsLoading, t]);
+
+  // Commodity and unit names arrive as free-form strings from the govt feed, so fall
+  // back to the raw value when there is no translation for them.
+  const cropLabel = (name: string) => {
+    const key = mandiCropKey(name);
+    return key ? t(key) : name;
+  };
+
+  const unitLabel = (unit: string) => {
+    const key = unitKey(unit);
+    return key ? t(key) : unit;
+  };
 
   const arrivalDateLabel =
-    mandiRows.length > 0 ? formatArrivalLabel(mandiRows[0].arrivalDate) : null;
+    mandiRows.length > 0 ? formatArrivalLabel(mandiRows[0].arrivalDate, locale) : null;
 
   const latestArrivalDate = mandiRows[0]?.arrivalDate ?? null;
   const historyForChart = mandiHistory
@@ -219,7 +227,7 @@ export default function MarketPricesPage() {
             }}
           >
             {stateCrops.map((item) => (
-              <option key={item} value={item}>{item}</option>
+              <option key={item} value={item}>{cropLabel(item)}</option>
             ))}
           </Select>
         </Field>
@@ -235,14 +243,25 @@ export default function MarketPricesPage() {
         <>
           {modalSummary ? (
             <Card>
-              <p className="text-sm font-bold uppercase text-soil">Agmarknet · live</p>
-              <p className="font-display text-2xl text-forest">{modalSummary.commodity}</p>
-              <p className="text-sm text-ink/70">{modalSummary.state} · top modal at {modalSummary.market}</p>
+              <p className="text-sm font-bold uppercase text-soil">
+                {t('marketPrices.liveEyebrow')}
+              </p>
+              <p className="font-display text-2xl text-forest">
+                {cropLabel(modalSummary.commodity)}
+              </p>
+              <p className="text-sm text-ink/70">
+                {t('marketPrices.topModal', {
+                  state: modalSummary.state,
+                  market: modalSummary.market,
+                })}
+              </p>
               <p className="mt-2 text-xl font-bold">
-                {formatMoney(modalSummary.pricePerKg)} / kg
+                {t('marketPrices.perKg', {
+                  price: formatMoney(modalSummary.pricePerKg, locale),
+                })}
                 <span className="text-sm font-medium text-ink/50">
                   {' '}
-                  (₹{modalSummary.modalPrice}/quintal modal)
+                  {t('marketPrices.modalPerQuintal', { price: `₹${modalSummary.modalPrice}` })}
                 </span>
               </p>
             </Card>
@@ -250,47 +269,54 @@ export default function MarketPricesPage() {
 
           <Card>
             <h2 className="font-display text-2xl text-forest">
-              {t('marketPrices.liveTitle', { crop })}
+              {t('marketPrices.liveTitle', { crop: cropLabel(crop) })}
             </h2>
             <p className="mt-1 text-sm text-ink/60">
-              Source: agmarknet.gov.in → data.gov.in.
-              {arrivalDateLabel
-                ? isPublishedToday
-                  ? ` Today's official arrivals (${arrivalDateLabel}).`
-                  : ` Latest published arrivals (${arrivalDateLabel}) — today's report may not be uploaded yet.`
-                : ' Showing latest published arrival day.'}
-              Prices in ₹/quintal as published by each APMC.
+              {[
+                t('marketPrices.source'),
+                arrivalDateLabel
+                  ? t(
+                      isPublishedToday
+                        ? 'marketPrices.arrivalsToday'
+                        : 'marketPrices.arrivalsLatest',
+                      { date: arrivalDateLabel },
+                    )
+                  : t('marketPrices.arrivalsUnknown'),
+                t('marketPrices.quintalNote'),
+              ].join(' ')}
             </p>
             {mandiRows.length === 0 ? (
               <p className="mt-3 text-ink/70">
-                {t('marketPrices.noRows', { crop, state })}
+                {t('marketPrices.noRows', { crop: cropLabel(crop), state })}
               </p>
             ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-ink/10 text-left text-ink/60">
-                      <th className="py-2 pr-3">Market</th>
-                      <th className="py-2 pr-3">District</th>
-                      <th className="py-2 pr-3">Variety</th>
-                      <th className="py-2 pr-3">Arrival</th>
-                      <th className="py-2 pr-3">Min</th>
-                      <th className="py-2 pr-3">Max</th>
-                      <th className="py-2 pr-3">Modal</th>
-                      <th className="py-2">₹/kg</th>
+                    <tr className="border-b border-ink/10 text-start text-ink/60">
+                      <th className="py-2 pe-3">{t('marketPrices.colMarket')}</th>
+                      <th className="py-2 pe-3">{t('marketPrices.colDistrict')}</th>
+                      <th className="py-2 pe-3">{t('marketPrices.colVariety')}</th>
+                      <th className="py-2 pe-3">{t('marketPrices.colArrival')}</th>
+                      <th className="py-2 pe-3">{t('marketPrices.colMin')}</th>
+                      <th className="py-2 pe-3">{t('marketPrices.colMax')}</th>
+                      <th className="py-2 pe-3">{t('marketPrices.colModal')}</th>
+                      <th className="py-2">{t('marketPrices.colPerKg')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {mandiRows.map((row) => (
                       <tr key={row.id} className="border-b border-ink/5">
-                        <td className="py-2 pr-3">{row.market}</td>
-                        <td className="py-2 pr-3">{row.district}</td>
-                        <td className="py-2 pr-3">{row.variety ?? '—'}</td>
-                        <td className="py-2 pr-3">{formatArrivalLabel(row.arrivalDate)}</td>
-                        <td className="py-2 pr-3">₹{row.minPrice}</td>
-                        <td className="py-2 pr-3">₹{row.maxPrice}</td>
-                        <td className="py-2 pr-3 font-semibold">₹{row.modalPrice}</td>
-                        <td className="py-2">{formatMoney(row.pricePerKg)}</td>
+                        <td className="py-2 pe-3">{row.market}</td>
+                        <td className="py-2 pe-3">{row.district}</td>
+                        <td className="py-2 pe-3">{row.variety ?? '—'}</td>
+                        <td className="py-2 pe-3">
+                          {formatArrivalLabel(row.arrivalDate, locale)}
+                        </td>
+                        <td className="py-2 pe-3">₹{row.minPrice}</td>
+                        <td className="py-2 pe-3">₹{row.maxPrice}</td>
+                        <td className="py-2 pe-3 font-semibold">₹{row.modalPrice}</td>
+                        <td className="py-2">{formatMoney(row.pricePerKg, locale)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -315,7 +341,9 @@ export default function MarketPricesPage() {
                     style={{
                       height: `${Math.max(8, (Number(point.avgModalPricePerKg) / maxPrice) * 100)}%`,
                     }}
-                    title={`Govt avg ${formatMoney(point.avgModalPricePerKg)}/kg`}
+                    title={t('marketPrices.govtAvgTooltip', {
+                      price: formatMoney(point.avgModalPricePerKg, locale),
+                    })}
                   />
                 ))}
                 {points.map((point) => (
@@ -325,7 +353,10 @@ export default function MarketPricesPage() {
                     style={{
                       height: `${Math.max(8, (Number(point.pricePerUnit) / maxPrice) * 100)}%`,
                     }}
-                    title={`Trade ${formatMoney(point.pricePerUnit)}/${point.unit}`}
+                    title={t('marketPrices.tradeTooltip', {
+                      price: formatMoney(point.pricePerUnit, locale),
+                      unit: unitLabel(point.unit),
+                    })}
                   />
                 ))}
               </div>

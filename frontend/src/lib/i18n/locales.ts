@@ -96,3 +96,10 @@ export function normalizeLocale(value: string | null | undefined): Locale | null
 export function isLocale(value: string): value is Locale {
   return (LOCALES as readonly string[]).includes(value);
 }
+
+/** Urdu is the only right-to-left locale; everything else reads left to right. */
+const RTL_LOCALES = new Set<Locale>(['ur']);
+
+export function localeDirection(locale: Locale): 'rtl' | 'ltr' {
+  return RTL_LOCALES.has(locale) ? 'rtl' : 'ltr';
+}

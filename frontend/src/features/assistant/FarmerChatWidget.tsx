@@ -2,16 +2,18 @@
 
 import { type FormEvent, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { getAssistantStatus, queryAssistant } from '@/lib/api/assistant';
-import { getErrorMessage } from '@/lib/api/errors';
+import { ApiError, getErrorMessage } from '@/lib/api/errors';
 import type { Role } from '@/lib/api/types';
 import { cx } from '@/components/ui';
 import { useLocale } from '@/features/i18n/locale-context';
+import type { Locale } from '@/lib/i18n/locales';
 import {
   isSpeechRecognitionSupported,
-  isSpeechSynthesisSupported,
+  preloadSpeechVoices,
   speakText,
   startListening,
   stopSpeaking,
+  unlockSpeechPlayback,
 } from '@/lib/speech';
 import { FarmerMascot } from './FarmerMascot';
 
@@ -19,6 +21,7 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  locale?: Locale;
 }
 
 const AUTO_SPEAK_KEY = 'agriconnect.kisan.autoSpeak';
@@ -99,7 +102,6 @@ export function FarmerChatWidget({
   const pendingRef = useRef(false);
 
   const voiceReady = isSpeechRecognitionSupported();
-  const ttsReady = isSpeechSynthesisSupported();
   const voiceTone = listening ? 'listen' : speakingId ? 'speak' : 'idle';
 
   const visibleMessages = useMemo<ChatMessage[]>(
@@ -110,6 +112,9 @@ export function FarmerChatWidget({
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(AUTO_SPEAK_KEY);
+      // Read after mount on purpose: localStorage is not available while server-rendering,
+      // so a lazy useState initializer would desync hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored != null) setAutoSpeak(stored === '1');
     } catch {
       /* keep default */
@@ -120,11 +125,31 @@ export function FarmerChatWidget({
     if (!open) {
       listenStopRef.current?.();
       listenStopRef.current = null;
-      setListening(false);
       stopSpeaking();
+      // Closing the panel tears down the mic and the speech engine, so the flags that
+      // mirror those external systems have to be reset here.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setListening(false);
       setSpeakingId(null);
+      return;
     }
+    unlockSpeechPlayback();
+    preloadSpeechVoices();
   }, [open]);
+
+  useEffect(() => {
+    stopSpeaking();
+    // Same reason: `speakingId` tracks the browser speech engine, which just stopped.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSpeakingId(null);
+    if (!open || !autoSpeak) return;
+    setSpeakingId('welcome');
+    speakText(greeting, locale, {
+      onEnd: () => setSpeakingId((current) => (current === 'welcome' ? null : current)),
+    });
+    // Re-bind spoken language when the header locale changes, not on every greeting tweak.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
 
   useEffect(() => {
     if (!open) return;
@@ -163,24 +188,19 @@ export function FarmerChatWidget({
     });
   }
 
-  function readAloud(id: string, content: string) {
-    if (!ttsReady) {
-      setVoiceError(t('kisan.voiceUnsupported'));
-      return;
-    }
+  function readAloud(id: string, content: string, spokenLocale: Locale = locale) {
     if (speakingId === id) {
       stopSpeaking();
       setSpeakingId(null);
       return;
     }
+    unlockSpeechPlayback();
     stopSpeaking();
     setVoiceError('');
     setSpeakingId(id);
-    speakText(content, locale);
-    const estimatedMs = Math.min(60_000, Math.max(2_500, content.length * 55));
-    window.setTimeout(() => {
-      setSpeakingId((current) => (current === id ? null : current));
-    }, estimatedMs);
+    speakText(content, spokenLocale, {
+      onEnd: () => setSpeakingId((current) => (current === id ? null : current)),
+    });
   }
 
   function toggleMic() {
@@ -195,7 +215,7 @@ export function FarmerChatWidget({
       return;
     }
 
-    // Barge-in: stop TTS when user starts talking.
+    unlockSpeechPlayback();
     stopSpeaking();
     setSpeakingId(null);
     setVoiceError('');
@@ -231,6 +251,7 @@ export function FarmerChatWidget({
 
     pendingRef.current = true;
     setPending(true);
+    unlockSpeechPlayback();
     listenStopRef.current?.();
     listenStopRef.current = null;
     setListening(false);
@@ -252,24 +273,26 @@ export function FarmerChatWidget({
       const replyId = newId();
       setMessages((current) => [
         ...current,
-        { id: replyId, role: 'assistant', content: data.reply },
+        { id: replyId, role: 'assistant', content: data.reply, locale },
       ]);
-      if (autoSpeak && ttsReady) {
+      if (autoSpeak) {
         setSpeakingId(replyId);
-        speakText(data.reply, locale);
+        speakText(data.reply, locale, {
+          onEnd: () => setSpeakingId((current) => (current === replyId ? null : current)),
+        });
       }
     } catch (error) {
-      const raw = getErrorMessage(
-        error,
-        "I couldn't reach the fields just now. Please try again in a moment.",
-      );
+      const raw = getErrorMessage(error, t('kisan.errorUnreachable'));
       const friendly =
         raw.includes('Validation failed') || raw.includes('Too big')
-          ? "That reply was too long to continue the chat. I've reset — please ask again."
-          : raw;
+          ? t('kisan.errorTooLong')
+          : // Gemini/transport failures come back in English, so speak the farmer's language instead.
+            error instanceof ApiError && error.code === 'ASSISTANT_UNAVAILABLE'
+            ? t('kisan.errorUnreachable')
+            : raw;
       setMessages((current) => [
         ...current,
-        { id: newId(), role: 'assistant', content: friendly },
+        { id: newId(), role: 'assistant', content: friendly, locale },
       ]);
     } finally {
       pendingRef.current = false;
@@ -295,7 +318,7 @@ export function FarmerChatWidget({
             : '';
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-end p-3 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:p-0">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-end p-3 sm:inset-x-auto sm:end-6 sm:bottom-6 sm:p-0">
       {open ? (
         <section
           id={panelId}
@@ -347,10 +370,10 @@ export function FarmerChatWidget({
                   )}
                 >
                   <p>{item.content}</p>
-                  {item.role === 'assistant' && ttsReady ? (
+                  {item.role === 'assistant' ? (
                     <button
                       type="button"
-                      onClick={() => readAloud(item.id, item.content)}
+                      onClick={() => readAloud(item.id, item.content, item.locale ?? locale)}
                       className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-forest/8 px-2.5 text-xs font-bold text-forest hover:bg-forest/12"
                       aria-label={
                         speakingId === item.id ? t('kisan.stopSpeakLabel') : t('kisan.speakLabel')
@@ -375,21 +398,19 @@ export function FarmerChatWidget({
           <div className="border-t border-forest/10 bg-field/60 px-3 py-2">
             <div className="mb-2 flex items-center justify-between gap-2">
               <VoiceWave active={listening || Boolean(speakingId)} tone={voiceTone} />
-              {ttsReady ? (
-                <button
-                  type="button"
-                  onClick={toggleAutoSpeak}
-                  className={cx(
-                    'rounded-full border px-2.5 py-1 text-xs font-semibold',
-                    autoSpeak
-                      ? 'border-leaf bg-leaf/15 text-forest'
-                      : 'border-forest/20 bg-paper text-ink/70',
-                  )}
-                  aria-pressed={autoSpeak}
-                >
-                  {t('kisan.autoSpeak')}
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onClick={toggleAutoSpeak}
+                className={cx(
+                  'rounded-full border px-2.5 py-1 text-xs font-semibold',
+                  autoSpeak
+                    ? 'border-leaf bg-leaf/15 text-forest'
+                    : 'border-forest/20 bg-paper text-ink/70',
+                )}
+                aria-pressed={autoSpeak}
+              >
+                {t('kisan.autoSpeak')}
+              </button>
             </div>
 
             <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
@@ -446,7 +467,9 @@ export function FarmerChatWidget({
                 <span className="text-lg leading-none" aria-hidden>
                   {listening ? '■' : '🎙'}
                 </span>
-                <span className="mt-0.5 max-w-[3.2rem] truncate text-[10px] leading-tight">
+                {/* Two clamped lines: most locales need more room than one 3.2rem line,
+                    and the full text is already on aria-label and title. */}
+                <span className="mt-0.5 line-clamp-2 max-w-[3.4rem] text-[9px] leading-[1.1]">
                   {listening ? t('kisan.stopMicLabel') : t('kisan.tapToTalk')}
                 </span>
               </button>
@@ -465,7 +488,10 @@ export function FarmerChatWidget({
       {!open ? (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            unlockSpeechPlayback();
+            setOpen(true);
+          }}
           className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-forest shadow-[0_12px_28px_rgba(31,61,43,0.32)] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-harvest sm:h-16 sm:w-16"
           aria-expanded={false}
           aria-controls={panelId}

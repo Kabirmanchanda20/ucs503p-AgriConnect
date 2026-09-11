@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Alert, Button, Card, Field, Textarea } from '@/components/ui';
 import { StarDisplay, StarRatingInput } from '@/components/star-rating';
+import { useLocale } from '@/features/i18n/locale-context';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { Review } from '@/lib/api/reviews';
 import {
@@ -20,6 +21,7 @@ export function OrderReviewSection({
   counterpartyName: string;
   counterpartyRating?: string | number | null;
 }) {
+  const { t } = useLocale();
   const [myReview, setMyReview] = useState<Review | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [rating, setRating] = useState(5);
@@ -60,7 +62,7 @@ export function OrderReviewSection({
   if (loading) {
     return (
       <Card>
-        <p className="text-sm text-ink/60">Loading reviews…</p>
+        <p className="text-sm text-ink/60">{t('order.review.loading')}</p>
       </Card>
     );
   }
@@ -68,7 +70,7 @@ export function OrderReviewSection({
   return (
     <Card className="space-y-4">
       <div>
-        <h2 className="font-display text-2xl text-forest">Ratings</h2>
+        <h2 className="font-display text-2xl text-forest">{t('order.review.title')}</h2>
         <p className="text-sm text-ink/60">
           {counterpartyName} — <StarDisplay value={counterpartyRating} />
         </p>
@@ -76,15 +78,17 @@ export function OrderReviewSection({
       {error ? <Alert>{error}</Alert> : null}
       {myReview ? (
         <div className="rounded-xl border border-forest/10 bg-field p-3">
-          <p className="text-sm font-semibold text-forest">Your review</p>
+          <p className="text-sm font-semibold text-forest">{t('order.review.yourReview')}</p>
           <StarDisplay value={myReview.rating} className="mt-1" />
           {myReview.comment ? <p className="mt-2 text-sm text-ink/80">{myReview.comment}</p> : null}
         </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-3 rounded-xl border border-forest/10 p-3">
-          <p className="text-sm font-semibold text-forest">Rate {counterpartyName}</p>
+          <p className="text-sm font-semibold text-forest">
+            {t('order.review.rate', { name: counterpartyName })}
+          </p>
           <StarRatingInput value={rating} onChange={setRating} disabled={pending} />
-          <Field label="Comment (optional)">
+          <Field label={t('order.review.comment')}>
             <Textarea
               value={comment}
               onChange={(event) => setComment(event.target.value)}
@@ -92,12 +96,12 @@ export function OrderReviewSection({
               rows={3}
             />
           </Field>
-          <Button type="submit" disabled={pending}>Submit review</Button>
+          <Button type="submit" disabled={pending}>{t('order.review.submit')}</Button>
         </form>
       )}
       {reviews.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-forest">Order reviews</p>
+          <p className="text-sm font-semibold text-forest">{t('order.review.all')}</p>
           {reviews.map((review) => (
             <div key={review.id} className="rounded-lg border border-forest/10 p-3 text-sm">
               <p className="font-semibold text-forest">{review.fromUser.name}</p>

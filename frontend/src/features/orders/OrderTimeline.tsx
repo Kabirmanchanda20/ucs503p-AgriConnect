@@ -1,9 +1,13 @@
 'use client';
 
+import { useLocale } from '@/features/i18n/locale-context';
 import type { Order } from '@/lib/api/types';
 import { formatDate, formatMoney } from '@/lib/format';
+import type { MessageKey } from '@/lib/i18n';
 
 type StepState = 'complete' | 'current' | 'upcoming' | 'cancelled';
+
+type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
 
 interface TimelineStep {
   id: string;
@@ -12,7 +16,12 @@ interface TimelineStep {
   detail?: string;
 }
 
-const MAIN_LABELS = ['Placed', 'Accepted', 'Confirmed', 'Fulfilled'] as const;
+const MAIN_KEYS = [
+  'order.timeline.placed',
+  'order.timeline.accepted',
+  'order.timeline.confirmed',
+  'order.timeline.fulfilled',
+] as const satisfies readonly MessageKey[];
 
 function mainStepState(stepIndex: number, order: Order): StepState {
   if (order.status === 'cancelled') {
@@ -24,54 +33,54 @@ function mainStepState(stepIndex: number, order: Order): StepState {
   return 'upcoming';
 }
 
-function paymentSteps(order: Order): TimelineStep[] | null {
+function paymentSteps(order: Order, t: Translate, locale: string): TimelineStep[] | null {
   const payment = order.payment;
   if (!payment && order.status === 'cancelled') return null;
 
   const steps: TimelineStep[] = [
-    { id: 'pay-pending', label: 'Payment', state: 'upcoming' },
-    { id: 'pay-held', label: 'Escrow held', state: 'upcoming' },
-    { id: 'pay-released', label: 'Released', state: 'upcoming' },
+    { id: 'pay-pending', label: t('order.timeline.paymentStep'), state: 'upcoming' },
+    { id: 'pay-held', label: t('order.timeline.escrowHeld'), state: 'upcoming' },
+    { id: 'pay-released', label: t('order.timeline.released'), state: 'upcoming' },
   ];
 
   if (!payment) {
     steps[0].state = order.status === 'pending' ? 'current' : 'upcoming';
-    steps[0].detail = 'Awaiting buyer payment';
+    steps[0].detail = t('order.timeline.awaitingPayment');
     return steps;
   }
 
   const status = payment.status;
   if (status === 'pending' || status === 'authorized') {
     steps[0].state = 'current';
-    steps[0].detail = formatMoney(payment.amount);
+    steps[0].detail = formatMoney(payment.amount, locale);
   } else if (status === 'held') {
     steps[0].state = 'complete';
     steps[1].state = 'current';
-    steps[1].detail = formatMoney(payment.amount);
+    steps[1].detail = formatMoney(payment.amount, locale);
   } else if (status === 'released') {
     steps[0].state = 'complete';
     steps[1].state = 'complete';
     steps[2].state = 'complete';
-    steps[2].detail = formatMoney(payment.amount);
+    steps[2].detail = formatMoney(payment.amount, locale);
   } else if (status === 'refunded' || status === 'failed') {
     steps[0].state = 'complete';
     steps[1].state = 'cancelled';
-    steps[1].detail = status;
+    steps[1].detail = t(`order.payment.state.${status}`);
     return steps;
   }
 
   return steps;
 }
 
-function logisticsSteps(order: Order): TimelineStep[] | null {
+function logisticsSteps(order: Order, t: Translate, locale: string): TimelineStep[] | null {
   if (order.deliveryMode !== 'delivery') return null;
   if (order.status === 'cancelled') return null;
 
   const logistics = order.logisticsStatus ?? 'none';
   const steps: TimelineStep[] = [
-    { id: 'log-dispatched', label: 'Dispatched', state: 'upcoming', detail: order.dispatchedAt ? formatDate(order.dispatchedAt) : undefined },
-    { id: 'log-transit', label: 'In transit', state: 'upcoming', detail: order.inTransitAt ? formatDate(order.inTransitAt) : undefined },
-    { id: 'log-delivered', label: 'Delivered', state: 'upcoming', detail: order.logisticsDeliveredAt ? formatDate(order.logisticsDeliveredAt) : undefined },
+    { id: 'log-dispatched', label: t('order.timeline.dispatched'), state: 'upcoming', detail: order.dispatchedAt ? formatDate(order.dispatchedAt, locale) : undefined },
+    { id: 'log-transit', label: t('order.timeline.inTransit'), state: 'upcoming', detail: order.inTransitAt ? formatDate(order.inTransitAt, locale) : undefined },
+    { id: 'log-delivered', label: t('order.timeline.delivered'), state: 'upcoming', detail: order.logisticsDeliveredAt ? formatDate(order.logisticsDeliveredAt, locale) : undefined },
   ];
 
   const rank = { none: -1, dispatched: 0, in_transit: 1, delivered: 2 }[logistics] ?? -1;
@@ -84,7 +93,7 @@ function logisticsSteps(order: Order): TimelineStep[] | null {
 
   if (logistics === 'none' && ['pending', 'accepted'].includes(order.status)) {
     steps[0].state = 'upcoming';
-    steps[0].detail = 'After confirmation';
+    steps[0].detail = t('order.timeline.afterConfirmation');
   }
 
   return steps;
@@ -142,33 +151,38 @@ function StepRow({ title, steps }: { title: string; steps: TimelineStep[] }) {
 }
 
 export function OrderTimeline({ order }: { order: Order }) {
-  const mainSteps: TimelineStep[] = MAIN_LABELS.map((label, index) => ({
+  const { locale, t } = useLocale();
+  const lastIndex = MAIN_KEYS.length - 1;
+  const mainSteps: TimelineStep[] = MAIN_KEYS.map((key, index) => ({
     id: `main-${index}`,
-    label: order.status === 'cancelled' && index === MAIN_LABELS.length - 1 ? 'Cancelled' : label,
+    label:
+      order.status === 'cancelled' && index === lastIndex
+        ? t('order.timeline.cancelled')
+        : t(key),
     state:
-      order.status === 'cancelled' && index === MAIN_LABELS.length - 1
+      order.status === 'cancelled' && index === lastIndex
         ? 'cancelled'
         : mainStepState(index, order),
     detail:
       index === 0 && order.createdAt
-        ? formatDate(order.createdAt)
-        : order.status === 'cancelled' && index === MAIN_LABELS.length - 1 && order.cancellationReason
+        ? formatDate(order.createdAt, locale)
+        : order.status === 'cancelled' && index === lastIndex && order.cancellationReason
           ? order.cancellationReason.slice(0, 40)
           : undefined,
   }));
 
-  const payment = paymentSteps(order);
-  const logistics = logisticsSteps(order);
+  const payment = paymentSteps(order, t, locale);
+  const logistics = logisticsSteps(order, t, locale);
 
   return (
     <div className="space-y-5 rounded-xl border border-forest/10 bg-forest/[0.03] p-4">
       <div>
-        <h2 className="font-display text-lg text-forest">Order timeline</h2>
-        <p className="text-sm text-ink/55">Track status, escrow, and delivery on this order.</p>
+        <h2 className="font-display text-lg text-forest">{t('order.timeline.title')}</h2>
+        <p className="text-sm text-ink/55">{t('order.timeline.subtitle')}</p>
       </div>
-      <StepRow title="Order" steps={mainSteps} />
-      {payment ? <StepRow title="Payment" steps={payment} /> : null}
-      {logistics ? <StepRow title="Delivery" steps={logistics} /> : null}
+      <StepRow title={t('order.timeline.orderSection')} steps={mainSteps} />
+      {payment ? <StepRow title={t('order.timeline.paymentSection')} steps={payment} /> : null}
+      {logistics ? <StepRow title={t('order.timeline.deliverySection')} steps={logistics} /> : null}
     </div>
   );
 }

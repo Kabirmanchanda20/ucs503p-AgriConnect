@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { cx } from '@/components/ui';
+import { useLocale } from '@/features/i18n/locale-context';
 
 const LOGO_WIDTH = 1536;
 const LOGO_HEIGHT = 1024;
@@ -32,6 +35,7 @@ function HeaderWordmark() {
 }
 
 export function Logo({ variant = 'header', className, linked = true }: LogoProps) {
+  const { t } = useLocale();
   const image =
     variant === 'header' ? (
       <HeaderWordmark />
@@ -39,7 +43,7 @@ export function Logo({ variant = 'header', className, linked = true }: LogoProps
       // Plain img keeps PNG alpha intact and avoids stale /_next/image cache.
       <img
         src="/logo.png"
-        alt="AgriConnect — smart farm-to-market and crop advisory platform"
+        alt={t('brand.logoAlt')}
         width={LOGO_WIDTH}
         height={LOGO_HEIGHT}
         decoding="async"
@@ -63,7 +67,7 @@ export function Logo({ variant = 'header', className, linked = true }: LogoProps
     <Link
       href="/"
       className={cx('inline-flex shrink-0 items-center', className)}
-      aria-label="AgriConnect home"
+      aria-label={t('brand.homeLabel')}
     >
       {image}
     </Link>

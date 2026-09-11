@@ -1,5 +1,6 @@
 import type { ListingStatus, Prisma, Role } from '../../generated/prisma/client.js';
 import { AppError } from '../../common/app-error.js';
+import { assertNoContactInfo } from '../../common/contact-guard.js';
 import { toDecimal } from '../../common/decimal.js';
 import { getPrismaClient } from '../../config/db.js';
 import {
@@ -53,6 +54,17 @@ function harvestDateFromInput(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
+/**
+ * Listing prose is read by every buyer, so it is a broadcast channel for a phone number
+ * and gets the same contact scan as chat. Crop, unit, price, and quantity are enumerated
+ * or numeric and cannot carry a message.
+ */
+function assertListingTextIsClean(input: CreateListingInput | UpdateListingInput): void {
+  assertNoContactInfo(input.description, 'description');
+  assertNoContactInfo(input.variety, 'variety');
+  assertNoContactInfo(input.village, 'village');
+}
+
 async function requireOwnedListing(listingId: string, farmerUserId: string) {
   const listing = await getPrismaClient().listing.findFirst({
     where: {
@@ -83,6 +95,8 @@ export async function createListing(farmerUserId: string, input: CreateListingIn
       'Active listings require at least one photo',
     );
   }
+
+  assertListingTextIsClean(input);
 
   const harvestDate = harvestDateFromInput(input.harvestDate);
   const listing = await getPrismaClient().listing.create({
@@ -248,6 +262,8 @@ export async function updateListing(
   if (input.status) {
     assertFarmerStatusTransition(listing.status, input.status);
   }
+
+  assertListingTextIsClean(input);
 
   const nextQuantity = input.quantity ? toDecimal(input.quantity) : listing.quantity;
   const nextMoq = input.minimumOrderQuantity

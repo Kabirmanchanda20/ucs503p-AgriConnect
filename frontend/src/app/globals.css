@@ -45,15 +45,38 @@ html[lang='pa'] body {
 }
 
 html[lang='bn'] body,
-html[lang='as'] body,
-html[lang='ta'] body,
-html[lang='te'] body,
-html[lang='gu'] body,
-html[lang='kn'] body,
-html[lang='ml'] body,
-html[lang='or'] body,
+html[lang='as'] body {
+  font-family: var(--font-noto-beng), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[lang='ta'] body {
+  font-family: var(--font-noto-taml), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[lang='te'] body {
+  font-family: var(--font-noto-telu), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[lang='gu'] body {
+  font-family: var(--font-noto-gujr), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[lang='kn'] body {
+  font-family: var(--font-noto-knda), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[lang='ml'] body {
+  font-family: var(--font-noto-mlym), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[lang='or'] body {
+  font-family: var(--font-noto-orya), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Nastaliq is a tall calligraphic face; the extra leading keeps descenders off the row below. */
 html[lang='ur'] body {
-  font-family: 'Nirmala UI', 'Noto Sans', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-noto-urdu), 'Nirmala UI', var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  line-height: 2;
 }
 
 .font-display {
@@ -125,10 +148,10 @@ html[lang='ur'] .font-display {
 .kisan-hint::after {
   content: '';
   position: absolute;
-  right: -6px;
+  inset-inline-end: -6px;
   bottom: 12px;
   border: 7px solid transparent;
-  border-left-color: var(--forest);
+  border-inline-start-color: var(--forest);
 }
 
 .kisan-typing::after {

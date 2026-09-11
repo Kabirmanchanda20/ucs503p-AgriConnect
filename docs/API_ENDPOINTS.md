@@ -21,6 +21,7 @@ This catalog is the **discovery** document. The contract is the **integration** 
 | **+ active** | `requireActiveAccount` — suspended users blocked on mutations |
 | **Role** | `FARMER` / `BUYER` / `ADMIN` via `roleGuard` |
 | **Realtime** | Socket.io (not REST) |
+| **Webhook** | Inbound from a third party; authenticated by signature, not by JWT |
 | **Outbound** | Server → third party / infra (not callable from the browser) |
 
 ---
@@ -36,6 +37,9 @@ This catalog is the **discovery** document. The contract is the **integration** 
 
 Exceeded → **429 `RATE_LIMIT_EXCEEDED`**.
 
+The Razorpay webhook sits under `/api`, so it shares the global bucket. Razorpay retries a
+throttled delivery, and the handler is idempotent, so a retry cannot double-hold escrow.
+
 ---
 
 ## 3. Coverage summary
@@ -43,9 +47,10 @@ Exceeded → **429 `RATE_LIMIT_EXCEEDED`**.
 | Surface | Count | Status |
 |---|---|---|
 | Ops HTTP | 2 | Live |
-| REST `/api/v1` (incl. meta) | 61 | Live |
-| **Total product HTTP** | **63** | Live |
-| Socket.io | 1 namespace (default `/`) | Live |
+| REST `/api/v1` (incl. meta) | 63 | Live |
+| **Total product HTTP** | **65** | Live |
+| Of those, inbound webhooks | 1 | `POST /api/v1/payments/webhook` |
+| Socket.io | 1 namespace (default `/`) — chat + voice calls | Live |
 | Outbound integrations | 3 families | Server-only |
 | Documented but **not implemented** | 1 | `GET /api/v1/admin/reports.csv` → 404 |
 
@@ -106,8 +111,8 @@ Extra limiter: **10/min**.
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/listings` | Optional auth | — | Browse / search listings | [§4](./API_CONTRACT.md#4-listings) |
 | `GET` | `/api/v1/listings/:id` | Optional auth | — | Listing detail | [§4](./API_CONTRACT.md#4-listings) |
-| `POST` | `/api/v1/listings` | Auth + active | FARMER | Create listing | [§4](./API_CONTRACT.md#4-listings) |
-| `PATCH` | `/api/v1/listings/:id` | Auth + active | FARMER | Update own listing | [§4](./API_CONTRACT.md#4-listings) |
+| `POST` | `/api/v1/listings` | Auth + active | FARMER | Create listing — **contact details rejected** in `description` / `variety` / `village` (`CONTACT_INFO_BLOCKED`) | [§4](./API_CONTRACT.md#4-listings) |
+| `PATCH` | `/api/v1/listings/:id` | Auth + active | FARMER | Update own listing — same contact scan as create | [§4](./API_CONTRACT.md#4-listings) |
 | `DELETE` | `/api/v1/listings/:id` | Auth + active | FARMER | Remove listing | [§4](./API_CONTRACT.md#4-listings) |
 | `POST` | `/api/v1/listings/:id/photos` | Auth + active | FARMER | Upload photos (multipart) | [§4](./API_CONTRACT.md#4-listings) |
 | `DELETE` | `/api/v1/listings/:id/photos/:photoId` | Auth + active | FARMER\|ADMIN | Delete photo | [§4](./API_CONTRACT.md#4-listings) |
@@ -120,18 +125,34 @@ Router-level: **Auth** on all rows. Ownership / role enforced in services.
 
 | Method | Path | Audience | Role | Purpose | Contract |
 |---|---|---|---|---|---|
-| `POST` | `/api/v1/orders` | Auth + active | BUYER | Place order | [§5](./API_CONTRACT.md#5-orders) |
+| `POST` | `/api/v1/orders` | Auth + active | BUYER | Place order — **contact details rejected** in `notes` (`CONTACT_INFO_BLOCKED`) | [§5](./API_CONTRACT.md#5-orders) |
 | `GET` | `/api/v1/orders` | Auth | any* | List my orders | [§5](./API_CONTRACT.md#5-orders) |
 | `GET` | `/api/v1/orders/:id` | Auth | any* | Order detail | [§5](./API_CONTRACT.md#5-orders) |
 | `PATCH` | `/api/v1/orders/:id/status` | Auth + active | any* | Advance / cancel status | [§5](./API_CONTRACT.md#5-orders) |
 | `PATCH` | `/api/v1/orders/:id/logistics` | Auth + active | any* | Logistics tracking | [§5](./API_CONTRACT.md#5-orders) |
-| `POST` | `/api/v1/orders/:id/payment` | Auth + active | BUYER | Init escrow / payment hold | [§5](./API_CONTRACT.md#5-orders) |
-| `POST` | `/api/v1/orders/:id/payment/confirm` | Auth + active | BUYER | Confirm payment held | [§5](./API_CONTRACT.md#5-orders) |
+| `POST` | `/api/v1/orders/:id/payment` | Auth + active | BUYER | Start payment with a chosen method (`upi`/`card`/`netbanking`/`cod`) | [§5](./API_CONTRACT.md#post-apiv1ordersidpayment) |
+| `POST` | `/api/v1/orders/:id/payment/confirm` | Auth + active | BUYER | Move payment into escrow (`held`) after the server verifies it with Razorpay | [§5](./API_CONTRACT.md#post-apiv1ordersidpaymentconfirm) |
 | `GET` | `/api/v1/orders/:id/messages` | Auth | any* | List order chat | [§5](./API_CONTRACT.md#5-orders) |
-| `POST` | `/api/v1/orders/:id/messages` | Auth + active | any* | Send chat message | [§5](./API_CONTRACT.md#5-orders) |
+| `POST` | `/api/v1/orders/:id/messages` | Auth + active | any* | Send chat message — **contact details rejected** (`CONTACT_INFO_BLOCKED`) | [§5](./API_CONTRACT.md#contact-info-blocking-anti-disintermediation) |
 | `POST` | `/api/v1/orders/:id/messages/read` | Auth + active | any* | Mark messages read | [§5](./API_CONTRACT.md#5-orders) |
 
 \*Buyer, farmer on the order, or admin (where allowed).
+
+---
+
+## 9b. Payments — `/api/v1/payments`
+
+| Method | Path | Audience | Role | Purpose | Contract |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/payments/methods` | Auth | any | Method catalog for the checkout picker | [§5](./API_CONTRACT.md#get-apiv1paymentsmethods) |
+| `POST` | `/api/v1/payments/webhook` | **Webhook** | — | Razorpay `payment.captured` / `payment.failed`; HMAC-signed raw body, no JWT | [§5](./API_CONTRACT.md#post-apiv1paymentswebhook) |
+
+Escrow lifecycle (`pending → authorized → held → released`, plus `refunded` on cancellation)
+is documented in [Payment methods and escrow lifecycle](./API_CONTRACT.md#payment-methods-and-escrow-lifecycle).
+
+A payment reaches `held` only after the server itself confirms it with Razorpay — either by
+reading the payment back during confirm, or from the signed webhook. The browser reports
+which payment id to check, never whether it succeeded.
 
 ---
 
@@ -214,6 +235,7 @@ Extra limiter: **20/min**.
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/assistant/status` | Auth | any | Online / offline + config | [§7b](./API_CONTRACT.md#7b-assistant-kisan) |
 | `POST` | `/api/v1/assistant/query` | Auth + active | any | Ask advisory question | [§7b](./API_CONTRACT.md#7b-assistant-kisan) |
+| `POST` | `/api/v1/assistant/speak` | Auth + active | any | Spoken WAV of a reply | [§7b](./API_CONTRACT.md#7b-assistant-kisan) |
 
 ---
 
@@ -226,11 +248,16 @@ Extra limiter: **20/min**.
 | Audience | **Realtime** + **Auth** |
 | Auth | `handshake.auth.token` or `Authorization: Bearer` |
 | Rooms | `order:{orderId}` after access check (buyer/farmer on order; ADMIN any) |
-| Client → server | `join:order`, `leave:order`, `typing:start` |
-| Server → client | `message:new`, `typing` |
-| Contract | [§5 Real-time chat](./API_CONTRACT.md#5-orders) |
+| Client → server | `join:order`, `leave:order`, `typing:start`, `call:invite`, `call:accept`, `call:decline`, `call:end`, `call:signal` |
+| Server → client | `message:new`, `typing`, `call:incoming`, `call:accepted`, `call:declined`, `call:ended`, `call:signal` |
+| Contract | [Real-time chat](./API_CONTRACT.md#real-time-chat-socketio) · [Voice calls](./API_CONTRACT.md#in-app-voice-calls-socketio) |
 
 REST chat (`GET/POST .../messages`) remains the durable store; sockets push live updates.
+
+**Voice calls** let the buyer and farmer talk without swapping phone numbers, which is why
+chat rejects contact details. Audio is peer-to-peer WebRTC — the server relays only SDP and
+ICE candidates, never media, and calls are not persisted. Admins cannot join a call. One live
+call per order, tracked in memory on the API process.
 
 ---
 
@@ -241,11 +268,12 @@ These are **not** product HTTP routes for the browser. Express calls them; the N
 | Integration | Direction | Env / config | Used by | Notes |
 |---|---|---|---|---|
 | **data.gov.in / Agmarknet** | Outbound HTTP | `DATA_GOV_IN_API_KEY` (optional for some states) | `mandi-prices.service.ts` → `/market/mandi/*` | Live wholesale prices; empty day = `200 []` |
-| **Google Gemini** | Outbound HTTP | `GEMINI_API_KEY`, `GEMINI_MODEL` | `assistant.service.ts` → `/assistant/*` | Kisan advisory; status offline if key missing |
+| **Google Gemini** | Outbound HTTP | `GEMINI_API_KEY`, `GEMINI_MODEL`, optional `GEMINI_TTS_MODEL`, `GEMINI_THINKING_LEVEL` | `assistant.service.ts` / `assistant-tts.ts` → `/assistant/*` | Kisan advisory + spoken WAV; status offline if key missing |
 | **Supabase PostgreSQL** | Outbound DB | `DATABASE_URL`, `DIRECT_URL` | Prisma | All persistent product data |
 | **Supabase Storage** | Outbound storage | `SUPABASE_*` service role | Listing photo upload | Browser never gets service-role key |
 | **SMTP / console mail** | Outbound mail | SMTP env or console | Password reset / notifications | Dev may log to console |
-| **Razorpay** (optional) | Outbound payments | Razorpay keys | Payment stub | Mock hold/confirm without keys; production webhooks backlog |
+| **Razorpay** (optional) | Outbound payments **+ inbound webhook** | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | `payments.service.ts` → `/orders/:id/payment*`; webhook → `POST /payments/webhook` | UPI / card / net banking. Creates the order, reads the payment back before escrowing, and accepts signed `payment.captured` / `payment.failed` events. Simulated hold/confirm without keys; COD never calls the gateway |
+| **STUN (public Google)** | Outbound UDP from the **browser** | `WEBRTC_ICE_SERVERS` (optional override) | Socket.io `call:*` | NAT discovery for voice calls. Add TURN for strict NATs |
 
 Details: [Outbound integrations appendix](./API_CONTRACT.md#12-outbound-integrations-server-only).
 
@@ -268,6 +296,7 @@ Details: [Outbound integrations appendix](./API_CONTRACT.md#12-outbound-integrat
 createApp()
 ├── GET /health
 ├── GET /ready
+├── express.raw /api/v1/payments/webhook   (before express.json)
 ├── rateLimit /api/*
 └── /api/v1
     ├── GET /
@@ -275,6 +304,7 @@ createApp()
     ├── /users
     ├── /listings
     ├── /orders        (+ payment + messages nested)
+    ├── /payments      (webhook [no JWT] + method catalog)
     ├── /notifications
     ├── /reports
     ├── /              (reviews routes)
