@@ -4,6 +4,8 @@ Start here if you are joining the project or picking up work after a pause. Thes
 
 The public project overview (problem, personas, stack, architecture sketch, quick start) lives in the root [README.md](../README.md). This folder is the deeper engineering set.
 
+**Faculty / UCS503 template docs:** [index.md](./index.md) · [requirements.md](./requirements.md) · [architecture-overview.md](./architecture-overview.md) · [testing.md](./testing.md) · [evaluation.md](./evaluation.md) · [ROADMAP.md](./ROADMAP.md) · [WEEKLY_PROGRESS.md](./WEEKLY_PROGRESS.md) · Week [1](./AgriConnect_Progress_Week1.pptx) / [2](./AgriConnect_Progress_Week2.pptx) / [3](./AgriConnect_Progress_Week3.pptx) decks
+
 **Complete endpoint catalog (discovery):** [API_ENDPOINTS.md](./API_ENDPOINTS.md)  
 **Canonical API contract (request/response shapes):** [API_CONTRACT.md](./API_CONTRACT.md)  
 **Status codes, approve/discard/change scenarios, and errors:** [API_STATUS_CODES.md](./API_STATUS_CODES.md)  
