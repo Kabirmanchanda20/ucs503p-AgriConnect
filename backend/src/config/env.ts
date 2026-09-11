@@ -86,6 +86,11 @@ const envSchema = z
       .default(true),
     /** Free key from https://data.gov.in — official Agmarknet OGD feed (all states incl. Haryana). */
     DATA_GOV_IN_API_KEY: optionalString,
+    /** Optional seed credentials for the human AGRONOMIST expert (not self-registerable). */
+    AGRONOMIST_SEED_EMAIL: optionalString,
+    AGRONOMIST_SEED_PASSWORD: optionalString,
+    /** Optional OpenWeatherMap key — reserved for live weather context in grounded answers. */
+    OPENWEATHER_API_KEY: optionalString,
   })
   .superRefine((value, context) => {
     if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) {

@@ -116,7 +116,7 @@ Never `fetch` ad-hoc in a page if a wrapper already exists. Add a function in `s
 | `reports.ts` | `/reports/me` |
 | `messages.ts` | order chat history, send, mark read |
 | `reviews.ts` | order/user reviews, submit rating |
-| `assistant.ts` | Kisan query, status, and `POST /assistant/speak` (WAV) |
+| `assistant.ts` | Kisan query (legacy + grounded + escalate), status, and `POST /assistant/speak` (WAV) |
 | `socket.ts` | Socket.io client (`join:order`, `message:new`); `auth` is a callback so every reconnect re-reads the current access token, and an `Unauthorized` handshake triggers one `refreshAccessToken()` retry |
 | `admin.ts` | users, suspend, verify, moderate, analytics, logs |
 | `types.ts` | Shared TS types (must match API JSON) |
@@ -181,7 +181,7 @@ If `user.isSuspended`, mutating API calls return **403 `ACCOUNT_SUSPENDED`**. Sh
 | Register / login | `app/register`, `app/login` | `POST /auth/register`, `/login` |
 | Browse crops | `app/marketplace` | `GET /listings` (public) |
 | Mandi / reference prices | `app/market-prices` | `GET /market/prices`, `/market/mandi/prices` (public). Requires API on `NEXT_PUBLIC_API_BASE_URL` (default `:5001`). Empty table = no Agmarknet arrivals for that crop/state today (e.g. Haryana Wheat); try Potato/Onion. `502 MANDI_FEED_UNAVAILABLE` = feed down/rate-limited. |
-| Ask Kisan | `FarmerChatWidget` | Voice-first: quiet launcher, mobile fullscreen, large mic (transcript → review → Send), waveform states, full read-aloud in the selected language. `POST /assistant/query` + `/assistant/speak`. |
+| Ask Kisan | `FarmerChatWidget` | Voice-first: quiet launcher, mobile fullscreen, large mic (transcript → review → Send), waveform states, full read-aloud in the selected language. `POST /assistant/query` + `/assistant/speak`. Capstone Grounded Kisan uses the **same** widget: citations render under grounded replies; marketplace how-to stays on the legacy chat path. |
 | Listing detail | `app/listings/[id]` | `GET /listings/:id`, `GET /users/:id/public` |
 | Create listing | `app/farmer/listings/new` | `POST /listings` (draft) → `POST .../photos` → `PATCH` `{ status: "active" }` |
 | Edit listing | `app/farmer/listings/[id]/edit` | `PATCH /listings/:id`, photo add/delete |

@@ -661,9 +661,9 @@ Shared limiter: **60 / minute** → **429 `RATE_LIMIT_EXCEEDED`** (one chat turn
 
 | HTTP | Code | Scenario |
 |---|---|---|
-| **200** | — | `{ reply, source }` in the requested `language` script |
+| **200** | — | `{ reply, source, mode, citations?, escalated?, escalationId? }` — `mode` is `chat` \| `grounded` \| `escalated` \| `refused` |
 | **400** | `VALIDATION_ERROR` | Empty message, invalid language, too much history |
-| **502** | `ASSISTANT_UNAVAILABLE` | Gemini down / missing key handled as local English-or-locale stub when key missing. Raised only after one automatic retry (30 s timeout each) |
+| **502** | `ASSISTANT_UNAVAILABLE` | Gemini down on a path that needs the model. Missing key → local stub / grounded excerpts. Raised only after one automatic retry (30 s timeout each) |
 
 #### `POST /speak`
 
@@ -672,6 +672,15 @@ Shared limiter: **60 / minute** → **429 `RATE_LIMIT_EXCEEDED`** (one chat turn
 | **200** | — | Raw `audio/wav` (not JSON). Full reply in the selected language |
 | **400** | `VALIDATION_ERROR` | Empty / oversized `text`, invalid language |
 | **502** | `ASSISTANT_UNAVAILABLE` | No `GEMINI_API_KEY`, TTS model missing, or empty audio |
+
+### 5.10b Agronomist (`/api/v1/agronomist`) — Auth: Yes · Roles: AGRONOMIST\|ADMIN
+
+| HTTP | Code | Scenario |
+|---|---|---|
+| **200** | — | List or update `AdvisoryEscalation` |
+| **400** | `VALIDATION_ERROR` | Resolve without `resolution` |
+| **403** | `FORBIDDEN` | Farmer/buyer |
+| **404** | `NOT_FOUND` | Unknown escalation id |
 
 ---
 

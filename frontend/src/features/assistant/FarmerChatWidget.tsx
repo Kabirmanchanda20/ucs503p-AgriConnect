@@ -22,6 +22,8 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   locale?: Locale;
+  citations?: { id: string; title: string; source: string }[];
+  escalated?: boolean;
 }
 
 const AUTO_SPEAK_KEY = 'agriconnect.kisan.autoSpeak';
@@ -74,6 +76,7 @@ export function FarmerChatWidget({
   const greeting = useMemo(() => {
     if (role === 'FARMER') return t('kisan.greetingFarmer', { name: nameSuffix });
     if (role === 'BUYER') return t('kisan.greetingBuyer', { name: nameSuffix });
+    // ADMIN + AGRONOMIST share the same helper greeting (expert uses escalations API).
     return t('kisan.greetingAdmin', { name: nameSuffix });
   }, [role, nameSuffix, t]);
 
@@ -273,7 +276,14 @@ export function FarmerChatWidget({
       const replyId = newId();
       setMessages((current) => [
         ...current,
-        { id: replyId, role: 'assistant', content: data.reply, locale },
+        {
+          id: replyId,
+          role: 'assistant',
+          content: data.reply,
+          locale,
+          citations: data.citations,
+          escalated: data.escalated,
+        },
       ]);
       if (autoSpeak) {
         setSpeakingId(replyId);
@@ -370,6 +380,15 @@ export function FarmerChatWidget({
                   )}
                 >
                   <p>{item.content}</p>
+                  {item.role === 'assistant' && item.citations && item.citations.length > 0 ? (
+                    <ul className="mt-2 space-y-1 border-t border-forest/10 pt-2 text-xs text-soil">
+                      {item.citations.map((cite) => (
+                        <li key={cite.id}>
+                          {cite.title} — {cite.source}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                   {item.role === 'assistant' ? (
                     <button
                       type="button"

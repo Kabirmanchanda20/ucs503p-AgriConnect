@@ -22,7 +22,8 @@
     "prisma:seed": "prisma db seed",
     "fix:demo-passwords": "tsx scripts/fix-demo-passwords.ts",
     "smoke:antibypass": "tsx scripts/smoke-antibypass-payments.ts",
-    "smoke:calls": "tsx scripts/smoke-call-signaling.ts"
+    "smoke:calls": "tsx scripts/smoke-call-signaling.ts",
+    "eval:grounded": "tsx scripts/eval-grounded-kisan.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",

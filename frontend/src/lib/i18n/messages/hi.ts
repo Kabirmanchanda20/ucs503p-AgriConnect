@@ -38,6 +38,14 @@ export const hi: MessageTree = {
   shell: {
     signedIn: '{email} से साइन इन, होम {path}',
   },
+  weather: {
+    aria: 'क्षेत्रीय मौसम पूर्वानुमान',
+    unavailable: 'मौसम उपलब्ध नहीं',
+    regionalNote: 'यदि खेत की स्थिति अलग हो तो स्थानीय IMD से पुष्टि करें।',
+    locationFromProfile: 'आपकी प्रोफ़ाइल के अनुसार: {place}',
+    fiveDayTitle: 'अगले 5 दिन',
+    closeDetails: 'बंद करें',
+  },
   rating: {
     none: 'अभी कोई रेटिंग नहीं',
     outOfFive: '5 में से',

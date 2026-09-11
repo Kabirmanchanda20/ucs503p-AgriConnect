@@ -38,6 +38,14 @@ export const te = withEnglishFallback({
   shell: {
     signedIn: '{email} గా సైన్ ఇన్ అయ్యారు, హోమ్ {path}',
   },
+  weather: {
+    aria: 'ప్రాంతీయ వాతావరణ సూచన',
+    unavailable: 'వాతావరణం లేదు',
+    regionalNote: 'పొలం వేరైతే స్థానిక IMDతో నిర్ధారించండి.',
+    locationFromProfile: 'మీ ప్రొఫైల్ ప్రకారం: {place}',
+    fiveDayTitle: 'తర్వాతి 5 రోజులు',
+    closeDetails: 'మూసివేయి',
+  },
   rating: {
     none: 'ఇంకా రేటింగ్‌లు లేవు',
     outOfFive: '5 లో',

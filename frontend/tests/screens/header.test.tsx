@@ -14,6 +14,33 @@ vi.mock('@/lib/api/notifications', () => ({
   listNotifications: vi.fn(() => Promise.resolve({ data: [], pagination: { total: 3 } })),
 }));
 
+vi.mock('@/lib/api/weather', () => ({
+  getWeatherForecast: vi.fn(() =>
+    Promise.resolve({
+      data: {
+        place: 'Ludhiana',
+        profilePlace: 'Ludhiana, Punjab',
+        description: 'clear sky',
+        tempC: 31,
+        humidity: 40,
+        rainOutlook: 'No rain soon',
+        alertLine: 'Live weather near Ludhiana',
+        days: [
+          {
+            date: '2026-09-12',
+            tempMinC: 24,
+            tempMaxC: 33,
+            description: 'few clouds',
+            rainMm: 0,
+          },
+        ],
+        source: 'OpenWeatherMap',
+        fetchedAt: new Date().toISOString(),
+      },
+    }),
+  ),
+}));
+
 vi.mock('@/lib/notifications-events', () => ({
   onNotificationsUpdated: vi.fn(() => () => undefined),
 }));

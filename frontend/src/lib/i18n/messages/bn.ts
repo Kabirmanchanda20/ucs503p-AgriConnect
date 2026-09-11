@@ -38,6 +38,14 @@ export const bn = withEnglishFallback({
   shell: {
     signedIn: '{email} দিয়ে সাইন ইন, হোম {path}',
   },
+  weather: {
+    aria: 'আঞ্চলিক আবহাওয়ার পূর্বাভাস',
+    unavailable: 'আবহাওয়া নেই',
+    regionalNote: 'ক্ষেত আলাদা হলে স্থানীয় IMD দিয়ে নিশ্চিত করুন।',
+    locationFromProfile: 'আপনার প্রোফাইল অনুযায়ী: {place}',
+    fiveDayTitle: 'পরবর্তী ৫ দিন',
+    closeDetails: 'বন্ধ',
+  },
   rating: {
     none: 'এখনও কোনও রেটিং নেই',
     outOfFive: '5-এর মধ্যে',

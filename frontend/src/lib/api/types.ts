@@ -1,4 +1,4 @@
-export type Role = 'FARMER' | 'BUYER' | 'ADMIN';
+export type Role = 'FARMER' | 'BUYER' | 'ADMIN' | 'AGRONOMIST';
 export type ListingStatus = 'draft' | 'active' | 'sold_out' | 'expired' | 'removed';
 export type OrderStatus =
   | 'pending'

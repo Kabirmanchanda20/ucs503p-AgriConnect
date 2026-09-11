@@ -140,10 +140,10 @@ export async function exportMe(userId: string) {
 
 export async function deleteMe(
   userId: string,
-  role: 'FARMER' | 'BUYER' | 'ADMIN',
+  role: 'FARMER' | 'BUYER' | 'ADMIN' | 'AGRONOMIST',
 ) {
-  if (role === 'ADMIN') {
-    throw new AppError(403, 'FORBIDDEN', 'Admin accounts cannot self-delete');
+  if (role === 'ADMIN' || role === 'AGRONOMIST') {
+    throw new AppError(403, 'FORBIDDEN', 'Admin and agronomist accounts cannot self-delete');
   }
 
   await getPrismaClient().$transaction(async (transaction) => {

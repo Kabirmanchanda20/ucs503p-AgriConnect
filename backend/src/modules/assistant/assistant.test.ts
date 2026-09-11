@@ -58,6 +58,7 @@ describe('assistant prompt mapping', () => {
     expect(buildSystemPrompt('FARMER')).toMatch(/farmer on AgriConnect/i);
     expect(buildSystemPrompt('BUYER')).toMatch(/buyer on AgriConnect/i);
     expect(buildSystemPrompt('ADMIN')).toContain('admin');
+    expect(buildSystemPrompt('AGRONOMIST')).toMatch(/agronomist/i);
     expect(MISSING_KEY_REPLY).toMatch(/GEMINI_API_KEY/);
   });
 

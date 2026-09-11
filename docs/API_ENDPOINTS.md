@@ -229,13 +229,28 @@ All rows: **Auth + ADMIN**.
 
 ## 16. Assistant (Kisan) — `/api/v1/assistant`
 
-Extra limiter: **20/min**.
+Extra limiter: **20/min**. Same widget: marketplace chat stays legacy Gemini; crop/scheme/weather uses Grounded RAG; high-stakes asks escalate.
 
 | Method | Path | Audience | Role | Purpose | Contract |
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/assistant/status` | Auth | any | Online / offline + config | [§7b](./API_CONTRACT.md#7b-assistant-kisan) |
-| `POST` | `/api/v1/assistant/query` | Auth + active | any | Ask advisory question | [§7b](./API_CONTRACT.md#7b-assistant-kisan) |
+| `POST` | `/api/v1/assistant/query` | Auth + active | any | Ask Kisan (legacy \| grounded \| escalate \| refuse) | [§7b](./API_CONTRACT.md#7b-assistant-kisan) |
 | `POST` | `/api/v1/assistant/speak` | Auth + active | any | Spoken WAV of a reply | [§7b](./API_CONTRACT.md#7b-assistant-kisan) |
+
+## 16b. Agronomist — `/api/v1/agronomist`
+
+Seeded `AGRONOMIST` only (not self-registerable). Admins allowed.
+
+| Method | Path | Audience | Role | Purpose | Contract |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/agronomist/escalations` | Auth | AGRONOMIST\|ADMIN | List advisory escalations | [§7b Agronomist](./API_CONTRACT.md#7b-agronomist-grounded-kisan-escalations) |
+| `PATCH` | `/api/v1/agronomist/escalations/:id` | Auth | AGRONOMIST\|ADMIN | Claim / resolve escalation | [§7b Agronomist](./API_CONTRACT.md#7b-agronomist-grounded-kisan-escalations) |
+
+## 16c. Weather — `/api/v1/weather`
+
+| Method | Path | Audience | Role | Purpose | Contract |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/weather` | Auth | any | Live regional sample + 24–48h rain outlook for header chip | OpenWeatherMap via `OPENWEATHER_API_KEY` |
 
 ---
 

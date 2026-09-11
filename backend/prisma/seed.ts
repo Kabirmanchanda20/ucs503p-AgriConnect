@@ -62,6 +62,40 @@ async function main(): Promise<void> {
 
   console.info(`Admin seed ensured for ${email}.`);
 
+  const agronomistEmail = (
+    process.env.AGRONOMIST_SEED_EMAIL ?? 'agronomist@demo.agriconnect.local'
+  )
+    .trim()
+    .toLowerCase();
+  const agronomistPassword =
+    process.env.AGRONOMIST_SEED_PASSWORD ?? process.env.DEMO_USER_PASSWORD ?? 'Demo@AgriConnect1';
+  if (agronomistPassword.length >= 12) {
+    const agronomistHash = await bcrypt.hash(agronomistPassword, 12);
+    await prisma.user.upsert({
+      where: { email: agronomistEmail },
+      create: {
+        email: agronomistEmail,
+        passwordHash: agronomistHash,
+        name: 'Demo Agronomist',
+        role: Role.AGRONOMIST,
+        verified: true,
+        languagePref: 'en',
+        state: 'Punjab',
+        district: 'Ludhiana',
+      },
+      update: {
+        passwordHash: agronomistHash,
+        role: Role.AGRONOMIST,
+        verified: true,
+        isSuspended: false,
+        deletedAt: null,
+      },
+    });
+    console.info(`Agronomist seed ensured for ${agronomistEmail}.`);
+  } else {
+    console.info('Skipped agronomist seed — password shorter than 12 characters.');
+  }
+
   if (seedDemoEnabled()) {
     await seedDemoData(prisma);
   } else {

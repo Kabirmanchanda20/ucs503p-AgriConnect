@@ -12,6 +12,8 @@ enum Role {
   FARMER
   BUYER
   ADMIN
+  /// Human expert for Grounded Kisan escalation. Seeded only — not self-registerable.
+  AGRONOMIST
 }
 
 enum ListingStatus {
@@ -57,6 +59,13 @@ enum NotificationType {
   ACCOUNT_SUSPENDED
   LISTING_MODERATED
   PASSWORD_RESET
+  ADVISORY_ESCALATION
+}
+
+enum EscalationStatus {
+  pending
+  claimed
+  resolved
 }
 
 enum LogisticsStatus {
@@ -119,6 +128,8 @@ model User {
   reviewsWritten      Review[]             @relation("ReviewAuthor")
   reviewsReceived     Review[]             @relation("ReviewTarget")
   buyerCropAlerts     BuyerCropAlert[]
+  escalationsOpened   AdvisoryEscalation[] @relation("EscalationFarmer")
+  escalationsAssigned AdvisoryEscalation[] @relation("EscalationAssignee")
 
   @@index([role])
   @@index([isSuspended])
@@ -389,4 +400,25 @@ model BuyerCropAlert {
   @@unique([userId, crop, state])
   @@index([userId])
   @@map("buyer_crop_alerts")
+}
+
+/// Grounded Kisan handoff when retrieval is weak or the ask is high-stakes (PRD §8.2).
+model AdvisoryEscalation {
+  id           String           @id @default(uuid()) @db.Uuid
+  farmerId     String           @db.Uuid
+  question     String
+  reason       String
+  language     String           @default("en")
+  status       EscalationStatus @default(pending)
+  assignedToId String?          @db.Uuid
+  resolution   String?
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime         @updatedAt @db.Timestamptz(6)
+  farmer       User             @relation("EscalationFarmer", fields: [farmerId], references: [id], onDelete: Cascade)
+  assignedTo   User?            @relation("EscalationAssignee", fields: [assignedToId], references: [id])
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([farmerId, createdAt(sort: Desc)])
+  @@index([assignedToId])
+  @@map("advisory_escalations")
 }

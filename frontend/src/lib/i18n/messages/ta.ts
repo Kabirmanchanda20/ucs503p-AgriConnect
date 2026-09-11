@@ -38,6 +38,14 @@ export const ta = withEnglishFallback({
   shell: {
     signedIn: '{email} ஆக உள்நுழைந்துள்ளீர்கள், முகப்பு {path}',
   },
+  weather: {
+    aria: 'பிராந்திய வானிலை முன்னறிவிப்பு',
+    unavailable: 'வானிலை இல்லை',
+    regionalNote: 'வயல் வேறுபட்டால் உள்ளூர் IMD மூலம் உறுதிசெய்யுங்கள்.',
+    locationFromProfile: 'உங்கள் சுயவிவரப்படி: {place}',
+    fiveDayTitle: 'அடுத்த 5 நாட்கள்',
+    closeDetails: 'மூடு',
+  },
   rating: {
     none: 'இன்னும் மதிப்பீடு இல்லை',
     outOfFive: '5-க்கு',

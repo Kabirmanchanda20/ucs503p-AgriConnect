@@ -38,6 +38,14 @@ export const pa: MessageTree = {
   shell: {
     signedIn: '{email} ਨਾਲ ਸਾਈਨ ਇਨ, ਹੋਮ {path}',
   },
+  weather: {
+    aria: 'ਖੇਤਰੀ ਮੌਸਮ ਭਵਿੱਖਬਾਣੀ',
+    unavailable: 'ਮੌਸਮ ਉਪਲਬਧ ਨਹੀਂ',
+    regionalNote: 'ਜੇ ਖੇਤ ਵੱਖਰਾ ਹੋਵੇ ਤਾਂ ਸਥਾਨਕ IMD ਤੋਂ ਪੁਸ਼ਟੀ ਕਰੋ।',
+    locationFromProfile: 'ਤੁਹਾਡੀ ਪ੍ਰੋਫਾਈਲ ਅਨੁਸਾਰ: {place}',
+    fiveDayTitle: 'ਅਗਲੇ 5 ਦਿਨ',
+    closeDetails: 'ਬੰਦ ਕਰੋ',
+  },
   rating: {
     none: 'ਹਾਲੇ ਕੋਈ ਰੇਟਿੰਗ ਨਹੀਂ',
     outOfFive: '5 ਵਿੱਚੋਂ',

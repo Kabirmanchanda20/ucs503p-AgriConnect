@@ -38,6 +38,14 @@ export const mr = withEnglishFallback({
   shell: {
     signedIn: '{email} म्हणून साइन इन, मुख्यपान {path}',
   },
+  weather: {
+    aria: 'प्रादेशिक हवामान अंदाज',
+    unavailable: 'हवामान उपलब्ध नाही',
+    regionalNote: 'शेत वेगळे असेल तर स्थानिक IMD ने खात्री करा.',
+    locationFromProfile: 'तुमच्या प्रोफाइलनुसार: {place}',
+    fiveDayTitle: 'पुढील ५ दिवस',
+    closeDetails: 'बंद',
+  },
   rating: {
     none: 'अजून कोणतेही रेटिंग नाही',
     outOfFive: '5 पैकी',

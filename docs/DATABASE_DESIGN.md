@@ -193,7 +193,7 @@ enum NotificationType {
 
 Prisma `enum` names are PascalCase in the schema; stored values for listing/order/unit match the API contract (snake_case / lowercase as above). Implementation must emit **exactly** these JSON strings.
 
-Do **not** add `AGRONOMIST` or `FPO` to `Role` in V1.
+Do **not** add `FPO` to `Role` in V1. Capstone adds seeded `AGRONOMIST` (not self-registerable) for Grounded Kisan escalations.
 
 ---
 

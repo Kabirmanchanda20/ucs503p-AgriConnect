@@ -3,6 +3,7 @@ import { AppError } from '../../common/app-error.js';
 import { getEnv } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 import type { AssistantTurn } from './assistant.schema.js';
+import type { AssistantQueryResult } from './grounded.service.js';
 
 export const MISSING_KEY_REPLY =
   "I'm ready to chat, but my field notes aren't connected yet. Ask the AgriConnect admin to add GEMINI_API_KEY to the backend .env file (from Google AI Studio), then try again.";
@@ -223,7 +224,9 @@ export function buildSystemPrompt(role: Role, language = 'en'): string {
       ? 'The user is a farmer on AgriConnect. Help them list produce, set fair prices, manage orders, and care for crops.'
       : role === 'BUYER'
         ? 'The user is a buyer on AgriConnect. Help them browse listings, place orders, and understand fair farm prices.'
-        : 'The user is an AgriConnect admin. Help them understand how farmers and buyers use the marketplace.';
+        : role === 'AGRONOMIST'
+          ? 'The user is a human agronomist reviewing escalations from Grounded Kisan. Help them understand AgriConnect advisory handoff and marketplace context.'
+          : 'The user is an AgriConnect admin. Help them understand how farmers and buyers use the marketplace.';
 
   const style = getReplyStyle(language);
   const languageLine = `Always reply ONLY in ${style.name} using ${style.script} script — even if the user types in English or another language. Never mix scripts. Do not switch language unless the user clearly asks to change language.`;
@@ -286,7 +289,7 @@ function extractReply(payload: GeminiResponse, model: string): string {
   return text;
 }
 
-export async function queryAssistant(input: {
+export async function queryAssistantChat(input: {
   message: string;
   history: AssistantTurn[];
   role: Role;
@@ -335,6 +338,49 @@ export async function queryAssistant(input: {
   return { reply, source: 'gemini' };
 }
 
+/**
+ * Public Kisan entry: marketplace/app chat stays on the legacy Gemini path;
+ * crop/scheme/weather goes through Grounded RAG; high-stakes asks escalate.
+ */
+export async function queryAssistant(input: {
+  message: string;
+  history: AssistantTurn[];
+  role: Role;
+  userId: string;
+  language?: string | undefined;
+}): Promise<AssistantQueryResult> {
+  const language = input.language ?? 'en';
+  const { classifyAssistantRoute, answerGrounded, handleEscalationRoute } =
+    await import('./grounded.service.js');
+
+  const decision = classifyAssistantRoute(input.message);
+  if (decision.route === 'escalate' && decision.reason) {
+    return handleEscalationRoute({
+      message: input.message,
+      userId: input.userId,
+      language,
+      reason: decision.reason,
+    });
+  }
+  if (decision.route === 'grounded') {
+    return answerGrounded({
+      message: input.message,
+      history: input.history,
+      role: input.role,
+      userId: input.userId,
+      language,
+    });
+  }
+
+  const chat = await queryAssistantChat({
+    message: input.message,
+    history: input.history,
+    role: input.role,
+    language,
+  });
+  return { reply: chat.reply, source: chat.source, mode: 'chat' };
+}
+
 const GEMINI_TIMEOUT_MS = 25_000;
 const GEMINI_MAX_OUTPUT_TOKENS = 768;
 
@@ -346,6 +392,23 @@ function delay(ms: number): Promise<void> {
 function isInvalidArgument(payload: GeminiResponse): boolean {
   if (payload.error?.status === 'INVALID_ARGUMENT') return true;
   return /invalid argument|unknown name|thinking/i.test(payload.error?.message ?? '');
+}
+
+export async function generateGeminiTextForGrounded(input: {
+  model: string;
+  system: string;
+  message: string;
+  history: AssistantTurn[];
+  maxOutputTokens?: number;
+  timeoutMs?: number;
+}): Promise<string> {
+  return generateGeminiText({
+    model: input.model,
+    system: input.system,
+    contents: toGeminiContents(input.message, input.history),
+    ...(input.maxOutputTokens !== undefined ? { maxOutputTokens: input.maxOutputTokens } : {}),
+    ...(input.timeoutMs !== undefined ? { timeoutMs: input.timeoutMs } : {}),
+  });
 }
 
 async function generateGeminiText(input: {

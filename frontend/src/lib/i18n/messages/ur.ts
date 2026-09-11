@@ -38,6 +38,14 @@ export const ur = withEnglishFallback({
   shell: {
     signedIn: '{email} کے طور پر سائن ان، ہوم {path}',
   },
+  weather: {
+    aria: 'علاقائی موسم کی پیش گوئی',
+    unavailable: 'موسم دستیاب نہیں',
+    regionalNote: 'اگر کھیت مختلف ہو تو مقامی IMD سے تصدیق کریں۔',
+    locationFromProfile: 'آپ کی پروفائل کے مطابق: {place}',
+    fiveDayTitle: 'اگلے 5 دن',
+    closeDetails: 'بند کریں',
+  },
   rating: {
     none: 'ابھی کوئی درجہ بندی نہیں',
     outOfFive: '5 میں سے',
