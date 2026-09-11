@@ -27,6 +27,7 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | | Task | Notes |
 |---|---|---|
 | **Working on** | Faculty Prototype demo | Walkthrough from `master`; Haryana Potato/Onion/Tomato have live rows; Wheat may be empty |
+| **Done** | Master layout like UCS503 template | App under `code/AgriConnect/`; `assets/`, stub `project-report-*`, `reports/`; `LICENSE` |
 | **Done** | `project-proposal/` on `master` | AgriConnect PDF + LaTeX (BharatAssist-style headings; Submitted to Mr. Hardik) |
 | **Done** | Grounded Kisan (RAG) Capstone §8.2 | Same widget; curated pack + cite/refuse; `AGRONOMIST` + escalations; profile weather + 5-day; `eval:grounded` 30/30 |
 | **Done** | Commit + push Prototype slice | Local verify: 138 backend / 128 frontend tests; smoke antibypass + calls; push `backend_frontend` → merge `master` |

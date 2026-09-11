@@ -161,11 +161,11 @@ Names only — install current patched releases; do not copy old version pins fr
 | --------------- | --------------------------------------------------- | ----------------------------------------------------- |
 | Runtime         | Node.js **24+** (`engines` in backend)              | Both apps                                             |
 | Language        | TypeScript (strict on the API)                      | Shared                                                |
-| Web UI          | **Next.js** (App Router) + React + **Tailwind CSS** | `frontend/`                                           |
+| Web UI          | **Next.js** (App Router) + React + **Tailwind CSS** | `code/AgriConnect/frontend/`                          |
 | HTTP client     | `fetch` wrapper in `frontend/src/lib/api`           | Bearer + cookie refresh                               |
-| API             | **Express 5**                                       | `backend/`                                            |
+| API             | **Express 5**                                       | `code/AgriConnect/backend/`                           |
 | Validation      | **Zod**                                             | Env vars + every body/query/params                    |
-| ORM             | **Prisma**                                          | `backend/prisma/`                                     |
+| ORM             | **Prisma**                                          | `code/AgriConnect/backend/prisma/`                    |
 | Database        | **PostgreSQL** on **Supabase**                      | App data                                              |
 | Files           | **Supabase Storage** bucket `listings`              | Photos; service role on the server                    |
 | Auth            | **jsonwebtoken** + bcryptjs                         | Access JWT + hashed refresh tokens                    |
@@ -175,7 +175,7 @@ Names only — install current patched releases; do not copy old version pins fr
 | Logging         | pino                                                | Structured logs                                       |
 | Tests           | Vitest + Supertest                                  | `backend`                                             |
 | Local DB option | Docker Compose `postgres:16`                        | When not using cloud Postgres                         |
-| API exploration | Postman collection                                  | `backend/postman/`                                    |
+| API exploration | Postman collection                                  | `code/AgriConnect/backend/postman/`                   |
 
 
 Payments/escrow (with Razorpay verification and a signed webhook), logistics tracking, and in-app voice calls shipped in V2. Still out of scope: farmer payouts and settlement, a separate ML service, MongoDB/Mongoose, Passport OAuth, and video calls.
@@ -185,25 +185,20 @@ Payments/escrow (with Razorpay verification and a signed webhook), logistics tra
 **Repository layout**
 
 ```
-Project AgriConnect/
-├── frontend/                 # Next.js UI (port 3000)
-│   └── src/
-│       ├── app/              # Pages: marketplace, farmer, buyer, orders, admin
-│       ├── features/auth/    # Session, RequireAuth, GuestOnly
-│       └── lib/api/          # Typed client — keep in sync with the contract
-├── backend/                  # Express API (port 5001)
-│   ├── src/
-│   │   ├── app.ts            # Middleware, rate limits, /health, /ready
-│   │   ├── routes/v1.ts      # Mounts /api/v1/*
-│   │   ├── modules/          # auth, users, listings, orders, messages, reviews, assistant, …
-│   │   ├── middleware/       # JWT, roles, Zod, errors
-│   │   └── services/         # email, storage, notifications
-│   ├── prisma/               # schema, migrations, seed
-│   ├── scripts/              # integration-crud-check, apply-pending-migration
-│   └── postman/
-├── .github/workflows/        # CI (typecheck, lint, test)
+ucs503p-AgriConnect/
+├── assets/                   # Course template assets (logos, mkdocs extras)
+├── code/AgriConnect/         # Application monorepo
+│   ├── frontend/             # Next.js UI (port 3000)
+│   ├── backend/              # Express API (port 5001)
+│   ├── docker-compose.yml    # Optional local PostgreSQL + containers
+│   └── scripts/
 ├── docs/                     # Contracts, architecture, guides
-├── docker-compose.yml        # Optional local PostgreSQL
+├── journals/                 # Weekly engineering journals
+├── project-proposal/         # Proposal PDF + LaTeX
+├── project-report-final/     # Final report (placeholder)
+├── project-report-prototype-stage/  # Prototype report (placeholder)
+├── reports/                  # Course report stubs
+├── .github/workflows/        # CI (typecheck, lint, test)
 ├── instruction.md            # Engineering blueprint (practices, not this product)
 └── README.md                 # This file
 ```
@@ -226,11 +221,11 @@ Do not commit `.env` or `.env.local`.
 ### 1. Backend
 
 ```bash
-cd backend
+cd code/AgriConnect/backend
 copy .env.example .env
 ```
 
-Fill `backend/.env`: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_*`, JWT secrets, `ENCRYPTION_KEY`, `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`. See [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md).
+Fill `code/AgriConnect/backend/.env`: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_*`, JWT secrets, `ENCRYPTION_KEY`, `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`. See [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md).
 
 ```bash
 npm ci
@@ -248,7 +243,7 @@ npm run prisma:deploy:pooler
 
 API: `http://localhost:5001`. Seeded admin is `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`.
 
-Optional: set `GEMINI_API_KEY` for live Kisan AI replies and spoken answers. Pin `GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview` so read-aloud does not probe slower TTS models. `GEMINI_THINKING_LEVEL` (`minimal` \| `low` \| `medium` \| `high`, default `minimal`) caps how much the model reasons before answering — Gemini 3 bills thinking tokens against the reply budget, so `minimal` keeps answers fast and complete. Raise it to `low` for more reasoning per answer. Spoken readout clips long replies (~280 chars) so voice stays quick while the full text remains on screen. Seeded agronomist (not self-registerable): `AGRONOMIST_SEED_EMAIL` / `AGRONOMIST_SEED_PASSWORD`. Optional `OPENWEATHER_API_KEY` for live weather snippets beside curated rules. Offline grounded eval: `cd backend && npm run eval:grounded`.
+Optional: set `GEMINI_API_KEY` for live Kisan AI replies and spoken answers. Pin `GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview` so read-aloud does not probe slower TTS models. `GEMINI_THINKING_LEVEL` (`minimal` \| `low` \| `medium` \| `high`, default `minimal`) caps how much the model reasons before answering — Gemini 3 bills thinking tokens against the reply budget, so `minimal` keeps answers fast and complete. Raise it to `low` for more reasoning per answer. Spoken readout clips long replies (~280 chars) so voice stays quick while the full text remains on screen. Seeded agronomist (not self-registerable): `AGRONOMIST_SEED_EMAIL` / `AGRONOMIST_SEED_PASSWORD`. Optional `OPENWEATHER_API_KEY` for live weather snippets beside curated rules. Offline grounded eval: `cd code/AgriConnect/backend && npm run eval:grounded`.
 
 Optional payments: set `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` for sandbox checkout. With keys present, `POST /orders/:id/payment/confirm` reads the payment back from Razorpay and refuses to escrow anything the gateway does not confirm. Add `RAZORPAY_WEBHOOK_SECRET` and point a Razorpay webhook (`payment.captured`, `payment.failed`) at `POST /api/v1/payments/webhook` so a hold still lands when the buyer closes the tab mid-checkout. Without keys, payments run in simulated mode and cash on delivery works either way.
 
@@ -259,15 +254,16 @@ Optional: `DATA_GOV_IN_API_KEY` (free from [data.gov.in](https://data.gov.in)) �
 Optional local database:
 
 ```bash
+cd code/AgriConnect
 docker compose up -d postgres
 ```
 
-Use the connection URL from `backend/.env.example` for that container.
+Use the connection URL from `code/AgriConnect/backend/.env.example` for that container.
 
 ### 2. Frontend
 
 ```bash
-cd frontend
+cd code/AgriConnect/frontend
 copy .env.example .env.local
 ```
 
@@ -283,7 +279,7 @@ UI: `http://localhost:3000`. Register a farmer or buyer, or log in as the seeded
 ### 3. Verify
 
 ```bash
-cd backend
+cd code/AgriConnect/backend
 npm run typecheck
 npm run lint
 npm test
@@ -295,7 +291,7 @@ Frontend: `npm run lint && npm run typecheck && npm run check:i18n && npm test`.
 With the API running, verify frontend actions persist to Supabase:
 
 ```bash
-cd backend
+cd code/AgriConnect/backend
 npx tsx scripts/integration-crud-check.ts
 ```
 
@@ -340,7 +336,7 @@ Auth header: `Authorization: Bearer <accessToken>`. Browser calls use cookies fo
 | 503       | Database down (`/ready`)                         |
 
 
-Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every route in one catalog: [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md). Every status and error: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md). Postman: `backend/postman/collection.json`.
+Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every route in one catalog: [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md). Every status and error: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md). Postman: `code/AgriConnect/backend/postman/collection.json`.
 
 ### Web app routes
 
@@ -362,7 +358,7 @@ Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every route in one 
 
 **Scripts**
 
-**Backend** (`cd backend`)
+**Backend** (`cd code/AgriConnect/backend`)
 
 
 | Script                                         | Purpose                                       |
@@ -375,7 +371,7 @@ Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every route in one 
 | `npx tsx scripts/integration-crud-check.ts`    | Live API → DB sync test (API must be running) |
 
 
-**Frontend** (`cd frontend`)
+**Frontend** (`cd code/AgriConnect/frontend`)
 
 
 | Script                    | Purpose              |
@@ -436,7 +432,7 @@ Cursor agents: `.cursor/rules/update-api-docs.mdc` requires API docs to update w
 
 ## Security notes for reviewers
 
-- Secrets stay in `backend/.env`. The only public frontend env is `NEXT_PUBLIC_API_BASE_URL`.
+- Secrets stay in `code/AgriConnect/backend/.env`. The only public frontend env is `NEXT_PUBLIC_API_BASE_URL`.
 - Refresh tokens are hashed in the database, rotated on every refresh, and reuse of an old token revokes the user’s refresh family.
 - Suspended users cannot log in (**403** `ACCOUNT_SUSPENDED`) but may still refresh and load `/me` if they were signed in before suspension (UI shows blocked state). Writes use `requireActiveAccount` (listings, orders, chat, reviews, assistant query, profile).
 - Rate limits apply to `/api` and more strictly to `/api/v1/auth`.

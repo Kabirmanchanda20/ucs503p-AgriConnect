@@ -28,4 +28,4 @@ Thumbs.db
 .idea/
 .vscode/
 
-backend/src/generated/prisma/
+code/AgriConnect/backend/src/generated/prisma/
