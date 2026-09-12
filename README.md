@@ -13,11 +13,6 @@
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white" />
 </p>
 
-<p align="center">
-  <img alt="Lab Complete" src="https://img.shields.io/badge/Lab-Complete-22C55E" />
-  <img alt="Prototype Complete" src="https://img.shields.io/badge/Prototype-Complete-22C55E" />
-  <img alt="Capstone In progress" src="https://img.shields.io/badge/Capstone-In_progress-F59E0B" />
-</p>
 
 <p align="center"><strong>Smart farm-to-market marketplace + crop advisory</strong> · UCS503P (TIET)</p>
 
@@ -26,37 +21,30 @@
 </p>
 
 <p align="center">
-  <a href="#demo">Demo</a> ·
-  <a href="#quick-start">Quick start</a> ·
-  <a href="#documentation">Docs</a> ·
-  <a href="./project-proposal/">Proposal</a> ·
-  <a href="./docs/WEEKLY_PROGRESS.md">Weekly progress</a>
+  <a href="#key-features">Key features</a> ·
+  <a href="#quick-start">Quick start</a>
 </p>
 
-> **Open the app:** UI → [http://localhost:3000](http://localhost:3000) · API → [http://localhost:5001/health](http://localhost:5001/health) (port **5001** has no website at `/` — that 404 is expected)
+> **Open the app:** UI → http://localhost:3000 · API health → http://localhost:5001/health  
+> (Port **5001** is the API only — `GET /` returning NOT_FOUND is expected.)
 
 | | |
 |---|---|
 | **Team** | Kabir Manchanda (1024030415), Manbhav Kumar Terry (1024030427) |
 | **Course** | UCS503P · Submitted to Mr. Hardik |
-| **Code** | [`code/AgriConnect/`](./code/AgriConnect/) |
+| **App code** | `code/AgriConnect/` |
 
 ---
 
 ## Contents
 
 - [Demo](#demo)
+- [Key features](#key-features)
 - [Why it exists](#why-it-exists)
 - [Project phases](#project-phases)
 - [Who uses it](#who-uses-it)
-- [What is already built](#what-is-already-built)
-- [How the system works](#how-the-system-works)
-- [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
-- [API & screens](#api--screens-glance)
-- [Tech stack](#tech-stack)
-- [Documentation](#documentation)
-- [Security notes](#security-notes-for-reviewers)
+- [More detail](#more-detail)
 
 ---
 
@@ -75,6 +63,42 @@
 </p>
 
 <p align="center"><em>Browse produce · Agmarknet / data.gov.in on <code>/market-prices</code></em></p>
+
+---
+
+## ⭐ Key features
+
+### 1. 🌾 Direct farm-to-buyer marketplace
+- **Produce listings with photos:** farmers publish crop, quantity, expected price, and location; buyers filter by crop and state.
+- **Inventory-safe orders:** quantity decrements in a database transaction so two buyers cannot oversell the same lot.
+- **Visible order lifecycle:** `pending → accepted → confirmed → fulfilled` (or `cancelled`) — every step is logged and role-gated.
+
+### 2. 📈 Live mandi price intelligence
+- **Agmarknet / data.gov.in feed:** farmers see wholesale benchmarks on `/market-prices` before they accept a weak farm-gate offer.
+- **Buyer produce alerts:** standing crop/state alerts notify when a matching listing goes live.
+- **Price transparency first:** the primary success metric of the project — close the gap between listed price and live mandi price.
+
+### 3. 📞 Stay-on-platform trade (chat + voice)
+- **Order-scoped chat:** REST + Socket.io with typing indicators — conversation stays tied to the deal.
+- **In-app voice calls:** peer-to-peer WebRTC so parties never need to exchange a phone number.
+- **Anti-bypass contact guard:** phone numbers, emails, and UPI IDs are blocked in chat, order notes, and listing copy (`CONTACT_INFO_BLOCKED`).
+
+### 4. 🔒 Escrow-style payments buyers can trust
+- **Methods that match India:** UPI, card, net banking, and cash on delivery.
+- **Server-verified escrow:** gateway holds only land after Razorpay read-back or a signed webhook — the browser cannot mark an order paid.
+- **Clean unwind:** release on `fulfilled`, auto-refund path on cancel (farmer payout settlement still later).
+
+### 5. 🌱 Grounded Kisan — cite, refuse, escalate
+- **Same farmer widget, Capstone brain:** curated crop / scheme / weather knowledge with **source citations**, not freestyle hallucination.
+- **Refuse when empty:** if retrieval confidence is low, Kisan says so instead of inventing doses.
+- **Agronomist handoff:** pesticide / medical / high-stakes asks escalate to a seeded **AGRONOMIST** queue.
+- **Live weather context:** profile-based outlook (optional OpenWeather) in the header and inside advisory replies.
+- **Spoken answers:** optional Gemini TTS so farmers can listen while working in the field.
+
+### 6. 🌍 Built for Indian farmers & faculty demos
+- **13 languages:** English, Hindi (हिंदी), Punjabi (ਪੰਜਾਬੀ), Bengali (বাংলা), Tamil (தமிழ்), Telugu (తెలుగు), Marathi (मराठी), Gujarati (ગુજરાતી), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം), Odia (ଓଡ଼ିଆ), Assamese (অসমীয়া), Urdu (اردو) — with **RTL** for Urdu.
+- **Admin trust layer:** verify / suspend users, moderate listings, analytics, and an attributed activity log.
+- **Ship-ready stack:** JWT + refresh cookies, Zod validation, Prisma + Supabase, Docker Compose, GitHub Actions CI.
 
 ---
 
@@ -227,7 +251,7 @@ copy .env.example .env          # macOS/Linux: cp .env.example .env
 ```
 
 Set at least: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_*`, JWT secrets, `ENCRYPTION_KEY`, `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`.  
-Full env guide: [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md).
+Full env list: `docs/DEVELOPMENT_SETUP.md`.
 
 ```bash
 npm ci
@@ -325,7 +349,7 @@ With the API up: `npx tsx scripts/integration-crud-check.ts` (from `backend/`).
 | `/farmer/*`, `/buyer/*`, `/orders/*` | Role dashboards & trade |
 | `/admin/*` | Moderation |
 
-Full contract: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md) · catalog: [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md) · statuses: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md) · Postman: [`code/AgriConnect/backend/postman/`](./code/AgriConnect/backend/postman/).
+Full contract and endpoint catalog live under `docs/`. Postman collection: `code/AgriConnect/backend/postman/`.
 
 </details>
 
@@ -352,19 +376,9 @@ Still out of scope: MongoDB, Passport OAuth, video calls, a separate ML microser
 
 ---
 
-## Documentation
+## More detail
 
-| Doc | Contents |
-|---|---|
-| [docs/index.md](./docs/index.md) | Faculty docs hub + weekly decks |
-| [docs/WEEKLY_PROGRESS.md](./docs/WEEKLY_PROGRESS.md) | Live board (Mon→Mon IST) |
-| [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md) | Env, Supabase, CORS |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Boundaries & request flow |
-| [docs/FRONTEND_GUIDE.md](./docs/FRONTEND_GUIDE.md) / [BACKEND_GUIDE.md](./docs/BACKEND_GUIDE.md) | How to extend |
-| [docs/AgriConnect_PRD.md](./docs/AgriConnect_PRD.md) | Product goals |
-| [project-proposal/](./project-proposal/) | Proposal PDF + LaTeX |
-
----
+Deep docs (setup, API contract, architecture, weekly board, proposal) are in the `docs/` and `project-proposal/` folders.
 
 <details>
 <summary><strong>Security notes for reviewers</strong></summary>

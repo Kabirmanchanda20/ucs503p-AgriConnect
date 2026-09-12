@@ -2,6 +2,9 @@
  * Verifies API writes are reflected in Supabase (read-back via Prisma).
  * Run: npx tsx scripts/integration-crud-check.ts
  */
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { connectDatabase, disconnectDatabase, getPrismaClient } from '../src/config/db.ts';
 
 const BASE = process.env.API_BASE ?? 'http://localhost:5001';
@@ -112,13 +115,14 @@ async function main() {
   const listingDb = await prisma.listing.findUnique({ where: { id: listingId } });
   assert('listing in DB', listingDb?.crop.includes('Audit Wheat'));
 
-  // Upload photo then publish (mirrors frontend listing form flow)
-  const jpegBytes = Buffer.from(
-    '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDAREAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAUGB//EABUBAQEAAAAAAAAAAAAAAAAAAAAB/9oADAMBEQACEQADAPwA/9k=',
-    'base64',
+  // Upload a real crop JPEG (1×1 smoke pixels look broken in the marketplace UI)
+  const wheatPhotoPath = path.resolve(
+    fileURLToPath(new URL('.', import.meta.url)),
+    '../../frontend/public/crops/wheat.jpg',
   );
+  const jpegBytes = await fs.readFile(wheatPhotoPath);
   const photoForm = new FormData();
-  photoForm.append('files', new Blob([jpegBytes], { type: 'image/jpeg' }), 'audit.jpg');
+  photoForm.append('files', new Blob([jpegBytes], { type: 'image/jpeg' }), 'wheat.jpg');
   const photoUpload = await fetch(`${BASE}/api/v1/listings/${listingId}/photos`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${farmerToken}` },
