@@ -1,60 +1,147 @@
 # AgriConnect
 
-![Direct market access for farmers. Direct sourcing for buyers.](https://readme-typing-svg.demolab.com?font=Poppins&weight=600&size=22&duration=2800&pause=900&color=22C55E&center=true&vCenter=true&width=720&lines=Direct+market+access+for+farmers.;Direct+sourcing+for+buyers.;No+middleman+in+V1.)
+<p align="center">
+  <img alt="AgriConnect typing tagline" src="https://readme-typing-svg.demolab.com?font=Poppins&weight=600&size=22&duration=2800&pause=900&color=22C55E&center=true&vCenter=true&width=780&lines=Direct+market+access+for+farmers.;Live+mandi+prices+before+you+sell.;Grounded+Kisan+advice+you+can+cite." />
+</p>
 
-![CI](https://img.shields.io/github/actions/workflow/status/Kabirmanchanda20/ucs503p-AgriConnect/ci.yml?branch=backend_frontend&label=CI&logo=githubactions&logoColor=white)
-![Node 24+](https://img.shields.io/badge/Node-24+-339933?logo=nodedotjs&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-App_Router-black?logo=nextdotjs)
-![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
+<p align="center">
+  <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Kabirmanchanda20/ucs503p-AgriConnect/ci.yml?branch=master&label=CI&logo=githubactions&logoColor=white" />
+  <img alt="Node 24+" src="https://img.shields.io/badge/Node-24+-339933?logo=nodedotjs&logoColor=white" />
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-App_Router-black?logo=nextdotjs" />
+  <img alt="Express 5" src="https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white" />
+  <img alt="Prisma" src="https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white" />
+  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white" />
+</p>
 
-**Direct market access for farmers. Direct sourcing for buyers.**
+<p align="center">
+  <img alt="Lab Complete" src="https://img.shields.io/badge/Lab-Complete-22C55E" />
+  <img alt="Prototype Complete" src="https://img.shields.io/badge/Prototype-Complete-22C55E" />
+  <img alt="Capstone In progress" src="https://img.shields.io/badge/Capstone-In_progress-F59E0B" />
+</p>
 
-[Web app](http://localhost:3000) · [API](http://localhost:5001) · [Health](http://localhost:5001/health) · [Ready](http://localhost:5001/ready) · `/api/v1`
+<p align="center"><strong>Smart farm-to-market marketplace + crop advisory</strong> · UCS503P (TIET)</p>
+
+<p align="center">
+  Farmers list produce · see live mandi benchmarks · trade on-platform · ask <strong>Grounded Kisan</strong> (cite / refuse / escalate)
+</p>
+
+<p align="center">
+  <a href="#demo">Demo</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#documentation">Docs</a> ·
+  <a href="./project-proposal/">Proposal</a> ·
+  <a href="./docs/WEEKLY_PROGRESS.md">Weekly progress</a>
+</p>
+
+> **Open the app:** UI → [http://localhost:3000](http://localhost:3000) · API → [http://localhost:5001/health](http://localhost:5001/health) (port **5001** has no website at `/` — that 404 is expected)
+
+| | |
+|---|---|
+| **Team** | Kabir Manchanda (1024030415), Manbhav Kumar Terry (1024030427) |
+| **Course** | UCS503P · Submitted to Mr. Hardik |
+| **Code** | [`code/AgriConnect/`](./code/AgriConnect/) |
 
 ---
 
-![AgriConnect — landing, marketplace, and live mandi prices](docs/assets/demo.gif)
+## Contents
 
-*Landing → marketplace listings → live mandi prices (captured from the running app).*
-
-
-|                                                                                                                           |                                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| ![Marketplace listings](docs/assets/demo-marketplace.png) Browse produce, filter by crop and state, order from the farmer | ![Live mandi prices](docs/assets/demo-market-prices.png) Agmarknet / data.gov.in mandi prices on `/market-prices` |
-
-
-AgriConnect is a farmer-to-buyer agricultural marketplace. Farmers list produce with photos, price, and quantity. Buyers discover listings and place orders. Admins moderate users and listings. There is no middleman in the V1 product: price and stock live on the platform, and order progress is a visible state machine (pending → accepted → confirmed → fulfilled, or cancelled).
-
-> [!NOTE]
-> **One-line pitch:** Direct market access and price transparency for farmers, with a production-shaped CRUD foundation that can grow into real-time logistics (V2) and AI crop advisory (V3).
-
-This repository is a **monorepo**: a Next.js web app and an Express REST API. The browser talks **only** to Express. Express talks to **Supabase PostgreSQL** (via Prisma) and **Supabase Storage** (listing photos). The frontend never receives database URLs, JWT secrets, or the Supabase service-role key.
-
-> [!TIP]
-> **New to the codebase?** After this README, open [docs/README.md](./docs/README.md).
+- [Demo](#demo)
+- [Why it exists](#why-it-exists)
+- [Project phases](#project-phases)
+- [Who uses it](#who-uses-it)
+- [What is already built](#what-is-already-built)
+- [How the system works](#how-the-system-works)
+- [Repository layout](#repository-layout)
+- [Quick start](#quick-start)
+- [API & screens](#api--screens-glance)
+- [Tech stack](#tech-stack)
+- [Documentation](#documentation)
+- [Security notes](#security-notes-for-reviewers)
 
 ---
 
+## Demo
 
+<p align="center">
+  <img alt="AgriConnect — landing, marketplace, and live mandi prices" src="docs/assets/demo.gif" width="820" />
+</p>
+
+<p align="center"><em>Landing → marketplace → live mandi prices (from the running app).</em></p>
+
+<p align="center">
+  <img alt="Marketplace listings" src="docs/assets/demo-marketplace.png" width="48%" />
+  &nbsp;
+  <img alt="Live mandi prices" src="docs/assets/demo-market-prices.png" width="48%" />
+</p>
+
+<p align="center"><em>Browse produce · Agmarknet / data.gov.in on <code>/market-prices</code></em></p>
+
+---
+
+## Why it exists
+
+Small and mid-size farmers often sell without an independent price benchmark, lack a trustworthy buyer channel, and get crop advice too late. AgriConnect folds those three needs into one accountable web platform — marketplace, mandi transparency, and grounded advisory — without putting secrets or the database in the browser.
+
+> **Pitch:** Direct market access and price transparency for farmers, with a production-shaped stack that already ships real-time trade tools and Capstone-grade grounded advisory.
+
+---
+
+## Project phases
+
+Faculty-facing growth model (**Lab → Prototype → Capstone**). Internal tags V1/V2/V3 and `/api/v1` are release/API versioning — not the course phases.
+
+| Phase | Theme | Status |
+|---|---|---|
+| **Lab** | Auth, RBAC, listings, orders, admin, notifications, reports | **Complete** |
+| **Prototype** | Chat, voice calls, mandi, logistics, escrow payments, 13-locale UI, Docker/CI | **Complete** |
+| **Capstone** | Grounded Kisan (RAG + cite/refuse), agronomist escalation, profile weather | **In progress** (core shipped) |
+
+---
 
 ## Who uses it
 
-
-|                                        | Role       | What they do in V1                                                                                                                                 |
-| -------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Farmer](docs/assets/role-farmer.png) | **Farmer** | Register, create draft listings, upload photos, publish, accept/confirm/fulfill incoming orders, cancel with a reason, view reports                |
-| ![Buyer](docs/assets/role-buyer.png)   | **Buyer**  | Register (trader / retailer / bulk / HORECA), browse the marketplace, place orders, cancel while the order is still `pending`, view spend reports  |
-| ![Admin](docs/assets/role-admin.png)   | **Admin**  | Seeded account (not self-register). Verify users, suspend/unsuspend, remove or reinstate listings, cancel orders, view analytics and activity logs |
-| ![Public](docs/assets/role-public.png) | **Public** | Browse **active** listings and farmer public profiles (no email/phone)                                                                             |
-
+| | Role | What they do |
+|---|---|---|
+| ![Farmer](docs/assets/role-farmer.png) | **Farmer** | List, sell, chat/call, ask Kisan |
+| ![Buyer](docs/assets/role-buyer.png) | **Buyer** | Browse, order, pay, rate |
+| ![Admin](docs/assets/role-admin.png) | **Admin** | Moderate users & listings (seeded) |
+| | **Agronomist** | High-stakes advisory queue (seeded) |
+| ![Public](docs/assets/role-public.png) | **Guest** | Browse active listings (no contact PII) |
 
 ---
 
+<details>
+<summary><strong>What is already built</strong> — click to expand full capability table</summary>
 
+<br/>
 
-## How the system works
+| Area | Capability |
+|---|---|
+| **Auth** | Register (farmer/buyer), login, refresh cookie, logout, `/me`, forgot/reset password, lockout, suspended-account gates |
+| **Listings** | Draft → photos → active; search/filter; expiry jobs; sold-out / removed |
+| **Orders** | Inventory-safe place; `pending → accepted → confirmed → fulfilled` (or `cancelled`) |
+| **Chat** | Order-scoped REST + Socket.io; typing; **contact details blocked** (phone/email/UPI) |
+| **Voice calls** | In-app WebRTC + Socket.io signalling (no phone number exchange) |
+| **Payments** | UPI / card / netbanking / COD; escrow after Razorpay verify + signed webhook; refund on cancel |
+| **Market** | Live mandi feed + `/market-prices`; buyer crop/state alerts |
+| **Logistics** | Order checkpoint updates on the order detail page |
+| **Reviews** | After `fulfilled`; averages on profiles |
+| **Kisan AI** | Same widget: legacy marketplace help + **Grounded RAG** (cite / refuse / escalate); TTS optional |
+| **Weather** | Profile-based live outlook (`OPENWEATHER_API_KEY`); header chip + advisory context |
+| **i18n** | 13 Indian languages; RTL Urdu; locale-aware money/dates; CI parity tests |
+| **Admin / reports** | Moderation, analytics, activity logs; farmer revenue & buyer spend reports |
+| **CI / Docker** | GitHub Actions; `docker compose` for Postgres + API + web |
+
+**Not yet:** farmer payout settlement via gateway, TURN for strict-NAT calls, crop CV / ML price models, native-speaker locale polish.
+
+</details>
+
+---
+
+<details>
+<summary><strong>How the system works</strong> — architecture, order flow, hard rules</summary>
+
+<br/>
 
 ```mermaid
 flowchart LR
@@ -64,9 +151,8 @@ flowchart LR
   Prisma --> PG["Supabase PostgreSQL"]
   API --> Storage["Supabase Storage"]
   API --> Mail["SMTP / console"]
+  API --> Mandi["Mandi / OpenWeather / Gemini"]
 ```
-
-
 
 ```mermaid
 stateDiagram-v2
@@ -79,186 +165,86 @@ stateDiagram-v2
   confirmed --> cancelled
 ```
 
-
-
-1. User logs in. The API returns a short-lived **access JWT** in JSON. A **refresh token** is set as an HttpOnly cookie (`Path=/api/v1/auth`).
-2. The UI keeps the access token **in memory** (not `localStorage`). Axios/fetch sends `Authorization: Bearer` plus cookies (`credentials: 'include'`).
-3. When the access token expires (~15 minutes), the client calls `POST /api/v1/auth/refresh`, then retries.
-4. Farmers create listings as **draft**, upload 1–5 photos (JPEG/PNG/WebP, ≤5 MB), then **PATCH** status to `active`.
-5. Buyers place orders against **active** listings. Quantity is decremented in a database transaction so two buyers cannot oversell.
-6. The farmer **approves** (`accepted`), **changes** (`confirmed` → `fulfilled`), or **discards** (`cancelled` + reason). Buyers may discard only from `pending`. Admins may only cancel.
-7. Buyers pay through AgriConnect (UPI / card / net banking / cash on delivery). Gateway payments only reach **escrow** after the server reads the payment back from Razorpay or receives the signed webhook — money is released to the farmer on `fulfilled` and refunded on cancellation.
-8. After **fulfilled**, buyer and farmer can rate each other; averages update on profiles.
-9. **Order-scoped chat** uses REST + Socket.io (`join:order`, `message:new`) on the order detail page. Chat rejects phone numbers, emails, and UPI IDs — as do order notes and listing copy, the other places the counterparty reads — and the **in-app voice call** (`call:*` events, peer-to-peer WebRTC) is how the two parties talk, so contact details never need to be shared and the trade stays on-platform.
-10. Farmers can open the **Kisan AI** widget (Gemini when `GEMINI_API_KEY` is set). Capstone Grounded Kisan upgrades the same chat: curated crop/scheme/weather answers with citations, refuse-when-empty, and escalation to a seeded agronomist for high-stakes asks.
-11. In-app notifications fire on order and moderation events; the header badge polls and refreshes on mark-read.
+1. Login returns a short-lived **access JWT**; **refresh** is an HttpOnly cookie (`Path=/api/v1/auth`).
+2. The UI keeps the access token **in memory** (not `localStorage`) and sends `Authorization: Bearer` + cookies.
+3. Farmers publish listings with photos; buyers order against **active** stock in a DB transaction.
+4. Chat and voice stay on-platform; contact strings are rejected so deals are not bypassed.
+5. Payments reach escrow only after **server-side** Razorpay confirmation (or signed webhook).
+6. Grounded Kisan retrieves curated knowledge, **cites** sources, **refuses** when empty, and escalates pesticide/medical asks to a seeded agronomist.
 
 **Hard rules**
 
-- Frontend never queries Supabase tables or uses the service-role key.
-- Money and quantities are PostgreSQL `NUMERIC`, serialized as **JSON strings** (`"25.00"`, `"500.000"`). Currency is INR.
-- IDs are UUIDs. Dates are ISO-8601 UTC; `harvestDate` is `YYYY-MM-DD`.
-- Errors use HTTP status codes plus `{ success: false, error: { code, message, fields? } }`. Success is `{ success: true, data }` (lists also include `pagination`).
+- Frontend never talks to Supabase with service-role keys or DB URLs.
+- Money/quantity are PostgreSQL `NUMERIC`, JSON-serialized as **strings** (`"25.00"`). Currency INR.
+- Errors: `{ success: false, error: { code, message, fields? } }`. Success: `{ success: true, data }` (+ `pagination` on lists).
+
+</details>
 
 ---
 
+<details>
+<summary><strong>Repository layout</strong></summary>
 
-
-## Why it exists
-
-Farmers often lack a direct channel to buyers; buyers lack a reliable way to source from growers. Value leaks to opaque intermediary chains. AgriConnect V1 is the lab-ready marketplace that demonstrates:
-
-- Full-stack CRUD with real auth and roles
-- Listings, photo uploads, and inventory-safe orders
-- Admin moderation and basic reports
-- A contract that frontend and backend can share without sharing the database
-
-What V1 is **not**: a payment processor, e-NAM replacement, logistics fleet, chat app, or ML service. Those are later phases (see [Roadmap](#roadmap-v1--v2--v3)).
-
----
-
-
-
-## What is already built
-
-
-| Area              | Capability                                                                                                                                     |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Auth              | Register (farmer/buyer), login, refresh, logout, `/me`, forgot/reset password, lockout after 5 failed logins; suspended users blocked at login |
-| Profiles          | Farmer/buyer profiles, DPDP-style data export, soft-delete account                                                                             |
-| Listings          | Draft → photos → active; search/filter; view counts; expire/sold-out; farmer unpublish or delete                                               |
-| Orders            | Place order, inventory decrement, status machine, stock restore on cancel                                                                      |
-| Chat              | Order-scoped messages (REST + Socket.io); typing indicators (V2); **contact details blocked** (phone / email / UPI / other apps) in chat, order notes, and listing copy, so trades stay on-platform |
-| Voice calls (V2)  | In-app buyer ↔ farmer voice call (peer-to-peer WebRTC, Socket.io signalling) so **no phone number is ever exchanged**; ring / accept / decline / mute / hang-up |
-| Reviews           | Ratings after `fulfilled`; `ratingAvg` on profiles and order detail                                                                            |
-| Market (V2)       | Price trends API + `/market-prices`; live Punjab/India mandi via Agmarknet/data.gov.in                                                         |
-| Buyer alerts (V2) | Crop/state alerts; `LISTING_PUBLISHED` notifications on new listings                                                                           |
-| Logistics (V2)    | Order logistics checkpoints; farmer updates on order detail                                                                                    |
-| Payments (V2)     | Methods: UPI / card / net banking / cash on delivery. Escrow hold → release on fulfilled, auto-refund on cancel. Every hold is **verified server-side** with Razorpay (read-back on confirm + signed `payment.captured` webhook), so a browser cannot mark an order paid; Razorpay sandbox optional, simulated without keys |
-| Assistant         | Kisan AI widget (`GEMINI_API_KEY` optional); marketplace chat unchanged; crop/scheme/weather uses Grounded RAG with citations; pesticide/medical asks escalate to seeded `AGRONOMIST`; optional `OPENWEATHER_API_KEY` |
-| i18n (V2)         | Every screen in 13 Indian languages (en, hi, pa, bn, ta, te, mr, gu, kn, ml, or, as, ur); language switcher; profile `languagePref` sync; served `<html lang>` and page metadata follow a locale cookie; dates, money, and quantities format per locale; server-written notifications and admin logs render in the reader's language from structured `params`; Urdu renders right-to-left (`dir` on `<html>`, logical spacing utilities) and every script ships its own Noto webfont; enforced by Vitest parity, render, width-budget, and hardcoded-string tests in CI |
-| Notifications     | List, mark read, mark all read; header unread badge                                                                                            |
-| Reports           | Farmer: listings / qty sold / revenue (fulfilled). Buyer: orders / spend (fulfilled)                                                           |
-| Admin             | Users (search, suspend, verify), listing moderate, analytics, activity logs                                                                    |
-| CI / QA           | GitHub Actions; `npx tsx scripts/integration-crud-check.ts` verifies API → Supabase writes                                                     |
-| Docker (V2)       | `docker compose up` — postgres, API, Next.js web                                                                                               |
-
-
-**Listing statuses:** `draft` → `active` ⇄ `draft`; `sold_out` / `expired` → `active`; `removed` is terminal for farmers (admin can reinstate). Hourly jobs warn before expiry and auto-expire due listings.
-
-**Order statuses:** `pending` → `accepted` → `confirmed` → `fulfilled`, or `cancelled` from the first three. Full HTTP codes and illegal transitions: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md).
-
-**Not implemented (do not call):** `GET /api/v1/admin/reports.csv`.
-
----
-
-**Tech stack**
-
-Names only — install current patched releases; do not copy old version pins from docs.
-
-
-| Layer           | Choice                                              | Role                                                  |
-| --------------- | --------------------------------------------------- | ----------------------------------------------------- |
-| Runtime         | Node.js **24+** (`engines` in backend)              | Both apps                                             |
-| Language        | TypeScript (strict on the API)                      | Shared                                                |
-| Web UI          | **Next.js** (App Router) + React + **Tailwind CSS** | `code/AgriConnect/frontend/`                          |
-| HTTP client     | `fetch` wrapper in `frontend/src/lib/api`           | Bearer + cookie refresh                               |
-| API             | **Express 5**                                       | `code/AgriConnect/backend/`                           |
-| Validation      | **Zod**                                             | Env vars + every body/query/params                    |
-| ORM             | **Prisma**                                          | `code/AgriConnect/backend/prisma/`                    |
-| Database        | **PostgreSQL** on **Supabase**                      | App data                                              |
-| Files           | **Supabase Storage** bucket `listings`              | Photos; service role on the server                    |
-| Auth            | **jsonwebtoken** + bcryptjs                         | Access JWT + hashed refresh tokens                    |
-| Email           | **Nodemailer**                                      | Password reset; console fallback if SMTP unset        |
-| Security        | helmet, cors allowlist, express-rate-limit          | Headers, cookies, 100 req/min API, 10 failed auth/min |
-| Real-time       | Socket.io (order chat + voice call signalling)       | Same host as API (`/socket.io`)                       |
-| Logging         | pino                                                | Structured logs                                       |
-| Tests           | Vitest + Supertest                                  | `backend`                                             |
-| Local DB option | Docker Compose `postgres:16`                        | When not using cloud Postgres                         |
-| API exploration | Postman collection                                  | `code/AgriConnect/backend/postman/`                   |
-
-
-Payments/escrow (with Razorpay verification and a signed webhook), logistics tracking, and in-app voice calls shipped in V2. Still out of scope: farmer payouts and settlement, a separate ML service, MongoDB/Mongoose, Passport OAuth, and video calls.
-
-
-
-**Repository layout**
+<br/>
 
 ```
 ucs503p-AgriConnect/
-├── assets/                   # Course template assets (logos, mkdocs extras)
-├── code/AgriConnect/         # Application monorepo
-│   ├── frontend/             # Next.js UI (port 3000)
-│   ├── backend/              # Express API (port 5001)
-│   ├── docker-compose.yml    # Optional local PostgreSQL + containers
+├── code/AgriConnect/          # Application (run everything from here)
+│   ├── backend/               # Express API · port 5001
+│   ├── frontend/              # Next.js UI · port 3000
+│   ├── docker-compose.yml
 │   └── scripts/
-├── docs/                     # Contracts, architecture, guides
-├── journals/                 # Weekly engineering journals
-├── project-proposal/         # Proposal PDF + LaTeX
-├── project-report-final/     # Final report (placeholder)
-├── project-report-prototype-stage/  # Prototype report (placeholder)
-├── reports/                  # Course report stubs
-├── .github/workflows/        # CI (typecheck, lint, test)
-├── instruction.md            # Engineering blueprint (practices, not this product)
-└── README.md                 # This file
+├── docs/                      # Contracts, guides, weekly progress, decks
+├── journals/                  # Per-student weekly journals
+├── project-proposal/          # PDF + LaTeX (Submitted to Mr. Hardik)
+├── project-report-final/      # Placeholder
+├── project-report-prototype-stage/
+├── reports/                   # Course report stubs
+├── assets/                    # TIET / mkdocs assets
+└── .github/workflows/ci.yml
 ```
 
-Each backend module is `routes` → thin `controller` → `service` (Prisma + rules) → Zod `schema`.
+Backend modules follow `routes → controller → service → Zod schema`.
 
+</details>
 
+---
 
-**Quick start**
+## Quick start
 
 ### Prerequisites
 
-- **Node.js 24** or newer and npm
-- Git
-- A **Supabase** project (PostgreSQL + Storage bucket `listings`), **or** Docker for local Postgres (`docker compose up -d postgres`)
-- Windows: use `copy`; macOS/Linux: use `cp`
-
-Do not commit `.env` or `.env.local`.
+- Node.js **24+** and npm  
+- Git  
+- Supabase project (Postgres + Storage bucket `listings`), **or** Docker Postgres  
+- Do **not** commit `.env` / `.env.local`
 
 ### 1. Backend
 
 ```bash
 cd code/AgriConnect/backend
-copy .env.example .env
+copy .env.example .env          # macOS/Linux: cp .env.example .env
 ```
 
-Fill `code/AgriConnect/backend/.env`: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_*`, JWT secrets, `ENCRYPTION_KEY`, `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`. See [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md).
+Set at least: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_*`, JWT secrets, `ENCRYPTION_KEY`, `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`.  
+Full env guide: [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md).
 
 ```bash
 npm ci
 npm run prisma:generate
-npm run prisma:migrate
+npm run prisma:migrate          # or: npm run prisma:deploy:pooler
 npm run prisma:seed
 npm run dev
 ```
 
-If `prisma migrate deploy` fails on direct port 5432 (common with Supabase), use the pooler fallback:
+API: http://localhost:5001 · health: http://localhost:5001/health
 
-```bash
-npm run prisma:deploy:pooler
-```
-
-API: `http://localhost:5001`. Seeded admin is `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD`.
-
-Optional: set `GEMINI_API_KEY` for live Kisan AI replies and spoken answers. Pin `GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview` so read-aloud does not probe slower TTS models. `GEMINI_THINKING_LEVEL` (`minimal` \| `low` \| `medium` \| `high`, default `minimal`) caps how much the model reasons before answering — Gemini 3 bills thinking tokens against the reply budget, so `minimal` keeps answers fast and complete. Raise it to `low` for more reasoning per answer. Spoken readout clips long replies (~280 chars) so voice stays quick while the full text remains on screen. Seeded agronomist (not self-registerable): `AGRONOMIST_SEED_EMAIL` / `AGRONOMIST_SEED_PASSWORD`. Optional `OPENWEATHER_API_KEY` for live weather snippets beside curated rules. Offline grounded eval: `cd code/AgriConnect/backend && npm run eval:grounded`.
-
-Optional payments: set `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` for sandbox checkout. With keys present, `POST /orders/:id/payment/confirm` reads the payment back from Razorpay and refuses to escrow anything the gateway does not confirm. Add `RAZORPAY_WEBHOOK_SECRET` and point a Razorpay webhook (`payment.captured`, `payment.failed`) at `POST /api/v1/payments/webhook` so a hold still lands when the buyer closes the tab mid-checkout. Without keys, payments run in simulated mode and cash on delivery works either way.
-
-Optional voice calls: `WEBRTC_ICE_SERVERS` (comma-separated STUN/TURN URLs) overrides the default public Google STUN. Add a **TURN** server for real-world use — STUN alone fails behind the symmetric NAT common on Indian mobile networks.
-
-Optional: `DATA_GOV_IN_API_KEY` (free from [data.gov.in](https://data.gov.in)) — **recommended for production** mandi prices (all states, avoids free API rate limits). Fallback: `MANDI_API_BASE_URL` (default open mandi API). `MANDI_SYNC_ENABLED=true` syncs staple crops into price trends daily (not on every server start).
-
-Optional local database:
+Optional local DB:
 
 ```bash
 cd code/AgriConnect
 docker compose up -d postgres
 ```
-
-Use the connection URL from `code/AgriConnect/backend/.env.example` for that container.
 
 ### 2. Frontend
 
@@ -267,174 +253,128 @@ cd code/AgriConnect/frontend
 copy .env.example .env.local
 ```
 
-`NEXT_PUBLIC_API_BASE_URL=http://localhost:5001` (no trailing slash).
+Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:5001` (no trailing slash).
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-UI: `http://localhost:3000`. Register a farmer or buyer, or log in as the seeded admin.
+UI: http://localhost:3000 — register a farmer/buyer, or use the seeded admin.
 
-### 3. Verify
+<details>
+<summary><strong>Optional integrations</strong></summary>
+
+<br/>
+
+| Env | Effect |
+|---|---|
+| `GEMINI_API_KEY` | Live Kisan replies + TTS |
+| `OPENWEATHER_API_KEY` | Live weather chip / advisory context |
+| `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` (+ webhook secret) | Real sandbox escrow; without keys, payments simulate |
+| `DATA_GOV_IN_API_KEY` | Broader mandi coverage / fewer rate limits |
+| `WEBRTC_ICE_SERVERS` | Custom STUN/TURN (TURN recommended off campus NAT) |
+
+Grounded advisory offline eval: `cd code/AgriConnect/backend && npm run eval:grounded`
+
+</details>
+
+<details>
+<summary><strong>Verify</strong> — typecheck, lint, tests</summary>
+
+<br/>
 
 ```bash
+# Backend
 cd code/AgriConnect/backend
-npm run typecheck
-npm run lint
-npm test
-npm audit --audit-level=high
+npm run typecheck && npm run lint && npm test
+
+# Frontend
+cd code/AgriConnect/frontend
+npm run lint && npm run typecheck && npm run check:i18n && npm test
 ```
 
-Frontend: `npm run lint && npm run typecheck && npm run check:i18n && npm test`. Confirm `/health` returns `{ "success": true, "data": { "status": "ok" } }`.
+Confirm `/health` → `{ "success": true, "data": { "status": "ok" } }`.  
+With the API up: `npx tsx scripts/integration-crud-check.ts` (from `backend/`).
 
-With the API running, verify frontend actions persist to Supabase:
-
-```bash
-cd code/AgriConnect/backend
-npx tsx scripts/integration-crud-check.ts
-```
-
-
-
-**API at a glance**
-
-
-| Method                | Path                                                     | Who                                  |
-| --------------------- | -------------------------------------------------------- | ------------------------------------ |
-| GET                   | `/health`, `/ready`                                      | Public                               |
-| POST                  | `/api/v1/auth/register`, `/login`, `/refresh`, `/logout` | Public / cookie                      |
-| GET                   | `/api/v1/auth/me`                                        | Any logged-in user                   |
-| GET/POST/PATCH/DELETE | `/api/v1/listings`                                       | Public browse; farmer writes         |
-| POST/GET/PATCH        | `/api/v1/orders`, `/orders/:id/status`                   | Buyer create; farmer/admin status    |
-| GET/POST              | `/api/v1/orders/:id/messages`                            | Order chat (Socket.io `message:new`); contact info rejected |
-| POST                  | `/api/v1/orders/:id/payment`, `/payment/confirm`         | Buyer pays; escrow hold after Razorpay verification |
-| GET                   | `/api/v1/payments/methods`                               | Payment method picker catalog        |
-| POST                  | `/api/v1/payments/webhook`                               | Razorpay only; HMAC-signed, no JWT   |
-| POST/GET              | `/api/v1/orders/:id/reviews`                             | Ratings after fulfilled              |
-| GET/POST              | `/api/v1/assistant/status`, `/assistant/query`           | Kisan AI (legacy + grounded)         |
-| GET                   | `/api/v1/weather`                                        | Header live weather + rain outlook   |
-| GET/PATCH             | `/api/v1/agronomist/escalations`                         | Agronomist advisory queue            |
-| GET/PATCH/POST        | `/api/v1/notifications`                                  | Logged-in                            |
-| GET                   | `/api/v1/reports/me`                                     | Farmer or buyer                      |
-| GET/PATCH             | `/api/v1/admin/*`                                        | Admin only                           |
-
-
-Auth header: `Authorization: Bearer <accessToken>`. Browser calls use cookies for refresh.
-
-
-| HTTP      | Meaning (typical)                                |
-| --------- | ------------------------------------------------ |
-| 200 / 201 | Success / created                                |
-| 400       | Validation or illegal approve / discard / change |
-| 401       | Missing, expired, or invalid token; bad login    |
-| 403       | Wrong role, suspended login, or suspended write  |
-| 404       | Missing resource, or not yours (IDOR-safe)       |
-| 409       | Email taken or not enough listing quantity       |
-| 413 / 415 | Photo too large / wrong type                     |
-| 429       | Rate limit                                       |
-| 503       | Database down (`/ready`)                         |
-
-
-Full shapes: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Every route in one catalog: [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md). Every status and error: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md). Postman: `code/AgriConnect/backend/postman/collection.json`.
-
-### Web app routes
-
-
-| Path                                                         | Purpose                                         |
-| ------------------------------------------------------------ | ----------------------------------------------- |
-| `/`                                                          | Landing                                         |
-| `/login`, `/register`, `/forgot-password`, `/reset-password` | Auth                                            |
-| `/marketplace`, `/listings/[id]`                             | Browse and listing detail                       |
-| `/market-prices`                                             | Live mandi / price trends                       |
-| `/farmer`, `/farmer/listings`, `/farmer/listings/new`        | Farmer home and listing CRUD                    |
-| `/buyer`, `/buyer/alerts`                                    | Buyer home and crop alerts                      |
-| `/orders`, `/orders/[id]`                                    | Order list; accept / confirm / fulfill / cancel |
-| `/notifications`, `/profile`, `/dashboard`                   | Inbox, profile, role redirect                   |
-| `/admin`, `/admin/users`, `/admin/listings`, `/admin/logs`   | Moderation and analytics                        |
-
-
-
-
-**Scripts**
-
-**Backend** (`cd code/AgriConnect/backend`)
-
-
-| Script                                         | Purpose                                       |
-| ---------------------------------------------- | --------------------------------------------- |
-| `npm run dev`                                  | Watch server                                  |
-| `npm run build` / `npm start`                  | Production compile + run                      |
-| `npm run typecheck` / `lint` / `test`          | Quality gates                                 |
-| `npm run prisma:generate` / `migrate` / `seed` | Database                                      |
-| `npm run prisma:deploy:pooler`                 | Migrate via pooler when direct 5432 blocked   |
-| `npx tsx scripts/integration-crud-check.ts`    | Live API → DB sync test (API must be running) |
-
-
-**Frontend** (`cd code/AgriConnect/frontend`)
-
-
-| Script                    | Purpose              |
-| ------------------------- | -------------------- |
-| `npm run dev`             | Next.js on port 3000 |
-| `npm run build` / `start` | Production           |
-| `npm run lint`            | ESLint               |
-| `npm run typecheck`       | TypeScript, no emit  |
-| `npm run check:i18n`      | Locale key parity    |
-| `npm test`                | Vitest (i18n parity, hardcoded-string guard, width budget, Punjabi render tests) |
-| `npm run test:watch`      | Vitest in watch mode |
-
-
-
+</details>
 
 ---
 
+<details>
+<summary><strong>API & screens (glance)</strong></summary>
 
+<br/>
+
+| Method | Path | Who |
+|---|---|---|
+| GET | `/health`, `/ready` | Public |
+| POST | `/api/v1/auth/*` | Public / cookie refresh |
+| CRUD | `/api/v1/listings` | Public browse; farmer writes |
+| POST/PATCH | `/api/v1/orders`, `…/status`, `…/payment` | Buyer / farmer / admin |
+| GET/POST | `/api/v1/orders/:id/messages` | Order parties (contact blocked) |
+| GET/POST | `/api/v1/assistant/*` | Kisan (legacy + grounded) |
+| GET | `/api/v1/weather` | Logged-in weather outlook |
+| GET/PATCH | `/api/v1/agronomist/escalations` | Agronomist |
+| GET/PATCH | `/api/v1/admin/*` | Admin |
+
+| UI route | Purpose |
+|---|---|
+| `/`, `/marketplace`, `/listings/[id]` | Landing & browse |
+| `/market-prices` | Live mandi |
+| `/farmer/*`, `/buyer/*`, `/orders/*` | Role dashboards & trade |
+| `/admin/*` | Moderation |
+
+Full contract: [docs/API_CONTRACT.md](./docs/API_CONTRACT.md) · catalog: [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md) · statuses: [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md) · Postman: [`code/AgriConnect/backend/postman/`](./code/AgriConnect/backend/postman/).
+
+</details>
+
+---
+
+<details>
+<summary><strong>Tech stack</strong></summary>
+
+<br/>
+
+| Layer | Choice |
+|---|---|
+| UI | Next.js (App Router), React, Tailwind |
+| API | Express 5, Zod, Prisma |
+| Data | Supabase PostgreSQL + Storage |
+| Auth | JWT access + hashed refresh cookies |
+| Realtime | Socket.io (chat + call signalling) |
+| Tests | Vitest (+ Supertest on API) |
+| CI | GitHub Actions on `master` / feature branches |
+
+Still out of scope: MongoDB, Passport OAuth, video calls, a separate ML microservice.
+
+</details>
+
+---
 
 ## Documentation
 
-
-| Document                                                 | Audience       | Contents                                            |
-| -------------------------------------------------------- | -------------- | --------------------------------------------------- |
-| [docs/README.md](./docs/README.md)                       | Anyone joining | Read order, known gaps, where to edit               |
-| [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md) | Setup          | Env vars, Supabase, CORS, cookies                   |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)           | Technical      | Boundaries, request flow, security                  |
-| [docs/DATABASE_DESIGN.md](./docs/DATABASE_DESIGN.md)     | Backend        | ERD, enums, inventory rules                         |
-| [docs/API_ENDPOINTS.md](./docs/API_ENDPOINTS.md)         | Both           | Full catalog: HTTP, Socket, outbound                |
-| [docs/API_CONTRACT.md](./docs/API_CONTRACT.md)           | Both           | Request/response JSON                               |
-| [docs/API_STATUS_CODES.md](./docs/API_STATUS_CODES.md)   | Both           | Status codes, approve/discard/change                |
-| [docs/FRONTEND_GUIDE.md](./docs/FRONTEND_GUIDE.md)       | Frontend       | Client, guards, screens                             |
-| [docs/BACKEND_GUIDE.md](./docs/BACKEND_GUIDE.md)         | Backend        | Modules, AppError, adding endpoints                 |
-| [docs/CHANGELOG.md](./docs/CHANGELOG.md)                 | Both           | What changed                                        |
-| [docs/AgriConnect_PRD.md](./docs/AgriConnect_PRD.md)     | Product        | Goals, personas, later phases                       |
-| [docs/PRD_AMENDMENTS.md](./docs/PRD_AMENDMENTS.md)       | Engineering    | Binding V1 stack/scope (wins over PRD on conflicts) |
-
-
-Cursor agents: `.cursor/rules/update-api-docs.mdc` requires API docs to update whenever routes or `frontend/src/lib/api` change.
+| Doc | Contents |
+|---|---|
+| [docs/index.md](./docs/index.md) | Faculty docs hub + weekly decks |
+| [docs/WEEKLY_PROGRESS.md](./docs/WEEKLY_PROGRESS.md) | Live board (Mon→Mon IST) |
+| [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md) | Env, Supabase, CORS |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Boundaries & request flow |
+| [docs/FRONTEND_GUIDE.md](./docs/FRONTEND_GUIDE.md) / [BACKEND_GUIDE.md](./docs/BACKEND_GUIDE.md) | How to extend |
+| [docs/AgriConnect_PRD.md](./docs/AgriConnect_PRD.md) | Product goals |
+| [project-proposal/](./project-proposal/) | Proposal PDF + LaTeX |
 
 ---
 
+<details>
+<summary><strong>Security notes for reviewers</strong></summary>
 
+<br/>
 
-## Roadmap (V1 → V2 → V3)
+- Secrets live only in `code/AgriConnect/backend/.env`. Frontend public env: `NEXT_PUBLIC_API_BASE_URL` only.
+- Refresh tokens are hashed, rotated, and reuse-revoked as a family.
+- Suspended accounts cannot log in (`403 ACCOUNT_SUSPENDED`); writes require an active account.
+- Rate limits on `/api` and stricter on `/api/v1/auth`.
+- Cross-user ownership misses return **404** (IDOR-safe), not 403.
 
-
-| Phase              | Theme                                                       | Status                                         |
-| ------------------ | ----------------------------------------------------------- | ---------------------------------------------- |
-| **V1 — Lab**       | Auth, RBAC, listings, orders, admin, notifications, reports | Shipped                                        |
-| **V2 — Prototype** | Chat, reviews, assistant, Docker/CI                         | Shipped in repo (chat, reviews, assistant, CI) |
-| **V3 — Capstone**  | ML advisory service, market intelligence                    | Not started                                    |
-
-
----
-
-
-
-## Security notes for reviewers
-
-- Secrets stay in `code/AgriConnect/backend/.env`. The only public frontend env is `NEXT_PUBLIC_API_BASE_URL`.
-- Refresh tokens are hashed in the database, rotated on every refresh, and reuse of an old token revokes the user’s refresh family.
-- Suspended users cannot log in (**403** `ACCOUNT_SUSPENDED`) but may still refresh and load `/me` if they were signed in before suspension (UI shows blocked state). Writes use `requireActiveAccount` (listings, orders, chat, reviews, assistant query, profile).
-- Rate limits apply to `/api` and more strictly to `/api/v1/auth`.
-- Ownership checks return **404**, not 403, so listings/orders of other users are not confirmed to exist.
-
+</details>

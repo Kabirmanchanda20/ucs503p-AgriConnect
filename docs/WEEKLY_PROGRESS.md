@@ -7,8 +7,8 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 | **Team** | Kabir Manchanda, Manbhav Kumar Terry |
 | **Course** | UCS503P |
 | **Current week** | **Week 3** — Mon 7 Sep → Mon 14 Sep 2026 |
-| **Updated** | Fri 11 Sep 2026 |
-| **Status** | **Green** — Capstone Grounded Kisan shipping to `backend_frontend` → `master` |
+| **Updated** | Sat 12 Sep 2026 |
+| **Status** | **Green** — Interactive README polish (collapsibles + TOC + phase badges) |
 
 ## Project phase snapshot
 
@@ -27,6 +27,8 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | | Task | Notes |
 |---|---|---|
 | **Working on** | Faculty Prototype demo | Walkthrough from `master`; Haryana Potato/Onion/Tomato have live rows; Wheat may be empty |
+| **Done** | Interactive README polish | Hero TOC, phase shields, centered demo, `<details>` for dense sections; Quick start stays open |
+| **Done** | Root README refresh | Faculty-facing Lab→Prototype→Capstone snapshot; `code/AgriConnect` paths; accurate Capstone status |
 | **Done** | UCS503 faculty docs + Week 1–3 decks | `docs/index.md`, requirements, architecture-overview, testing, evaluation, ROADMAP, progress PPTX |
 | **Done** | Master layout like UCS503 template | App under `code/AgriConnect/`; `assets/`, stub `project-report-*`, `reports/`; `LICENSE` |
 | **Done** | `project-proposal/` on `master` | AgriConnect PDF + LaTeX (BharatAssist-style headings; Submitted to Mr. Hardik) |
