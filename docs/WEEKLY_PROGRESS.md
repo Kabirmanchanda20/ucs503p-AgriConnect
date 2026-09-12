@@ -28,8 +28,8 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 |---|---|---|
 | **Working on** | Faculty Prototype demo | Walkthrough from `master`; marketplace demo assets now show real crop photos |
 | **Done** | Interactive README polish | Hero TOC, phase shields, centered demo, `<details>` for dense sections; Quick start stays open |
-| **Done** | README demo assets refreshed | Recaptured `demo.gif`, `demo-marketplace.png`, `demo-market-prices.png` with real crop photos |
-| **Done** | Marketplace wheat photo fallback | Detect tiny/corrupt Supabase JPEGs; fall back to `/crops/*.jpg` then Unsplash |
+| **Done** | README demo assets refreshed | Recaptured `demo.gif`, `demo-marketplace.png`, `demo-market-prices.png` with real crop photos — `e7b446d` |
+| **Done** | Marketplace wheat photo fallback | Detect tiny/corrupt Supabase JPEGs; fall back to `/crops/*.jpg` then Unsplash — `e7b446d` |
 | **Done** | Root README refresh | Faculty-facing Lab→Prototype→Capstone snapshot; `code/AgriConnect` paths; accurate Capstone status |
 | **Done** | UCS503 faculty docs + Week 1–3 decks | `docs/index.md`, requirements, architecture-overview, testing, evaluation, ROADMAP, progress PPTX |
 | **Done** | Master layout like UCS503 template | App under `code/AgriConnect/`; `assets/`, stub `project-report-*`, `reports/`; `LICENSE` |
