@@ -27,7 +27,7 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | | Task | Notes |
 |---|---|---|
 | **Working on** | Faculty Prototype demo | Walkthrough from `master`; use ordered deck in `docs/` |
-| **Done** | Faculty ordered presentation | `docs/AgriConnect_Presentation_Ordered.pptx` + link in `docs/index.md` |
+| **Done** | Faculty ordered presentation | `docs/AgriConnect_Presentation_Ordered.pptx` + link in `docs/index.md` � `7f1d501` |
 | **Done** | Interactive README polish | Hero TOC, phase shields, centered demo, `<details>` for dense sections; Quick start stays open |
 | **Done** | README demo assets refreshed | Recaptured `demo.gif`, `demo-marketplace.png`, `demo-market-prices.png` with real crop photos — `e7b446d` |
 | **Done** | Marketplace wheat photo fallback | Detect tiny/corrupt Supabase JPEGs; fall back to `/crops/*.jpg` then Unsplash — `e7b446d` |
