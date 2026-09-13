@@ -7,8 +7,8 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 | **Team** | Kabir Manchanda, Manbhav Kumar Terry |
 | **Course** | UCS503P |
 | **Current week** | **Week 3** — Mon 7 Sep → Mon 14 Sep 2026 |
-| **Updated** | Sat 12 Sep 2026 |
-| **Status** | **Green** — README demo screenshots refreshed (real crop photos) |
+| **Updated** | Sun 13 Sep 2026 |
+| **Status** | **Green** — Faculty ordered presentation on `master` under `docs/` |
 
 ## Project phase snapshot
 
@@ -26,7 +26,8 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 
 | | Task | Notes |
 |---|---|---|
-| **Working on** | Faculty Prototype demo | Walkthrough from `master`; marketplace demo assets now show real crop photos |
+| **Working on** | Faculty Prototype demo | Walkthrough from `master`; use ordered deck in `docs/` |
+| **Done** | Faculty ordered presentation | `docs/AgriConnect_Presentation_Ordered.pptx` + link in `docs/index.md` |
 | **Done** | Interactive README polish | Hero TOC, phase shields, centered demo, `<details>` for dense sections; Quick start stays open |
 | **Done** | README demo assets refreshed | Recaptured `demo.gif`, `demo-marketplace.png`, `demo-market-prices.png` with real crop photos — `e7b446d` |
 | **Done** | Marketplace wheat photo fallback | Detect tiny/corrupt Supabase JPEGs; fall back to `/crops/*.jpg` then Unsplash — `e7b446d` |

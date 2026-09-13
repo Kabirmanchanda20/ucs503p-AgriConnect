@@ -18,6 +18,9 @@ UCS503P — TIET
 - [Roadmap](ROADMAP.md)
 - [Weekly progress](WEEKLY_PROGRESS.md)
 
+## Faculty demo deck
+- [AgriConnect — ordered presentation](AgriConnect_Presentation_Ordered.pptx)
+
 ## Weekly progress decks
 - [Week 1](AgriConnect_Progress_Week1.pptx) — Lab (24–31 Aug 2026)
 - [Week 2](AgriConnect_Progress_Week2.pptx) — Prototype (31 Aug–7 Sep 2026)
