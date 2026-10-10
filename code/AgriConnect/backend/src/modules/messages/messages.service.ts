@@ -61,7 +61,7 @@ export async function listMessages(
   await getParticipantOrder(actor, orderId);
 
   const skip = (query.page - 1) * query.limit;
-  const [messages, total] = await getPrismaClient().$transaction([
+  const [messages, total] = await Promise.all([
     getPrismaClient().message.findMany({
       where: { orderId },
       include: messageInclude,

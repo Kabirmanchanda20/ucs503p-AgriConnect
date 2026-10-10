@@ -44,9 +44,7 @@ export default function MarketPricesPage() {
   const [state, setState] = useState<string>(MANDI_LIVE_STATES[0]);
   const [crop, setCrop] = useState<string>(MANDI_CROPS[0]);
   const [stateCrops, setStateCrops] = useState<string[]>([...MANDI_CROPS]);
-  // Starts true: the first crop list is fetched on mount. Later switches flip it in the
-  // Select handler, so the fetch effect never has to set it synchronously.
-  const [cropsLoading, setCropsLoading] = useState(true);
+  const [cropsLoading, setCropsLoading] = useState(false);
   const [points, setPoints] = useState<PriceTrendPoint[]>([]);
   const [mandiRows, setMandiRows] = useState<MandiPriceRow[]>([]);
   const [mandiHistory, setMandiHistory] = useState<MandiHistoryPoint[]>([]);
@@ -108,7 +106,7 @@ export default function MarketPricesPage() {
   }, [state, t]);
 
   useEffect(() => {
-    if (!crop || cropsLoading) return;
+    if (!crop) return;
 
     let cancelled = false;
     const historyFrom = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -150,7 +148,7 @@ export default function MarketPricesPage() {
     return () => {
       cancelled = true;
     };
-  }, [state, crop, cropsLoading, t]);
+  }, [state, crop, t]);
 
   // Commodity and unit names arrive as free-form strings from the govt feed, so fall
   // back to the raw value when there is no translation for them.
@@ -206,7 +204,6 @@ export default function MarketPricesPage() {
               setStaleNotice('');
               setUnpublishedNotice('');
               setCropsLoading(true);
-              setLoading(true);
               setState(e.target.value);
             }}
           >
@@ -218,11 +215,10 @@ export default function MarketPricesPage() {
         <Field label={t('marketPrices.crop')}>
           <Select
             value={crop}
-            disabled={cropsLoading || stateCrops.length === 0}
+            disabled={stateCrops.length === 0}
             onChange={(e) => {
               setError('');
               setStaleNotice('');
-              setLoading(true);
               setCrop(e.target.value);
             }}
           >
@@ -242,36 +238,44 @@ export default function MarketPricesPage() {
       ) : (
         <>
           {modalSummary ? (
-            <Card>
-              <p className="text-sm font-bold uppercase text-soil">
-                {t('marketPrices.liveEyebrow')}
-              </p>
-              <p className="font-display text-2xl text-forest">
-                {cropLabel(modalSummary.commodity)}
-              </p>
-              <p className="text-sm text-ink/70">
-                {t('marketPrices.topModal', {
-                  state: modalSummary.state,
-                  market: modalSummary.market,
-                })}
-              </p>
-              <p className="mt-2 text-xl font-bold">
-                {t('marketPrices.perKg', {
-                  price: formatMoney(modalSummary.pricePerKg, locale),
-                })}
-                <span className="text-sm font-medium text-ink/50">
-                  {' '}
-                  {t('marketPrices.modalPerQuintal', { price: `₹${modalSummary.modalPrice}` })}
+            <Card className="border-forest/15 bg-gradient-to-br from-paper to-[#f8f2e2] shadow-sm p-6 sm:p-7">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-soil/80">
+                    {t('marketPrices.liveEyebrow')}
+                  </p>
+                  <p className="mt-1 font-display text-3xl font-bold text-forest">
+                    {cropLabel(modalSummary.commodity)}
+                  </p>
+                  <p className="mt-1 text-sm text-ink/70">
+                    {t('marketPrices.topModal', {
+                      state: modalSummary.state,
+                      market: modalSummary.market,
+                    })}
+                  </p>
+                </div>
+                <span className="rounded-full bg-harvest/25 border border-harvest/40 px-3.5 py-1 text-xs font-bold uppercase text-soil">
+                  {modalSummary.market}
                 </span>
-              </p>
+              </div>
+              <div className="mt-4 pt-4 border-t border-forest/10 flex flex-wrap items-baseline gap-3">
+                <p className="text-2xl sm:text-3xl font-bold text-forest">
+                  {t('marketPrices.perKg', {
+                    price: formatMoney(modalSummary.pricePerKg, locale),
+                  })}
+                </p>
+                <p className="text-sm font-semibold text-ink/60">
+                  {t('marketPrices.modalPerQuintal', { price: `₹${modalSummary.modalPrice}` })}
+                </p>
+              </div>
             </Card>
           ) : null}
 
-          <Card>
-            <h2 className="font-display text-2xl text-forest">
+          <Card className="p-6">
+            <h2 className="font-display text-2xl font-bold text-forest">
               {t('marketPrices.liveTitle', { crop: cropLabel(crop) })}
             </h2>
-            <p className="mt-1 text-sm text-ink/60">
+            <p className="mt-1.5 text-sm text-ink/65 leading-relaxed">
               {[
                 t('marketPrices.source'),
                 arrivalDateLabel
@@ -286,42 +290,80 @@ export default function MarketPricesPage() {
               ].join(' ')}
             </p>
             {mandiRows.length === 0 ? (
-              <p className="mt-3 text-ink/70">
+              <p className="mt-4 text-ink/70">
                 {t('marketPrices.noRows', { crop: cropLabel(crop), state })}
               </p>
             ) : (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-ink/10 text-start text-ink/60">
-                      <th className="py-2 pe-3">{t('marketPrices.colMarket')}</th>
-                      <th className="py-2 pe-3">{t('marketPrices.colDistrict')}</th>
-                      <th className="py-2 pe-3">{t('marketPrices.colVariety')}</th>
-                      <th className="py-2 pe-3">{t('marketPrices.colArrival')}</th>
-                      <th className="py-2 pe-3">{t('marketPrices.colMin')}</th>
-                      <th className="py-2 pe-3">{t('marketPrices.colMax')}</th>
-                      <th className="py-2 pe-3">{t('marketPrices.colModal')}</th>
-                      <th className="py-2">{t('marketPrices.colPerKg')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mandiRows.map((row) => (
-                      <tr key={row.id} className="border-b border-ink/5">
-                        <td className="py-2 pe-3">{row.market}</td>
-                        <td className="py-2 pe-3">{row.district}</td>
-                        <td className="py-2 pe-3">{row.variety ?? '—'}</td>
-                        <td className="py-2 pe-3">
+              <>
+                {/* Mobile Cards View (eliminates horizontal panning on phones) */}
+                <div className="mt-5 space-y-3 md:hidden">
+                  {mandiRows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="rounded-xl border border-forest/10 bg-field/40 p-4 space-y-2 shadow-2xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-bold text-base text-forest">{row.market}</h4>
+                          <p className="text-xs text-ink/60">{row.district} · {row.variety ?? '—'}</p>
+                        </div>
+                        <span className="text-xs font-medium text-ink/50 shrink-0">
                           {formatArrivalLabel(row.arrivalDate, locale)}
-                        </td>
-                        <td className="py-2 pe-3">₹{row.minPrice}</td>
-                        <td className="py-2 pe-3">₹{row.maxPrice}</td>
-                        <td className="py-2 pe-3 font-semibold">₹{row.modalPrice}</td>
-                        <td className="py-2">{formatMoney(row.pricePerKg, locale)}</td>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-forest/8 pt-2.5">
+                        <div className="text-xs text-ink/70">
+                          <span>₹{row.minPrice}</span> — <span>₹{row.maxPrice}</span>
+                        </div>
+                        <div className="text-end">
+                          <p className="text-base font-bold text-forest">
+                            {formatMoney(row.pricePerKg, locale)}
+                          </p>
+                          <p className="text-[11px] font-semibold text-ink/50">
+                            ₹{row.modalPrice}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Data Table */}
+                <div className="mt-5 hidden md:block overflow-hidden rounded-xl border border-forest/10">
+                  <table className="w-full text-sm text-start">
+                    <thead>
+                      <tr className="border-b border-forest/10 bg-forest/5 text-ink/70 font-semibold">
+                        <th className="py-3 px-3.5 text-start">{t('marketPrices.colMarket')}</th>
+                        <th className="py-3 px-3.5 text-start">{t('marketPrices.colDistrict')}</th>
+                        <th className="py-3 px-3.5 text-start">{t('marketPrices.colVariety')}</th>
+                        <th className="py-3 px-3.5 text-start">{t('marketPrices.colArrival')}</th>
+                        <th className="py-3 px-3.5 text-end">{t('marketPrices.colMin')}</th>
+                        <th className="py-3 px-3.5 text-end">{t('marketPrices.colMax')}</th>
+                        <th className="py-3 px-3.5 text-end">{t('marketPrices.colModal')}</th>
+                        <th className="py-3 px-3.5 text-end">{t('marketPrices.colPerKg')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-forest/6">
+                      {mandiRows.map((row) => (
+                        <tr key={row.id} className="transition-colors hover:bg-forest/[0.03]">
+                          <td className="py-3 px-3.5 font-medium text-forest">{row.market}</td>
+                          <td className="py-3 px-3.5 text-ink/75">{row.district}</td>
+                          <td className="py-3 px-3.5 text-ink/60">{row.variety ?? '—'}</td>
+                          <td className="py-3 px-3.5 text-ink/65 whitespace-nowrap">
+                            {formatArrivalLabel(row.arrivalDate, locale)}
+                          </td>
+                          <td className="py-3 px-3.5 text-end text-ink/75">₹{row.minPrice}</td>
+                          <td className="py-3 px-3.5 text-end text-ink/75">₹{row.maxPrice}</td>
+                          <td className="py-3 px-3.5 text-end font-bold text-forest">₹{row.modalPrice}</td>
+                          <td className="py-3 px-3.5 text-end font-bold text-leaf whitespace-nowrap">
+                            {formatMoney(row.pricePerKg, locale)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </Card>
 

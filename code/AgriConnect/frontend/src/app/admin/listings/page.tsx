@@ -44,28 +44,38 @@ function AdminListings() {
   if (!listings) return <Spinner />;
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-4xl text-forest">{t('admin.moderationTitle')}</h1>
-      <Card>
+    <div className="space-y-6">
+      <div className="border-b border-forest/10 pb-5">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-forest sm:text-4xl">
+          {t('admin.moderationTitle')}
+        </h1>
+      </div>
+
+      <Card className="p-4 sm:p-5 shadow-xs border-forest/10">
         <form
-          className="flex flex-wrap gap-3"
+          className="flex flex-wrap items-end gap-3"
           action={(form) => {
             const next = String(form.get('status')) as ListingStatus;
             setStatus(next);
             reload(next);
           }}
         >
-          <Field label={t('common.status')}>
-            <Select name="status" defaultValue={status}>
-              <option value="active">{t('listing.status.active')}</option>
-              <option value="draft">{t('listing.status.draft')}</option>
-              <option value="sold_out">{t('listing.status.sold_out')}</option>
-              <option value="expired">{t('listing.status.expired')}</option>
-              <option value="removed">{t('listing.status.removed')}</option>
-            </Select>
-          </Field>
-          <Button className="mt-7" type="submit">
-            {t('common.filter')}
+          <div className="min-w-[200px]">
+            <Field label={t('common.status')}>
+              <Select name="status" defaultValue={status}>
+                <option value="active">{t('listing.status.active')}</option>
+                <option value="draft">{t('listing.status.draft')}</option>
+                <option value="sold_out">{t('listing.status.sold_out')}</option>
+                <option value="expired">{t('listing.status.expired')}</option>
+                <option value="removed">{t('listing.status.removed')}</option>
+              </Select>
+            </Field>
+          </div>
+          <Button type="submit" className="shadow-xs">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
+              <path fillRule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 0 1 .628.74v2.288a2.25 2.25 0 0 1-.659 1.59l-4.682 4.683a2.25 2.25 0 0 0-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 0 1 8 18.25v-5.757a2.25 2.25 0 0 0-.659-1.591L2.659 6.22A2.25 2.25 0 0 1 2 4.629V2.34a.75.75 0 0 1 .628-.74Z" clipRule="evenodd" />
+            </svg>
+            <span>{t('common.filter')}</span>
           </Button>
         </form>
       </Card>

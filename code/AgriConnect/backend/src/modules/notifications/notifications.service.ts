@@ -40,7 +40,7 @@ export async function listNotifications(
     ...(query.unread ? { readAt: null } : {}),
   };
   const skip = (query.page - 1) * query.limit;
-  const [rows, total] = await getPrismaClient().$transaction([
+  const [rows, total] = await Promise.all([
     getPrismaClient().notification.findMany({
       where,
       orderBy: { createdAt: 'desc' },

@@ -84,65 +84,95 @@ export default function MarketplacePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-4xl text-forest">{t('marketplace.title')}</h1>
-        <p className="mt-1 text-ink/70">{t('marketplace.subtitle')}</p>
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-4xl sm:text-5xl font-bold text-forest">{t('marketplace.title')}</h1>
+          <p className="mt-2 text-base text-ink/75">{t('marketplace.subtitle')}</p>
+        </div>
+        {!loading && listings.length > 0 ? (
+          <span className="rounded-full bg-forest/8 px-4 py-1.5 text-xs font-bold text-forest">
+            {listings.length}
+          </span>
+        ) : null}
       </div>
+
       {error ? <Alert>{error}</Alert> : null}
-      <Card>
-        <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" action={apply}>
-          <Field label={t('marketplace.crop')}>
-            <Input name="crop" placeholder={t('common.cropExample')} defaultValue={filters.crop} />
-          </Field>
-          <Field label={t('marketplace.category')}>
-            <Select name="category" defaultValue={filters.category ?? ''}>
-              <option value="">{t('common.select')}</option>
-              {CROP_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {t(`listing.category.${category}`)}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t('marketplace.state')}>
-            <Select name="state" defaultValue={filters.state ?? ''}>
-              <option value="">{t('common.select')}</option>
-              {INDIAN_STATES.map((state) => (
-                <option key={state} value={state}>
-                  {state}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t('marketplace.minPrice')}>
-            <Input name="minPrice" defaultValue={filters.minPrice} />
-          </Field>
-          <Field label={t('marketplace.maxPrice')}>
-            <Input name="maxPrice" defaultValue={filters.maxPrice} />
-          </Field>
-          <Field label={t('marketplace.sort')}>
-            <Select name="sort" defaultValue={filters.sort}>
-              <option value="createdAt_desc">{t('marketplace.sortNewest')}</option>
-              <option value="price_asc">{t('marketplace.sortPriceAsc')}</option>
-              <option value="price_desc">{t('marketplace.sortPriceDesc')}</option>
-              <option value="harvestDate_asc">{t('marketplace.sortHarvest')}</option>
-            </Select>
-          </Field>
-          <div className="sm:col-span-2 lg:col-span-3 xl:col-span-6">
-            <Button type="submit">{t('marketplace.apply')}</Button>
-          </div>
-        </form>
-      </Card>
+
+      <div className="sticky top-16 z-20">
+        <Card className="p-4 sm:p-5 shadow-md border-forest/15 bg-paper/95 backdrop-blur-md">
+          <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" action={apply}>
+            <Field label={t('marketplace.crop')}>
+              <Input name="crop" placeholder={t('common.cropExample')} defaultValue={filters.crop} />
+            </Field>
+            <Field label={t('marketplace.category')}>
+              <Select name="category" defaultValue={filters.category ?? ''}>
+                <option value="">{t('common.select')}</option>
+                {CROP_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {t(`listing.category.${category}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t('marketplace.state')}>
+              <Select name="state" defaultValue={filters.state ?? ''}>
+                <option value="">{t('common.select')}</option>
+                {INDIAN_STATES.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t('marketplace.minPrice')}>
+              <Input name="minPrice" defaultValue={filters.minPrice} />
+            </Field>
+            <Field label={t('marketplace.maxPrice')}>
+              <Input name="maxPrice" defaultValue={filters.maxPrice} />
+            </Field>
+            <Field label={t('marketplace.sort')}>
+              <Select name="sort" defaultValue={filters.sort}>
+                <option value="createdAt_desc">{t('marketplace.sortNewest')}</option>
+                <option value="price_asc">{t('marketplace.sortPriceAsc')}</option>
+                <option value="price_desc">{t('marketplace.sortPriceDesc')}</option>
+                <option value="harvestDate_asc">{t('marketplace.sortHarvest')}</option>
+              </Select>
+            </Field>
+            <div className="sm:col-span-2 lg:col-span-3 xl:col-span-6 flex justify-end pt-1">
+              <Button type="submit" className="w-full sm:w-auto px-7 shadow-sm">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
+                  <path fillRule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 0 1 .628.74v2.288a2.25 2.25 0 0 1-.659 1.59l-4.682 4.683a2.25 2.25 0 0 0-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 0 1 8 18.25v-5.757a2.25 2.25 0 0 0-.659-1.591L2.659 6.22A2.25 2.25 0 0 1 2 4.629V2.34a.75.75 0 0 1 .628-.74Z" clipRule="evenodd" />
+                </svg>
+                <span>{t('marketplace.apply')}</span>
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+
       {loading ? (
         <Spinner />
       ) : listings.length === 0 ? (
         <EmptyState
           title={t('marketplace.empty')}
           body={t('marketplace.subtitle')}
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setLoading(true);
+                setMandiCompare({});
+                setFilters({ sort: 'createdAt_desc', page: 1, limit: 12 });
+              }}
+            >
+              {t('marketplace.apply')}
+            </Button>
+          }
         />
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {listings.filter((listing) => isPublicListing(listing.crop)).map((listing) => (
             <ListingCard
               key={listing.id}

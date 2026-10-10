@@ -186,7 +186,7 @@ export async function listListings(query: ListListingsQuery, viewer?: ListingVie
           : { createdAt: 'desc' };
 
   const skip = (query.page - 1) * query.limit;
-  const [rows, total] = await getPrismaClient().$transaction([
+  const [rows, total] = await Promise.all([
     getPrismaClient().listing.findMany({
       where,
       include: listingInclude,

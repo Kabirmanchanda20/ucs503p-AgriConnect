@@ -229,7 +229,7 @@ export async function listOrders(actor: AuthenticatedActor, query: ListOrdersQue
   }
 
   const skip = (query.page - 1) * query.limit;
-  const [orders, total] = await getPrismaClient().$transaction([
+  const [orders, total] = await Promise.all([
     getPrismaClient().order.findMany({
       where,
       include: orderInclude,

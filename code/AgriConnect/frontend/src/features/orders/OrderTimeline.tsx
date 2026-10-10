@@ -101,16 +101,16 @@ function logisticsSteps(order: Order, t: Translate, locale: string): TimelineSte
 
 function StepDot({ state }: { state: StepState }) {
   const styles = {
-    complete: 'border-leaf bg-leaf text-cream',
-    current: 'border-harvest bg-harvest/20 text-forest ring-2 ring-harvest/40',
-    upcoming: 'border-forest/20 bg-cream text-ink/35',
+    complete: 'border-leaf bg-leaf text-paper shadow-xs shadow-leaf/30',
+    current: 'border-harvest bg-harvest/25 text-forest ring-4 ring-harvest/30 font-extrabold',
+    upcoming: 'border-forest/20 bg-paper text-ink/30',
     cancelled: 'border-clay bg-clay/15 text-clay',
   }[state];
 
   return (
     <span
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-bold ${styles}`}
-      aria-hidden
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold transition-all ${styles}`}
+      aria-hidden="true"
     >
       {state === 'complete' ? '✓' : state === 'cancelled' ? '!' : ''}
     </span>
@@ -119,8 +119,10 @@ function StepDot({ state }: { state: StepState }) {
 
 function StepRow({ title, steps }: { title: string; steps: TimelineStep[] }) {
   return (
-    <div>
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-soil">{title}</p>
+    <div className="space-y-2.5">
+      <div className="inline-flex items-center gap-1.5 rounded-md bg-sand/35 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-soil">
+        {title}
+      </div>
       <ol className="flex flex-wrap items-start gap-y-3">
         {steps.map((step, index) => (
           <li key={step.id} className="flex min-w-0 flex-1 items-center">
@@ -128,19 +130,25 @@ function StepRow({ title, steps }: { title: string; steps: TimelineStep[] }) {
               <StepDot state={step.state} />
               <span
                 className={`text-xs font-semibold leading-tight ${
-                  step.state === 'current' ? 'text-forest' : step.state === 'complete' ? 'text-leaf' : 'text-ink/45'
+                  step.state === 'current'
+                    ? 'font-bold text-forest'
+                    : step.state === 'complete'
+                      ? 'text-leaf'
+                      : 'text-ink/45'
                 }`}
               >
                 {step.label}
               </span>
-              {step.detail ? <span className="text-[10px] text-ink/50">{step.detail}</span> : null}
+              {step.detail ? (
+                <span className="text-[10px] font-medium text-ink/55">{step.detail}</span>
+              ) : null}
             </div>
             {index < steps.length - 1 ? (
               <div
                 className={`mx-1 h-0.5 min-w-[1rem] flex-1 rounded-full ${
                   step.state === 'complete' ? 'bg-leaf/60' : 'bg-forest/12'
                 }`}
-                aria-hidden
+                aria-hidden="true"
               />
             ) : null}
           </li>
@@ -175,10 +183,12 @@ export function OrderTimeline({ order }: { order: Order }) {
   const logistics = logisticsSteps(order, t, locale);
 
   return (
-    <div className="space-y-5 rounded-xl border border-forest/10 bg-forest/[0.03] p-4">
+    <div className="space-y-5 rounded-2xl border border-forest/10 bg-gradient-to-b from-forest/[0.02] to-paper p-5 shadow-xs sm:p-6">
       <div>
-        <h2 className="font-display text-lg text-forest">{t('order.timeline.title')}</h2>
-        <p className="text-sm text-ink/55">{t('order.timeline.subtitle')}</p>
+        <h2 className="font-display text-lg font-bold text-forest sm:text-xl">
+          {t('order.timeline.title')}
+        </h2>
+        <p className="text-xs text-ink/65 sm:text-sm">{t('order.timeline.subtitle')}</p>
       </div>
       <StepRow title={t('order.timeline.orderSection')} steps={mainSteps} />
       {payment ? <StepRow title={t('order.timeline.paymentSection')} steps={payment} /> : null}

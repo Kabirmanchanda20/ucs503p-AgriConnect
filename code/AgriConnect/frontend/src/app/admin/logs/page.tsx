@@ -40,22 +40,33 @@ function Logs() {
   if (!logs) return <Spinner />;
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-4xl text-forest">{t('admin.logsTitle')}</h1>
+    <div className="space-y-6">
+      <div className="border-b border-forest/10 pb-5">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-forest sm:text-4xl">
+          {t('admin.logsTitle')}
+        </h1>
+      </div>
       {logs.length === 0 ? (
         <EmptyState title={t('admin.logsEmptyTitle')} body={t('admin.logsEmptyBody')} />
       ) : (
-        logs.map((log) => (
-          <Card key={log.id}>
-            <p className="font-bold text-forest">
-              {ACTION_KEYS[log.action] ? t(ACTION_KEYS[log.action]) : titleCase(log.action)}
-            </p>
-            <p className="text-sm text-ink/70">
-              {TARGET_KEYS[log.targetType] ? t(TARGET_KEYS[log.targetType]) : log.targetType}{' '}
-              {log.targetId} · {formatDate(log.createdAt, locale)}
-            </p>
-          </Card>
-        ))
+        <div className="space-y-3">
+          {logs.map((log) => (
+            <Card key={log.id} className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5 shadow-xs">
+              <div className="space-y-1">
+                <p className="font-bold text-forest">
+                  {ACTION_KEYS[log.action] ? t(ACTION_KEYS[log.action]) : titleCase(log.action)}
+                </p>
+                <p className="text-xs text-ink/70">
+                  {TARGET_KEYS[log.targetType] ? t(TARGET_KEYS[log.targetType]) : log.targetType}{' '}
+                  <span className="font-mono text-soil">{log.targetId}</span>
+                </p>
+              </div>
+              <span className="text-xs font-medium text-ink/60">
+                {formatDate(log.createdAt, locale)}
+              </span>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { APP_LOCALES } from '../../common/locales.js';
 
-const email = z.email().max(254).transform((value) => value.toLowerCase());
+const email = z
+  .string()
+  .trim()
+  .max(254)
+  .pipe(z.email())
+  .transform((value) => value.toLowerCase());
 const password = z.string().min(8).max(128);
 const requiredLocation = z.string().trim().min(1).max(100);
 const optionalVillage = z.string().trim().min(1).max(100).optional();
@@ -23,7 +28,8 @@ export const registerSchema = z
 export const loginSchema = z
   .object({
     email,
-    password: z.string().min(1).max(128),
+    // Trim so copy/paste from the faculty demo box still works.
+    password: z.string().trim().min(1).max(128),
   })
   .strict();
 

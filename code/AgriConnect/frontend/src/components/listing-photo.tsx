@@ -63,6 +63,7 @@ export function ListingPhoto({
   const [source, setSource] = useState<string>(src || local);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSource(src || local);
   }, [src, local]);
 

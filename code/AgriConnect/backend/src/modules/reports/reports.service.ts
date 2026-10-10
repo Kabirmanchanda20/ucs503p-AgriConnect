@@ -15,7 +15,7 @@ export async function getMyReport(userId: string, role: Role) {
   }
 
   if (role === 'FARMER') {
-    const [totalListings, fulfilled] = await getPrismaClient().$transaction([
+    const [totalListings, fulfilled] = await Promise.all([
       getPrismaClient().listing.count({
         where: { farmerProfile: { userId }, deletedAt: null },
       }),
@@ -47,7 +47,7 @@ export async function getMyReport(userId: string, role: Role) {
     };
   }
 
-  const [totalOrders, orders] = await getPrismaClient().$transaction([
+  const [totalOrders, orders] = await Promise.all([
     getPrismaClient().order.count({ where: { buyerId: userId } }),
     getPrismaClient().order.findMany({
       where: { buyerId: userId, status: 'fulfilled' },

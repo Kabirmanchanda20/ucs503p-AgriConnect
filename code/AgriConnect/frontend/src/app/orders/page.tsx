@@ -47,28 +47,38 @@ function OrdersList() {
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-4xl text-forest">{t('order.listTitle')}</h1>
+    <div className="space-y-6">
+      <div className="border-b border-forest/10 pb-5">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-forest sm:text-4xl">
+          {t('order.listTitle')}
+        </h1>
+      </div>
+
       {sorted.length === 0 ? (
         <EmptyState title={t('order.emptyTitle')} body={t('order.emptyBody')} />
       ) : (
-        sorted.map((order) => (
-          <Link key={order.id} href={`/orders/${order.id}`}>
-            <Card className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-display text-2xl text-forest">
-                  {order.listing?.crop ?? t('order.produceFallback')}
-                </p>
-                <p className="text-sm text-ink/70">
-                  {formatQty(order.quantity, t(`units.${order.unit}`), locale)} ·{' '}
-                  {formatMoney(order.priceTotal, locale)} · {formatDate(order.createdAt, locale)}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-leaf">{t('order.openCta')}</p>
-              </div>
-              <Badge tone={tones[order.status]}>{t(`order.status.${order.status}`)}</Badge>
-            </Card>
-          </Link>
-        ))
+        <div className="space-y-3.5">
+          {sorted.map((order) => (
+            <Link key={order.id} href={`/orders/${order.id}`} className="block group">
+              <Card className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6 transition-all duration-200 group-hover:border-leaf/40 group-hover:shadow-md">
+                <div className="space-y-1">
+                  <p className="font-display text-2xl font-bold text-forest group-hover:text-leaf transition-colors">
+                    {order.listing?.crop ?? t('order.produceFallback')}
+                  </p>
+                  <p className="text-sm text-ink/75">
+                    {formatQty(order.quantity, t(`units.${order.unit}`), locale)} ·{' '}
+                    <span className="font-bold text-forest">{formatMoney(order.priceTotal, locale)}</span> ·{' '}
+                    <span>{formatDate(order.createdAt, locale)}</span>
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-leaf flex items-center gap-1 group-hover:underline">
+                    <span>{t('order.openCta')}</span>
+                  </p>
+                </div>
+                <Badge tone={tones[order.status]}>{t(`order.status.${order.status}`)}</Badge>
+              </Card>
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

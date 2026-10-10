@@ -335,22 +335,37 @@ export function FarmerChatWidget({
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className="pointer-events-auto kisan-panel flex h-[100dvh] w-full flex-col overflow-hidden border border-forest/15 bg-paper shadow-[0_18px_50px_rgba(31,61,43,0.22)] sm:mb-3 sm:h-[min(34rem,68vh)] sm:w-[min(24.5rem,calc(100vw-2rem))] sm:rounded-3xl"
+          className="pointer-events-auto kisan-panel flex h-[100dvh] w-full flex-col overflow-hidden border border-forest/15 bg-paper shadow-[0_20px_60px_rgba(31,61,43,0.25)] sm:mb-3 sm:h-[min(36rem,72vh)] sm:w-[min(26rem,calc(100vw-2rem))] sm:rounded-3xl"
         >
-          <header className="flex items-center gap-3 bg-forest px-4 py-3 text-paper">
-            <FarmerMascot size={44} className="ring-1 ring-harvest/40" />
+          <header className="flex items-center gap-3 bg-gradient-to-r from-forest via-forest to-leaf/90 px-4 py-3 text-paper shadow-sm">
+            <FarmerMascot size={44} className="ring-2 ring-harvest/40 shadow-xs" />
             <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="font-display text-lg leading-tight">
+              <h2 id={titleId} className="font-display text-lg font-bold leading-tight">
                 {t('kisan.title')}
               </h2>
-              <p className="truncate text-xs text-paper/75" aria-live="polite">
-                {statusLabel}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cx(
+                    'h-2 w-2 rounded-full',
+                    listening
+                      ? 'bg-harvest animate-ping'
+                      : speakingId
+                        ? 'bg-leaf animate-pulse'
+                        : assistantOnline
+                          ? 'bg-leaf'
+                          : 'bg-clay/70',
+                  )}
+                  aria-hidden="true"
+                />
+                <p className="truncate text-xs text-paper/85" aria-live="polite">
+                  {statusLabel}
+                </p>
+              </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="min-h-11 min-w-11 rounded-xl text-lg font-semibold text-paper/85 hover:bg-paper/10 hover:text-paper"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-lg font-semibold text-paper/85 transition hover:bg-paper/15 hover:text-paper"
               aria-label={t('kisan.closeLabel')}
             >
               ✕
@@ -359,7 +374,7 @@ export function FarmerChatWidget({
 
           <div
             ref={listRef}
-            className="flex-1 space-y-3 overflow-y-auto px-3 py-3"
+            className="flex-1 space-y-3.5 overflow-y-auto bg-cream/25 px-3 py-3"
             aria-live="polite"
             id={liveId}
           >
@@ -369,22 +384,22 @@ export function FarmerChatWidget({
                 className={cx('flex gap-2', item.role === 'user' ? 'justify-end' : 'justify-start')}
               >
                 {item.role === 'assistant' ? (
-                  <FarmerMascot size={28} className="mt-1 shrink-0" />
+                  <FarmerMascot size={28} className="mt-1 shrink-0 ring-1 ring-harvest/30" />
                 ) : null}
                 <div
                   className={cx(
-                    'max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                    'max-w-[84%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-xs',
                     item.role === 'user'
-                      ? 'bg-leaf text-paper'
-                      : 'border border-forest/10 bg-field text-ink',
+                      ? 'rounded-tr-xs bg-leaf text-paper font-medium'
+                      : 'rounded-tl-xs border border-forest/10 bg-paper text-ink',
                   )}
                 >
-                  <p>{item.content}</p>
+                  <p className="whitespace-pre-wrap">{item.content}</p>
                   {item.role === 'assistant' && item.citations && item.citations.length > 0 ? (
-                    <ul className="mt-2 space-y-1 border-t border-forest/10 pt-2 text-xs text-soil">
+                    <ul className="mt-2.5 space-y-1 rounded-xl border border-forest/10 bg-sand/20 p-2 text-xs text-soil">
                       {item.citations.map((cite) => (
-                        <li key={cite.id}>
-                          {cite.title} — {cite.source}
+                        <li key={cite.id} className="leading-snug">
+                          <span className="font-semibold">{cite.title}</span> — {cite.source}
                         </li>
                       ))}
                     </ul>
@@ -393,11 +408,25 @@ export function FarmerChatWidget({
                     <button
                       type="button"
                       onClick={() => readAloud(item.id, item.content, item.locale ?? locale)}
-                      className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-forest/8 px-2.5 text-xs font-bold text-forest hover:bg-forest/12"
+                      className="mt-2.5 inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-forest/10 bg-forest/5 px-2.5 text-xs font-bold text-forest transition hover:bg-forest/10 active:scale-95"
                       aria-label={
                         speakingId === item.id ? t('kisan.stopSpeakLabel') : t('kisan.speakLabel')
                       }
                     >
+                      <svg
+                        className="h-3.5 w-3.5 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.757 3.63 8.25 4.51 8.25H6.75z"
+                        />
+                      </svg>
                       {speakingId === item.id ? t('kisan.stopSpeakLabel') : t('kisan.speakLabel')}
                     </button>
                   ) : null}
@@ -406,24 +435,24 @@ export function FarmerChatWidget({
             ))}
             {pending ? (
               <div className="flex items-center gap-2 text-soil">
-                <FarmerMascot size={28} />
-                <span className="kisan-typing rounded-2xl border border-forest/10 bg-field px-3 py-2 text-sm">
+                <FarmerMascot size={28} className="ring-1 ring-harvest/30" />
+                <span className="kisan-typing rounded-2xl rounded-tl-xs border border-forest/10 bg-paper px-3.5 py-2 text-sm text-ink/75 shadow-xs">
                   {t('kisan.sending')}
                 </span>
               </div>
             ) : null}
           </div>
 
-          <div className="border-t border-forest/10 bg-field/60 px-3 py-2">
+          <div className="border-t border-forest/10 bg-paper/95 px-3 py-2.5 backdrop-blur-xs">
             <div className="mb-2 flex items-center justify-between gap-2">
               <VoiceWave active={listening || Boolean(speakingId)} tone={voiceTone} />
               <button
                 type="button"
                 onClick={toggleAutoSpeak}
                 className={cx(
-                  'rounded-full border px-2.5 py-1 text-xs font-semibold',
+                  'rounded-full border px-2.5 py-1 text-xs font-semibold transition',
                   autoSpeak
-                    ? 'border-leaf bg-leaf/15 text-forest'
+                    ? 'border-leaf bg-leaf/15 text-forest font-bold'
                     : 'border-forest/20 bg-paper text-ink/70',
                 )}
                 aria-pressed={autoSpeak}
@@ -439,15 +468,15 @@ export function FarmerChatWidget({
                   type="button"
                   disabled={pending}
                   onClick={() => void sendMessage(chip)}
-                  className="shrink-0 rounded-full border border-harvest/40 bg-harvest/15 px-3 py-1.5 text-xs font-semibold text-soil hover:bg-harvest/25 disabled:opacity-50"
+                  className="shrink-0 rounded-full border border-harvest/40 bg-harvest/15 px-3 py-1.5 text-xs font-semibold text-soil transition hover:bg-harvest/25 active:scale-95 disabled:opacity-50"
                 >
                   {chip}
                 </button>
               ))}
             </div>
 
-            {voiceError ? <p className="mb-2 text-xs text-soil">{voiceError}</p> : null}
-            <p className="mb-2 text-xs text-ink/55">{t('kisan.voiceHint')}</p>
+            {voiceError ? <p className="mb-2 text-xs font-medium text-clay">{voiceError}</p> : null}
+            <p className="mb-2 text-xs text-ink/60">{t('kisan.voiceHint')}</p>
 
             <form onSubmit={onSubmit} className="flex items-end gap-2">
               <label htmlFor={inputId} className="sr-only">
@@ -467,27 +496,25 @@ export function FarmerChatWidget({
                 maxLength={800}
                 rows={2}
                 placeholder={listening ? t('kisan.listening') : t('kisan.placeholder')}
-                className="min-h-12 flex-1 resize-none rounded-2xl border border-forest/15 bg-paper px-3 py-2.5 text-sm text-ink outline-none ring-harvest/40 focus:border-leaf focus:ring-2"
+                className="min-h-12 flex-1 resize-none rounded-2xl border border-forest/15 bg-paper px-3 py-2.5 text-sm text-ink outline-none transition ring-harvest/40 focus:border-leaf focus:ring-3"
               />
               <button
                 type="button"
                 onClick={toggleMic}
                 disabled={pending}
                 className={cx(
-                  'flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full text-xs font-bold shadow-sm transition disabled:opacity-50',
+                  'flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-50',
                   listening
-                    ? 'bg-soil text-paper ring-4 ring-harvest/40'
-                    : 'bg-forest text-paper hover:brightness-110',
+                    ? 'bg-clay text-paper ring-4 ring-clay/35 animate-pulse'
+                    : 'bg-forest text-paper hover:bg-forest/90',
                 )}
                 aria-label={listening ? t('kisan.stopMicLabel') : t('kisan.micLabel')}
                 aria-pressed={listening}
                 title={listening ? t('kisan.stopMicLabel') : t('kisan.micLabel')}
               >
-                <span className="text-lg leading-none" aria-hidden>
+                <span className="text-lg leading-none" aria-hidden="true">
                   {listening ? '■' : '🎙'}
                 </span>
-                {/* Two clamped lines: most locales need more room than one 3.2rem line,
-                    and the full text is already on aria-label and title. */}
                 <span className="mt-0.5 line-clamp-2 max-w-[3.4rem] text-[9px] leading-[1.1]">
                   {listening ? t('kisan.stopMicLabel') : t('kisan.tapToTalk')}
                 </span>
@@ -495,7 +522,7 @@ export function FarmerChatWidget({
               <button
                 type="submit"
                 disabled={pending || !draft.trim()}
-                className="flex h-14 min-w-14 shrink-0 items-center justify-center rounded-2xl bg-leaf px-4 text-sm font-bold text-paper hover:bg-forest disabled:cursor-not-allowed disabled:bg-soil/40"
+                className="flex h-14 min-w-14 shrink-0 items-center justify-center rounded-2xl bg-leaf px-4 text-sm font-bold text-paper shadow-xs transition hover:bg-forest active:scale-95 disabled:cursor-not-allowed disabled:bg-soil/40"
               >
                 {t('kisan.send')}
               </button>
@@ -511,12 +538,16 @@ export function FarmerChatWidget({
             unlockSpeechPlayback();
             setOpen(true);
           }}
-          className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-forest shadow-[0_12px_28px_rgba(31,61,43,0.32)] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-harvest sm:h-16 sm:w-16"
+          className="group pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full bg-forest shadow-[0_14px_32px_rgba(31,61,43,0.35)] transition duration-200 hover:scale-105 hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-harvest sm:h-16 sm:w-16"
           aria-expanded={false}
           aria-controls={panelId}
           aria-label={t('kisan.openLabel')}
         >
-          <FarmerMascot size={56} />
+          <span
+            className="absolute -inset-1 rounded-full bg-leaf/25 opacity-75 blur-xs transition group-hover:opacity-100"
+            aria-hidden="true"
+          />
+          <FarmerMascot size={56} className="relative z-10" />
         </button>
       ) : null}
     </div>

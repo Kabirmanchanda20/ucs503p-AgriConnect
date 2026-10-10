@@ -49,25 +49,32 @@ process.once('SIGTERM', () => {
 });
 
 try {
-  await connectDatabase();
-  await seedReferencePriceTrendsIfEmpty();
-  const expiryTimer = setInterval(() => {
-    void runListingMaintenanceJobs().catch((error: unknown) => {
-      logger.error({ err: error }, 'Listing maintenance job failed');
-    });
-  }, 60 * 60 * 1000);
-  expiryTimer.unref();
-
-  const mandiSyncTimer = setInterval(() => {
-    void syncMandiPricesToTrends().catch((error: unknown) => {
-      logger.warn({ err: error }, 'Scheduled mandi price sync failed');
-    });
-  }, 24 * 60 * 60 * 1000);
-  mandiSyncTimer.unref();
-
   server.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, 'AgriConnect API listening');
   });
+
+  try {
+    await connectDatabase();
+    await seedReferencePriceTrendsIfEmpty();
+    const expiryTimer = setInterval(() => {
+      void runListingMaintenanceJobs().catch((error: unknown) => {
+        logger.error({ err: error }, 'Listing maintenance job failed');
+      });
+    }, 60 * 60 * 1000);
+    expiryTimer.unref();
+
+    const mandiSyncTimer = setInterval(() => {
+      void syncMandiPricesToTrends().catch((error: unknown) => {
+        logger.warn({ err: error }, 'Scheduled mandi price sync failed');
+      });
+    }, 24 * 60 * 60 * 1000);
+    mandiSyncTimer.unref();
+  } catch (dbError) {
+    logger.error(
+      { err: dbError },
+      `Database connection failed at startup. Supabase project may be paused. Server is listening on port ${String(env.PORT)}`,
+    );
+  }
 } catch (error) {
   logger.fatal({ err: error }, 'Server startup failed');
   await disconnectDatabase();

@@ -6,9 +6,9 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 |---|---|
 | **Team** | Kabir Manchanda, Manbhav Kumar Terry |
 | **Course** | UCS503P |
-| **Current week** | **Week 3** — Mon 7 Sep → Mon 14 Sep 2026 |
-| **Updated** | Sun 13 Sep 2026 |
-| **Status** | **Green** — Faculty ordered presentation on `master` under `docs/` |
+| **Current week** | **Week 4** — Mon 5 Oct → Mon 12 Oct 2026 |
+| **Updated** | Sat 10 Oct 2026 |
+| **Status** | **Green** — Farm-authentic UI refresh across all surfaces; 13-locale parity; Mandi & DB pooler concurrency overhaul |
 
 ## Project phase snapshot
 
@@ -18,16 +18,59 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 |---|---|---|---|
 | **Lab** | Functional CRUD marketplace | Complete (Week 1) | Auth/RBAC, listings, orders, admin, notifications, reports — see Archive |
 | **Prototype** | Real-time, production-shaped system | Complete (Week 2–3) | Chat, calls, mandi, logistics, escrow payments + webhook, 13-locale UI, contact guard — see board |
-| **Capstone** | AI-assisted advisory platform | In progress | Grounded Kisan RAG + AGRONOMIST + profile weather (shipping) |
+| **Capstone** | AI-assisted advisory platform | In progress | Grounded Kisan RAG + AGRONOMIST + profile weather + authentic farm UI refresh |
 
-## Board — week 3
+## Board — week 4
 
-**Focus:** faculty demo from `master`; then Capstone scope.
+**Focus:** authentic farm UI/UX refresh (same routes & APIs) + concurrency/latency overhaul + faculty walkthrough; then Capstone scope.
 
 | | Task | Notes |
 |---|---|---|
-| **Working on** | Faculty Prototype demo | Walkthrough from `master`; use ordered deck in `docs/` |
-| **Done** | Faculty ordered presentation | `docs/AgriConnect_Presentation_Ordered.pptx` + link in `docs/index.md` � `7f1d501` |
+| **Working on** | Farm-authentic UI refresh walkthrough | Uncommitted UI refresh across public, auth, dashboards, and orders awaiting commit |
+| **Done** | Tokens & field surface texture | Soft field micro-dot grain background, tactile buttons, rich cards, PageHeader and StatCard tokens in `globals.css` and `ui.tsx` |
+| **Done** | App shell & navigation pills | Clearer active nav pills, tighter weather/lang/bell cluster, mobile second-row nav in `shell.tsx` |
+| **Done** | Split-brand auth screens | Responsive brand showcase + form on `/login` and `/register`; demo credentials quick-fill maintained |
+| **Done** | Landing page auth hero sync | Synced landing hero with active `useAuth()` session; role-aware subtitle and dynamic [Dashboard] link to eliminate contradictory guest CTAs |
+| **Done** | Logged-in dashboard KPI strips | Farmer, buyer, and admin desk KPI cards, revenue/spend stats, and quick actions |
+| **Done** | Two-column order workspace | Desktop two-column layout on `/orders/[id]` (details/timeline left, payment/call/chat right); list status badges |
+| **Done** | Admin moderation chrome | Distinct filter toolbars, search bar, and audit timeline cards on `/admin/users`, `/admin/listings`, `/admin/logs` |
+| **Done** | Landing page farm story | Authentic hero banner, trust credentials strip, horizontal category pill slider, live produce showcase |
+| **Done** | Sticky marketplace filter bar | Anchored filter toolbar (`sticky top-16`), result count badges, dense card grid, empty search reset |
+| **Done** | Listing detail gallery & sticky buy card | Photo badge overlays, harvest & availability cards, farmer rating, sticky desktop order panel |
+| **Done** | Mandi rate cards & dual layout | High modal rate banner, mobile card view + desktop APMC table, 90-day history chart in `/market-prices` |
+| **Done** | Mandi latency & APMC benchmark fallbacks | Eliminated 45s timeouts & unbounded loops with 3.5s budget in `mandi-prices.service.ts`; built realistic APMC benchmark matrices (6 states, 15 staples); decoupled frontend waterfall in `/market-prices` |
+| **Done** | Database pooler concurrency optimization | Replaced read-only Prisma `$transaction` across 7 backend services with concurrent `Promise.all` to eliminate Supabase pooler lockups and P2028 timeouts |
+| **Done** | Trade widgets refresh | Enlarged Ask Kisan launcher & voice wave bars, payment method radio cards, compact phone bar, 5-day weather popover |
+| **Done** | 13-locale i18n & quality gates | 483 keys × 13 locales parity, AST zero hardcoded strings check, width budget tests, 128 frontend / 146 backend tests green |
+| **Blocked** | — | None |
+| **Backlog** | Native-speaker pass on the ten new dictionaries | Machine-translated today |
+| **Backlog** | Capstone — ML price / crop CV | Still backlog after Grounded Kisan |
+| **Backlog** | Farmer payouts / settlement | Escrow holds and refunds are done; paying the farmer out through Razorpay is not |
+| **Backlog** | TURN server for calls | Public STUN only today, so calls behind strict NATs may fail to connect |
+| **Backlog** | Contact blocking on review comments | Chat, order notes, and listing copy are scanned; review comments are the last free-text field still unscanned |
+| **Backlog** | Razorpay webhook tunnel for local demos | Checkout works without it; webhook needs a public HTTPS URL |
+
+**Risks:** Locale dictionaries still need a native-speaker pass. Voice calls are single-process + public STUN (TURN still backlog).
+
+**Next week:** faculty walkthrough of UI refresh + Grounded Kisan; optional TURN + farmer payouts.
+
+---
+
+## Archive
+
+### Week 3 — Mon 7 Sep → Mon 14 Sep 2026
+
+| | |
+|---|---|
+| **Milestone** | **Prototype** close-out + **Capstone** start (Grounded Kisan) |
+| **Status** | **Green** — Prototype demo-ready; login copy/paste whitespace trim, Grounded Kisan RAG, and profile weather shipped |
+| **Closed** | Mon 14 Sep 2026 |
+
+| | Task | Notes |
+|---|---|---|
+| **Done** | Faculty Prototype demo | Walkthrough from `master`; use ordered deck in `docs/` |
+| **Done** | Login copy/paste trim | Email/password trim + one-click Farmer/Buyer fill on `/login` |
+| **Done** | Faculty ordered presentation | `docs/AgriConnect_Presentation_Ordered.pptx` + link in `docs/index.md` - `7f1d501` |
 | **Done** | Interactive README polish | Hero TOC, phase shields, centered demo, `<details>` for dense sections; Quick start stays open |
 | **Done** | README demo assets refreshed | Recaptured `demo.gif`, `demo-marketplace.png`, `demo-market-prices.png` with real crop photos — `e7b446d` |
 | **Done** | Marketplace wheat photo fallback | Detect tiny/corrupt Supabase JPEGs; fall back to `/crops/*.jpg` then Unsplash — `e7b446d` |
@@ -54,38 +97,36 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 
 **Risks:** Locale dictionaries still need a native-speaker pass. Voice calls are single-process + public STUN (TURN still backlog).
 
-**Next week:** faculty Prototype + Grounded Kisan demo; optional TURN + farmer payouts.
+**Carried into Week 4:** Farm-authentic UI refresh across all surfaces while keeping all routes, APIs, and features intact.
 
 ---
-
-## Archive
 
 ### Week 2 — Mon 31 Aug → Mon 7 Sep 2026
 
 | | |
 |---|---|
-| **Milestone** | **Prototype** — real-time, production-shaped system |
-| **Status** | **Green** — Prototype demo-ready; anti-bypass chat guard, in-app voice calls, and payment methods verified against the live API |
+| **Milestone** | **Prototype** â€” real-time, production-shaped system |
+| **Status** | **Green** â€” Prototype demo-ready; anti-bypass chat guard, in-app voice calls, and payment methods verified against the live API |
 | **Closed** | Mon 7 Sep 2026 |
 
 | | Task | Notes |
 |---|---|---|
 | **Done** | Commit + push Prototype slice | `49a11f1` (+ CI fixes `4bc4814`, `4e17381`); remote `origin/backend_frontend` |
-| **Done** | Live mandi feed (Agmarknet) | `latestOnly`, grain probes, 90-day history — `49a11f1` / `mandi-prices.service.ts` |
-| **Done** | Docker + CI | `docker-compose.yml`, Dockerfiles, `.github/workflows/ci.yml` — `49a11f1` |
-| **Done** | Hindi / Punjabi i18n | en/hi/pa switcher; register + profile; Kisan language — `41455f0` |
-| **Blocked** | — | None |
-| **Done** | Real-time order chat + typing | Socket.io + REST — commit `c603f78` |
+| **Done** | Live mandi feed (Agmarknet) | `latestOnly`, grain probes, 90-day history â€” `49a11f1` / `mandi-prices.service.ts` |
+| **Done** | Docker + CI | `docker-compose.yml`, Dockerfiles, `.github/workflows/ci.yml` â€” `49a11f1` |
+| **Done** | Hindi / Punjabi i18n | en/hi/pa switcher; register + profile; Kisan language â€” `41455f0` |
+| **Blocked** | â€” | None |
+| **Done** | Real-time order chat + typing | Socket.io + REST â€” commit `c603f78` |
 | **Done** | Reviews + Kisan assistant + CI | Commits `c603f78`, `9477dc0`, `0736886` |
-| **Done** | Market price trends + summary | `GET /market/prices`, `/prices/summary`, `/market-prices` — `49a11f1` |
-| **Done** | Logistics tracking | `PATCH /orders/:id/logistics` — `49a11f1` |
-| **Done** | Escrow-style payment stub | Mock hold/confirm — `49a11f1` |
-| **Done** | Buyer produce alerts | `/buyer/alerts` — `49a11f1` |
-| **Done** | Listing lifecycle jobs | Expiry warnings + auto-expire — `49a11f1` |
-| **Done** | Demo seed + schema migration | V2 migration + seed — `49a11f1` |
-| **Done** | Guest browse + landing UX | Logo hero, public marketplace — `49a11f1` |
-| **Done** | Order timeline + mandi compare badge | `OrderTimeline`; `POST /market/prices/compare` — `49a11f1` |
-| **Done** | Verification | Backend Vitest 43/43; frontend build; i18n parity — local + `41455f0` |
+| **Done** | Market price trends + summary | `GET /market/prices`, `/prices/summary`, `/market-prices` â€” `49a11f1` |
+| **Done** | Logistics tracking | `PATCH /orders/:id/logistics` â€” `49a11f1` |
+| **Done** | Escrow-style payment stub | Mock hold/confirm â€” `49a11f1` |
+| **Done** | Buyer produce alerts | `/buyer/alerts` â€” `49a11f1` |
+| **Done** | Listing lifecycle jobs | Expiry warnings + auto-expire â€” `49a11f1` |
+| **Done** | Demo seed + schema migration | V2 migration + seed â€” `49a11f1` |
+| **Done** | Guest browse + landing UX | Logo hero, public marketplace â€” `49a11f1` |
+| **Done** | Order timeline + mandi compare badge | `OrderTimeline`; `POST /market/prices/compare` â€” `49a11f1` |
+| **Done** | Verification | Backend Vitest 43/43; frontend build; i18n parity â€” local + `41455f0` |
 | **Done** | API endpoint catalog (boss review) | `docs/API_ENDPOINTS.md` + contract gaps (meta, commodities, outbound) |
 | **Done** | Marketplace / mandi load UX | Backend-down message; Haryana in state fallback; `Promise.allSettled` on mandi page; `filters[state]` fix |
 | **Done** | Register required fields | Phone, state, district required; village optional |
@@ -95,15 +136,15 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 
 ---
 
-### Week 1 — Mon 24 Aug → Mon 31 Aug 2026
+### Week 1 â€” Mon 24 Aug â†’ Mon 31 Aug 2026
 
 | | |
 |---|---|
-| **Milestone** | **Lab** — functional CRUD marketplace |
-| **Status** | **Green** — lab acceptance criteria met |
+| **Milestone** | **Lab** â€” functional CRUD marketplace |
+| **Status** | **Green** â€” lab acceptance criteria met |
 | **Closed** | Mon 31 Aug 2026 |
 
-**Delivered:** Auth/RBAC (farmer, buyer, admin), listings + photos, order state machine (pending → accepted → confirmed → fulfilled / cancelled), admin moderate/verify/suspend, notifications, reports, password reset, public marketplace browse.
+**Delivered:** Auth/RBAC (farmer, buyer, admin), listings + photos, order state machine (pending â†’ accepted â†’ confirmed â†’ fulfilled / cancelled), admin moderate/verify/suspend, notifications, reports, password reset, public marketplace browse.
 
 **Engineering:** Full-stack monorepo, Prisma + Supabase, Express REST API, Next.js App Router, Zod validation, JWT + refresh cookies, ownership checks, rate limits.
 
@@ -113,4 +154,4 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 
 ---
 
-_When Week 4 starts (Mon 14 Sep): archive the Week 3 board here, then open Week 4 with fresh **Working on** rows._
+_When Week 5 starts (Mon 12 Oct): archive the Week 4 board here, then open Week 5 with fresh **Working on** rows._

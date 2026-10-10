@@ -52,8 +52,10 @@ function NavLink({
       href={href}
       aria-label={label}
       className={cx(
-        'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition',
-        active ? 'bg-paper/15 text-paper' : 'text-paper/80 hover:bg-paper/10 hover:text-paper',
+        'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-semibold transition',
+        active
+          ? 'bg-harvest text-forest shadow-xs'
+          : 'text-paper/85 hover:bg-paper/12 hover:text-paper',
         className,
       )}
     >
@@ -156,7 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-full bg-field">
-      <header className="border-b border-paper/10 bg-forest text-paper">
+      <header className="sticky top-0 z-30 border-b border-harvest/25 bg-forest/96 backdrop-blur-md text-paper shadow-[0_8px_28px_rgba(12,45,28,0.22)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-6">
             <Logo variant="header" />
@@ -164,7 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 are wider than English — Tamil, Kannada, and Malayalam are ~20% wider. */}
             <nav
               className={cx(
-                'hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto lg:flex',
+                'hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex',
                 SCROLLBAR_HIDDEN,
               )}
               aria-label={t('nav.primaryNav')}
@@ -172,7 +174,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {links}
             </nav>
           </div>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             <HeaderWeather />
             <LanguageSwitcher />
             {!user ? (
@@ -180,7 +182,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <NavLink href="/login">{t('nav.logIn')}</NavLink>
                 <Link
                   href="/register"
-                  className="rounded-lg bg-harvest px-3 py-2 text-sm font-bold text-forest hover:bg-[#c49212]"
+                  className="rounded-xl bg-harvest px-4 py-2 text-sm font-bold text-forest shadow-xs hover:bg-[#c49212] transition-colors"
                 >
                   {t('nav.join')}
                 </Link>
@@ -195,22 +197,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <NavLink
                   href="/notifications"
                   label={t('nav.notifications')}
-                  className="relative px-2"
+                  className="relative p-2"
                 >
                   <BellIcon />
                   {unread ? (
-                    <span className="absolute -end-0.5 -top-0.5 min-w-4 rounded-full bg-harvest px-1 text-[10px] font-bold leading-4 text-forest">
+                    <span className="absolute -end-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-harvest px-1 py-0.5 text-[10px] font-bold leading-none text-forest shadow-xs">
                       {unread > 9 ? '9+' : unread}
                     </span>
                   ) : null}
                 </NavLink>
-                <NavLink href="/profile" className="max-w-[7rem] truncate">
-                  {user.name.split(' ')[0]}
+                <NavLink href="/profile" className="max-w-[8rem] truncate flex items-center gap-1.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-paper/20 text-[11px] font-bold" aria-hidden>
+                    {user.name.trim()[0]?.toUpperCase()}
+                  </span>
+                  <span className="truncate">{user.name.split(' ')[0]}</span>
                 </NavLink>
                 <button
                   type="button"
                   onClick={() => void logout()}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-paper/80 hover:bg-paper/10 hover:text-paper"
+                  className="rounded-lg px-2.5 py-1.5 text-sm font-semibold text-paper/80 hover:bg-paper/10 hover:text-paper transition-colors cursor-pointer"
                 >
                   {t('nav.logOut')}
                 </button>
@@ -220,7 +225,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav
           className={cx(
-            'flex gap-1 overflow-x-auto border-t border-paper/10 px-4 py-1.5 lg:hidden',
+            'flex gap-1 overflow-x-auto border-t border-harvest/20 bg-forest px-4 py-2 lg:hidden',
             SCROLLBAR_HIDDEN,
           )}
           aria-label={t('nav.primaryNav')}

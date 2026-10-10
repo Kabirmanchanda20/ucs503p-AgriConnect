@@ -117,103 +117,141 @@ function OrderDetail() {
 
   const unit = t(`units.${order.unit}`);
 
+  const statusTone: Record<OrderStatus, 'neutral' | 'good' | 'warn' | 'bad'> = {
+    pending: 'neutral',
+    accepted: 'warn',
+    confirmed: 'warn',
+    fulfilled: 'good',
+    cancelled: 'bad',
+  };
+
   return (
-    <div className="space-y-6">
-    <Card className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-4xl text-forest">
-          {order.listing?.crop ?? t('order.titleFallback')}
-        </h1>
-        <Badge>{t(`order.status.${order.status}`)}</Badge>
+    <div className="grid gap-6 lg:grid-cols-12">
+      <div className="space-y-6 lg:col-span-7">
+        <Card className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-forest/10 pb-4">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-forest sm:text-4xl">
+              {order.listing?.crop ?? t('order.titleFallback')}
+            </h1>
+            <Badge tone={statusTone[order.status]}>{t(`order.status.${order.status}`)}</Badge>
+          </div>
+
+          <div className="rounded-xl border border-leaf/20 bg-leaf/5 p-4 sm:p-5">
+            <p className="font-display text-3xl font-extrabold text-forest sm:text-4xl">
+              {formatMoney(order.priceTotal, locale)}
+            </p>
+            <p className="mt-1 text-sm font-medium text-ink/75 sm:text-base">
+              {t('order.quantityLine', {
+                qty: formatQty(order.quantity, unit, locale),
+                price: formatMoney(order.pricePerUnit, locale),
+                unit,
+              })}
+            </p>
+          </div>
+
+          <div className="space-y-2 rounded-xl border border-forest/10 bg-sand/15 p-4 text-sm text-ink/80">
+            <p>{t('order.deliveryLine', { mode: t(`order.deliveryMode.${order.deliveryMode}`) })}</p>
+            <p>{t('order.placedLine', { date: formatDate(order.createdAt, locale) })}</p>
+            {order.notes ? <p>{t('order.notesLine', { notes: order.notes })}</p> : null}
+            {order.cancellationReason ? (
+              <p className="font-medium text-clay">
+                {t('order.cancelledLine', { reason: order.cancellationReason })}
+              </p>
+            ) : null}
+          </div>
+
+          {error ? <Alert>{error}</Alert> : null}
+          {escrowWarning ? <Alert>{t('order.escrowNotHeld')}</Alert> : null}
+
+          {isFarmer && order.deliveryMode === 'delivery' && order.status !== 'cancelled' ? (
+            <div className="flex flex-wrap gap-2.5 pt-2">
+              {order.logisticsStatus === 'none' ? (
+                <Button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void advanceLogistics('dispatched')}
+                >
+                  {t('order.actions.dispatch')}
+                </Button>
+              ) : null}
+              {order.logisticsStatus === 'dispatched' ? (
+                <Button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void advanceLogistics('in_transit')}
+                >
+                  {t('order.actions.transit')}
+                </Button>
+              ) : null}
+              {['dispatched', 'in_transit'].includes(order.logisticsStatus ?? 'none') ? (
+                <Button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void advanceLogistics('delivered')}
+                >
+                  {t('order.actions.deliver')}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-3 pt-2">
+            {actions.map((action) =>
+              action.needsReason ? (
+                <form
+                  key={action.status}
+                  className="space-y-3 rounded-xl border border-clay/20 bg-clay/5 p-4"
+                  action={(form) => void changeStatus(action.status, form)}
+                >
+                  <Field label={t('order.cancellationReason')}>
+                    <Textarea name="cancellationReason" required />
+                  </Field>
+                  <Button type="submit" variant="danger" disabled={pending}>
+                    {t(action.labelKey)}
+                  </Button>
+                </form>
+              ) : (
+                <Button
+                  key={action.status}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void changeStatus(action.status)}
+                >
+                  {t(action.labelKey)}
+                </Button>
+              ),
+            )}
+          </div>
+        </Card>
+
+        <OrderTimeline order={order} />
+
+        {order.status === 'fulfilled' ? (
+          <OrderReviewSection
+            orderId={order.id}
+            counterpartyName={counterparty.name}
+            counterpartyRating={counterpartyRating}
+          />
+        ) : null}
       </div>
-      <p>
-        {t('order.quantityLine', {
-          qty: formatQty(order.quantity, unit, locale),
-          price: formatMoney(order.pricePerUnit, locale),
-          unit,
-        })}
-      </p>
-      <p className="text-2xl font-bold text-forest">{formatMoney(order.priceTotal, locale)}</p>
-      <p>{t('order.deliveryLine', { mode: t(`order.deliveryMode.${order.deliveryMode}`) })}</p>
-      <p>{t('order.placedLine', { date: formatDate(order.createdAt, locale) })}</p>
-      {order.notes ? <p>{t('order.notesLine', { notes: order.notes })}</p> : null}
-      {order.cancellationReason ? (
-        <p>{t('order.cancelledLine', { reason: order.cancellationReason })}</p>
-      ) : null}
-      <OrderTimeline order={order} />
-      {error ? <Alert>{error}</Alert> : null}
-      {isFarmer && order.deliveryMode === 'delivery' && order.status !== 'cancelled' ? (
-        <div className="flex flex-wrap gap-2">
-          {order.logisticsStatus === 'none' ? (
-            <Button type="button" disabled={pending} onClick={() => void advanceLogistics('dispatched')}>
-              {t('order.actions.dispatch')}
-            </Button>
-          ) : null}
-          {order.logisticsStatus === 'dispatched' ? (
-            <Button type="button" disabled={pending} onClick={() => void advanceLogistics('in_transit')}>
-              {t('order.actions.transit')}
-            </Button>
-          ) : null}
-          {['dispatched', 'in_transit'].includes(order.logisticsStatus ?? 'none') ? (
-            <Button type="button" disabled={pending} onClick={() => void advanceLogistics('delivered')}>
-              {t('order.actions.deliver')}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      {escrowWarning ? <Alert>{t('order.escrowNotHeld')}</Alert> : null}
-      <div className="flex flex-col gap-3">
-        {actions.map((action) =>
-          action.needsReason ? (
-            <form
-              key={action.status}
-              className="space-y-2 rounded-xl border border-forest/10 p-3"
-              action={(form) => void changeStatus(action.status, form)}
-            >
-              <Field label={t('order.cancellationReason')}>
-                <Textarea name="cancellationReason" required />
-              </Field>
-              <Button type="submit" variant="danger" disabled={pending}>
-                {t(action.labelKey)}
-              </Button>
-            </form>
-          ) : (
-            <Button
-              key={action.status}
-              type="button"
-              disabled={pending}
-              onClick={() => void changeStatus(action.status)}
-            >
-              {t(action.labelKey)}
-            </Button>
-          ),
-        )}
+
+      <div className="space-y-6 lg:col-span-5">
+        <OrderPaymentPanel order={order} isBuyer={isBuyer} onUpdated={refreshOrder} />
+
+        {canCall ? (
+          <OrderCallPanel
+            orderId={order.id}
+            counterpartyName={counterparty.name}
+            disabled={chatDisabled}
+          />
+        ) : null}
+
+        <OrderChat orderId={order.id} userId={user.id} disabled={chatDisabled} />
+
+        <p className="rounded-xl border border-forest/10 bg-forest/[0.02] p-3 text-center text-xs text-ink/65">
+          {t('order.footerHint', { call: t('order.call.title'), kisan: t('kisan.title') })}
+        </p>
       </div>
-    </Card>
-
-    <OrderPaymentPanel order={order} isBuyer={isBuyer} onUpdated={refreshOrder} />
-
-    {canCall ? (
-      <OrderCallPanel
-        orderId={order.id}
-        counterpartyName={counterparty.name}
-        disabled={chatDisabled}
-      />
-    ) : null}
-
-    <OrderChat orderId={order.id} userId={user.id} disabled={chatDisabled} />
-
-    <p className="text-sm text-ink/60">
-      {t('order.footerHint', { call: t('order.call.title'), kisan: t('kisan.title') })}
-    </p>
-
-    {order.status === 'fulfilled' ? (
-      <OrderReviewSection
-        orderId={order.id}
-        counterpartyName={counterparty.name}
-        counterpartyRating={counterpartyRating}
-      />
-    ) : null}
     </div>
   );
 }

@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --field: #f3ecda;
-  --paper: #fffcf5;
-  --forest: #1f3d2b;
-  --leaf: #3d7a4a;
-  --harvest: #d4a017;
-  --soil: #5c4033;
-  --ink: #1c241e;
-  --clay: #9b2c2c;
+  --field: #f6f8f5;
+  --paper: #ffffff;
+  --forest: #0c2d1c;
+  --leaf: #15803d;
+  --harvest: #d97706;
+  --soil: #475569;
+  --ink: #0f172a;
+  --clay: #dc2626;
 }
 
 @theme inline {
@@ -22,6 +22,8 @@
   --color-clay: var(--clay);
   --font-sans: var(--font-nunito);
   --font-display: var(--font-fraunces);
+  --shadow-card: 0 2px 10px -1px rgba(12, 45, 28, 0.05), 0 1px 3px 0 rgba(12, 45, 28, 0.03);
+  --shadow-card-hover: 0 20px 32px -4px rgba(12, 45, 28, 0.12), 0 6px 14px -2px rgba(12, 45, 28, 0.06);
 }
 
 html,
@@ -30,7 +32,12 @@ body {
 }
 
 body {
-  background: var(--field);
+  background-color: var(--field);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 0% -10%, rgb(21 128 61 / 0.08), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(217 119 6 / 0.07), transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='%230c2d1c' fill-opacity='0.035'%3E%3Ccircle cx='4' cy='4' r='1.2'/%3E%3Ccircle cx='40' cy='22' r='1'/%3E%3Ccircle cx='18' cy='48' r='1.1'/%3E%3C/g%3E%3C/svg%3E");
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
@@ -139,6 +146,10 @@ html[lang='ur'] .font-display {
     0 0 0 2px rgb(255 252 245 / 0.92),
     0 0 0 5px rgb(212 160 23 / 0.42),
     0 14px 32px rgb(31 61 43 / 0.28);
+}
+
+.photo-scrim {
+  background: linear-gradient(180deg, rgba(31, 61, 43, 0.45) 0%, rgba(31, 61, 43, 0) 35%, rgba(12, 28, 18, 0.75) 100%);
 }
 
 .kisan-panel {

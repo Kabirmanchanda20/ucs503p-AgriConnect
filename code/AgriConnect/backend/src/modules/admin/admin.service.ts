@@ -41,7 +41,7 @@ export async function listUsers(query: AdminUsersQuery) {
       : {}),
   };
   const skip = (query.page - 1) * query.limit;
-  const [users, total] = await getPrismaClient().$transaction([
+  const [users, total] = await Promise.all([
     getPrismaClient().user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -283,7 +283,7 @@ export async function listActivityLogs(query: ActivityLogsQuery) {
     ...(query.action ? { action: query.action } : {}),
   };
   const skip = (query.page - 1) * query.limit;
-  const [rows, total] = await getPrismaClient().$transaction([
+  const [rows, total] = await Promise.all([
     getPrismaClient().adminActivityLog.findMany({
       where,
       orderBy: { createdAt: 'desc' },

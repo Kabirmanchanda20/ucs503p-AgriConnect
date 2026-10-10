@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Badge, Button, Card } from '@/components/ui';
+import { Alert, Badge, Button, Card, cx } from '@/components/ui';
 import { useLocale } from '@/features/i18n/locale-context';
 import { getErrorMessage } from '@/lib/api/errors';
 import {
@@ -169,23 +169,33 @@ export function OrderPaymentPanel({
             {methods.map((option) => (
               <label
                 key={option.method}
-                className="flex cursor-pointer items-center gap-3 rounded-xl border border-forest/10 px-3 py-2 text-sm"
+                className={cx(
+                  'flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3.5 text-sm transition',
+                  selected === option.method
+                    ? 'border-leaf bg-leaf/5 ring-1 ring-leaf/30 shadow-xs'
+                    : 'border-forest/10 bg-paper hover:border-forest/30 hover:bg-forest/[0.02]',
+                )}
               >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value={option.method}
-                  checked={selected === option.method}
-                  onChange={() => setChosen(option.method)}
-                />
-                <span className="font-semibold text-forest">
-                  {t(`order.payment.method.${option.method}`)}
-                </span>
-                <span className="text-xs text-ink/60">
-                  {option.escrow
-                    ? t('order.payment.escrowProtected')
-                    : t('order.payment.payOnDelivery')}
-                </span>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={option.method}
+                    checked={selected === option.method}
+                    onChange={() => setChosen(option.method)}
+                    className="h-4 w-4 accent-leaf"
+                  />
+                  <div>
+                    <p className="font-semibold text-forest">
+                      {t(`order.payment.method.${option.method}`)}
+                    </p>
+                    <p className="text-xs text-ink/65">
+                      {option.escrow
+                        ? t('order.payment.escrowProtected')
+                        : t('order.payment.payOnDelivery')}
+                    </p>
+                  </div>
+                </div>
               </label>
             ))}
           </fieldset>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/features/auth/guards';
-import { Card, Spinner, Alert } from '@/components/ui';
+import { Spinner, Alert, StatCard } from '@/components/ui';
 import { useLocale } from '@/features/i18n/locale-context';
 import { getAdminAnalytics } from '@/lib/api/admin';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -25,27 +25,39 @@ function AdminHome() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-4xl text-forest">{t('admin.overviewTitle')}</h1>
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <p className="text-sm font-bold uppercase text-soil">{t('admin.users')}</p>
-          <p className="font-display text-4xl">{stats.totalUsers}</p>
-        </Card>
-        <Card>
-          <p className="text-sm font-bold uppercase text-soil">{t('admin.listings')}</p>
-          <p className="font-display text-4xl">{stats.totalListings}</p>
-          <p className="text-sm text-ink/60">
-            {t('admin.activeCount', { count: stats.activeListings ?? '—' })}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-forest/10 pb-5">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-harvest">
+            {t('nav.overview')}
           </p>
-        </Card>
-        <Card>
-          <p className="text-sm font-bold uppercase text-soil">{t('admin.orders')}</p>
-          <p className="font-display text-4xl">{stats.totalOrders}</p>
-        </Card>
-        <Card>
-          <p className="text-sm font-bold uppercase text-soil">{t('admin.gmv')}</p>
-          <p className="font-display text-4xl">{formatMoney(stats.gmv, locale)}</p>
-        </Card>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-forest sm:text-4xl">
+            {t('admin.overviewTitle')}
+          </h1>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label={t('admin.users')}
+          value={stats.totalUsers}
+          tone="forest"
+        />
+        <StatCard
+          label={t('admin.listings')}
+          value={stats.totalListings}
+          hint={t('admin.activeCount', { count: stats.activeListings ?? '—' })}
+          tone="leaf"
+        />
+        <StatCard
+          label={t('admin.orders')}
+          value={stats.totalOrders}
+          tone="forest"
+        />
+        <StatCard
+          label={t('admin.gmv')}
+          value={formatMoney(stats.gmv, locale)}
+          tone="harvest"
+        />
       </div>
     </div>
   );

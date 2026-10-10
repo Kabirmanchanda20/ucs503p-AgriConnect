@@ -135,7 +135,7 @@ export async function listOrderReviews(
   await getParticipantOrder(actor, orderId);
 
   const skip = (query.page - 1) * query.limit;
-  const [reviews, total] = await getPrismaClient().$transaction([
+  const [reviews, total] = await Promise.all([
     getPrismaClient().review.findMany({
       where: { orderId },
       include: reviewInclude,
@@ -159,7 +159,7 @@ export async function listOrderReviews(
 
 export async function listUserReviews(userId: string, query: ListReviewsQuery) {
   const skip = (query.page - 1) * query.limit;
-  const [reviews, total] = await getPrismaClient().$transaction([
+  const [reviews, total] = await Promise.all([
     getPrismaClient().review.findMany({
       where: { toUserId: userId },
       include: reviewInclude,
