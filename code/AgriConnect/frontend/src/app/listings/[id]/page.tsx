@@ -4,9 +4,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useLocale } from '@/features/i18n/locale-context';
-import { Alert, Badge, Button, Card, Field, Input, Select, Spinner, Textarea } from '@/components/ui';
+import { Alert, Badge, Button, Card, Field, Input, Select, Spinner, Textarea, cx } from '@/components/ui';
 import { ListingPhoto } from '@/components/listing-photo';
 import { StarDisplay } from '@/components/star-rating';
+import { BidForm } from '@/features/bids/BidForm';
+import { FarmerBidsList } from '@/features/bids/FarmerBidsList';
+import { BuyerBidsList } from '@/features/bids/BuyerBidsList';
 import { createOrder } from '@/lib/api/orders';
 import { getListing } from '@/lib/api/listings';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -21,6 +24,7 @@ export default function ListingDetailPage() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [activeTab, setActiveTab] = useState<'buy' | 'bid'>('buy');
 
   useEffect(() => {
     void getListing(params.id)
@@ -33,6 +37,12 @@ export default function ListingDetailPage() {
 
   const photo = listing.photos[0]?.publicUrl;
   const canOrder = user?.role === 'BUYER' && listing.status === 'active' && !user.isSuspended;
+  const isOwner = Boolean(
+    user &&
+      ((listing.farmer?.userId && user.id === listing.farmer.userId) ||
+        (listing.farmerProfileId && user.farmerProfile?.id && user.farmerProfile.id === listing.farmerProfileId) ||
+        ((listing as { farmerId?: string }).farmerId && user.id === (listing as { farmerId?: string }).farmerId)),
+  );
   const unit = t(`units.${listing.unit}`);
 
   const currentListing = listing;
@@ -175,14 +185,15 @@ export default function ListingDetailPage() {
       <div className="lg:col-span-5 xl:col-span-4">
         <div className="lg:sticky lg:top-24">
           <Card className="rounded-3xl border border-forest/10 bg-paper p-6 shadow-md shadow-forest/5 sm:p-7">
-            <h2 className="font-display text-2xl font-extrabold text-forest">
-              {t('listing.place.title')}
-            </h2>
-
-            {!user ? (
-              <div className="mt-4 space-y-4">
+            {isOwner ? (
+              <FarmerBidsList listingId={listing.id} />
+            ) : !user ? (
+              <div className="space-y-4">
+                <h2 className="font-display text-2xl font-extrabold text-forest">
+                  {t('listing.place.title')}
+                </h2>
                 <p className="text-sm text-ink/75 leading-relaxed">
-                  {t('listing.place.loginPrompt')}
+                  {t('bid.loginPrompt')}
                 </p>
                 <Button
                   onClick={() => router.push('/login')}
@@ -192,40 +203,92 @@ export default function ListingDetailPage() {
                 </Button>
               </div>
             ) : user.role !== 'BUYER' ? (
-              <p className="mt-4 rounded-xl border border-harvest/30 bg-harvest/10 p-3.5 text-sm text-ink/80">
+              <p className="rounded-xl border border-harvest/30 bg-harvest/10 p-3.5 text-sm text-ink/80">
                 {t('listing.place.buyerOnly')}
               </p>
             ) : listing.status !== 'active' ? (
-              <p className="mt-4 rounded-xl border border-forest/15 bg-sand/20 p-3.5 text-sm text-ink/75">
+              <p className="rounded-xl border border-forest/15 bg-sand/20 p-3.5 text-sm text-ink/75">
                 {t('listing.place.notOpen')}
               </p>
             ) : (
-              <form className="mt-5 space-y-4" action={placeOrder}>
-                {error ? <Alert>{error}</Alert> : null}
-                <Field label={t('listing.place.quantity', { unit })}>
-                  <Input
-                    name="quantity"
-                    required
-                    defaultValue={listing.minimumOrderQuantity}
+              <div className="space-y-5">
+                <h2 className="font-display text-2xl font-extrabold text-forest">
+                  {t('listing.place.title')}
+                </h2>
+
+                {/* Segmented Tab Selector */}
+                <div className="grid grid-cols-2 p-1 bg-sand/30 rounded-xl border border-forest/10 text-xs font-bold text-center">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('buy')}
+                    className={cx(
+                      'py-2.5 rounded-lg transition-all cursor-pointer',
+                      activeTab === 'buy'
+                        ? 'bg-forest text-paper shadow-sm'
+                        : 'text-forest/70 hover:text-forest',
+                    )}
+                  >
+                    {t('bid.tabBuyNow')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('bid')}
+                    className={cx(
+                      'py-2.5 rounded-lg transition-all cursor-pointer',
+                      activeTab === 'bid'
+                        ? 'bg-forest text-paper shadow-sm'
+                        : 'text-forest/70 hover:text-forest',
+                    )}
+                  >
+                    {t('bid.tabMakeOffer')}
+                  </button>
+                </div>
+
+                {activeTab === 'buy' ? (
+                  <form className="space-y-4" action={placeOrder}>
+                    {error ? <Alert>{error}</Alert> : null}
+                    <Field label={t('listing.place.quantity', { unit })}>
+                      <Input
+                        name="quantity"
+                        required
+                        defaultValue={listing.minimumOrderQuantity}
+                      />
+                    </Field>
+                    <Field label={t('listing.place.delivery')}>
+                      <Select name="deliveryMode" defaultValue="pickup">
+                        <option value="pickup">{t('listing.place.pickupOption')}</option>
+                        <option value="delivery">{t('listing.place.deliveryOption')}</option>
+                      </Select>
+                    </Field>
+                    <Field label={t('listing.place.notes')}>
+                      <Textarea name="notes" rows={2} />
+                    </Field>
+                    <Button
+                      type="submit"
+                      disabled={pending || !canOrder}
+                      className="w-full text-base font-bold py-3.5 shadow-md shadow-leaf/20 hover:shadow-lg transition-all"
+                    >
+                      {pending ? t('listing.place.submitting') : t('listing.place.submit')}
+                    </Button>
+                  </form>
+                ) : (
+                  <BidForm
+                    listing={{
+                      id: listing.id,
+                      crop: listing.crop,
+                      unit: listing.unit,
+                      pricePerUnit: listing.pricePerUnit,
+                      quantity: listing.quantity,
+                      minimumOrderQuantity: listing.minimumOrderQuantity,
+                    }}
                   />
-                </Field>
-                <Field label={t('listing.place.delivery')}>
-                  <Select name="deliveryMode" defaultValue="pickup">
-                    <option value="pickup">{t('listing.place.pickupOption')}</option>
-                    <option value="delivery">{t('listing.place.deliveryOption')}</option>
-                  </Select>
-                </Field>
-                <Field label={t('listing.place.notes')}>
-                  <Textarea name="notes" rows={2} />
-                </Field>
-                <Button
-                  type="submit"
-                  disabled={pending || !canOrder}
-                  className="w-full text-base font-bold py-3.5 shadow-md shadow-leaf/20 hover:shadow-lg transition-all"
-                >
-                  {pending ? t('listing.place.submitting') : t('listing.place.submit')}
-                </Button>
-              </form>
+                )}
+
+                {/* Buyer's active bids on this listing */}
+                <div className="border-t border-forest/10 pt-4">
+                  <BuyerBidsList listingId={listing.id} />
+                </div>
+              </div>
             )}
           </Card>
         </div>

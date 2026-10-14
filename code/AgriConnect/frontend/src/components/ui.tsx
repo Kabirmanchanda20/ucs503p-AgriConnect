@@ -198,12 +198,37 @@ export function Badge({
   );
 }
 
-export function Alert({ children }: { children: ReactNode }) {
+export function Alert({
+  children,
+  tone = 'bad',
+}: {
+  children: ReactNode;
+  tone?: 'bad' | 'warn' | 'good' | 'neutral';
+}) {
+  const toneClasses = {
+    bad: 'border-clay/25 border-s-clay bg-clay/8 text-clay',
+    warn: 'border-harvest/35 border-s-harvest bg-harvest/15 text-soil',
+    good: 'border-leaf/25 border-s-leaf bg-leaf/10 text-forest',
+    neutral: 'border-forest/20 border-s-forest bg-forest/8 text-forest',
+  }[tone];
+
+  const iconClasses = {
+    bad: 'text-clay',
+    warn: 'text-soil',
+    good: 'text-forest',
+    neutral: 'text-forest',
+  }[tone];
+
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-clay/25 border-s-4 border-s-clay bg-clay/8 px-4 py-3 text-sm text-clay shadow-xs">
+    <div
+      className={cx(
+        'flex items-start gap-3 rounded-xl border border-s-4 px-4 py-3 text-sm shadow-xs',
+        toneClasses,
+      )}
+    >
       <svg
         viewBox="0 0 20 20"
-        className="mt-0.5 h-4 w-4 shrink-0 text-clay"
+        className={cx('mt-0.5 h-4 w-4 shrink-0', iconClasses)}
         fill="currentColor"
         aria-hidden
       >

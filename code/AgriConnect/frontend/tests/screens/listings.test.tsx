@@ -23,6 +23,16 @@ vi.mock('@/lib/api/market', () => ({
   compareListingPrices: vi.fn(() => okList([])),
 }));
 
+vi.mock('@/lib/api/bids', () => ({
+  listListingBids: vi.fn(() => okList([])),
+  listMyBids: vi.fn(() => okList([])),
+  createBid: vi.fn(),
+  acceptBid: vi.fn(),
+  rejectBid: vi.fn(),
+  counterBid: vi.fn(),
+  withdrawBid: vi.fn(),
+}));
+
 describe('listing detail in Punjabi', () => {
   it('translates availability, harvest, and the order form', async () => {
     renderWithLocale(<ListingDetailPage />, { user: BUYER });
