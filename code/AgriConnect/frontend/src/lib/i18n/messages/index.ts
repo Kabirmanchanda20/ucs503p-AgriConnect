@@ -13,11 +13,13 @@ import { assamese } from './as';
 import { ur } from './ur';
 import type { Locale } from '../locales';
 import { bidsMessagesByLocale } from './bids-messages';
-import { deepMerge } from './merge';
+import { deepMerge, type DeepPartial } from './merge';
 
 function withBids(locale: string, base: MessageTree): MessageTree {
   const patch = bidsMessagesByLocale[locale];
-  return patch ? (deepMerge(base as unknown as Record<string, unknown>, patch) as MessageTree) : base;
+  return patch
+    ? (deepMerge(base as unknown as Record<string, unknown>, patch as DeepPartial<Record<string, unknown>>) as MessageTree)
+    : base;
 }
 
 export const messagesByLocale: Record<Locale, MessageTree> = {

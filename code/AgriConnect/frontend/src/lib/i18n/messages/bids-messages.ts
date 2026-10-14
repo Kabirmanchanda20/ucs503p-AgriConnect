@@ -1,4 +1,7 @@
-export const bidsMessagesByLocale: Record<string, Record<string, any>> = {
+import type { MessageTree } from './en';
+import type { DeepPartial } from './merge';
+
+export const bidsMessagesByLocale: Record<string, DeepPartial<MessageTree>> = {
   bn: {
     alerts: {
       type: {

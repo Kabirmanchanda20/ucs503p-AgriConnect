@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, EmptyState, Field, Input, Spinner } from '@/components/ui';
 import { useLocale } from '@/features/i18n/locale-context';
 import { acceptBid, counterBid, listListingBids, rejectBid } from '@/lib/api/bids';
@@ -31,7 +31,7 @@ export function FarmerBidsList({ listingId }: FarmerBidsListProps) {
   const [counterPrice, setCounterPrice] = useState('');
   const [actionPending, setActionPending] = useState(false);
 
-  async function loadBids() {
+  const loadBids = useCallback(async () => {
     try {
       const { data } = await listListingBids(listingId);
       setBids(data);
@@ -40,11 +40,31 @@ export function FarmerBidsList({ listingId }: FarmerBidsListProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [listingId, t]);
 
   useEffect(() => {
-    void loadBids();
-  }, [listingId]);
+    let mounted = true;
+    async function initLoad() {
+      try {
+        const { data } = await listListingBids(listingId);
+        if (mounted) {
+          setBids(data);
+        }
+      } catch (cause) {
+        if (mounted) {
+          setActionError(getErrorMessage(cause, t('common.errorGeneric')));
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+    void initLoad();
+    return () => {
+      mounted = false;
+    };
+  }, [listingId, t]);
 
   async function handleAccept(bidId: string) {
     setActionPending(true);
@@ -161,7 +181,7 @@ export function FarmerBidsList({ listingId }: FarmerBidsListProps) {
 
               {bid.notes ? (
                 <p className="text-xs text-ink/80 bg-paper rounded-lg p-2 border border-forest/10 italic">
-                  "{bid.notes}"
+                  {bid.notes}
                 </p>
               ) : null}
 
