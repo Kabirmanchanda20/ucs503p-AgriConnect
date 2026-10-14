@@ -217,6 +217,100 @@ export async function createOrder(buyerId: string, input: CreateOrderInput) {
   return serializeOrder(created);
 }
 
+export async function createOrderFromBid(params: {
+  listingId: string;
+  buyerId: string;
+  farmerId: string;
+  quantity: string;
+  pricePerUnit: string;
+  deliveryMode?: 'pickup' | 'delivery';
+  notes?: string | null;
+}) {
+  const quantity = toDecimal(params.quantity);
+  const pricePerUnit = toDecimal(params.pricePerUnit);
+  if (quantity.lessThanOrEqualTo(0) || pricePerUnit.lessThanOrEqualTo(0)) {
+    throw new AppError(400, 'INVALID_REQUEST', 'Quantity and price must be greater than zero');
+  }
+
+  const created = await getPrismaClient().$transaction(async (transaction) => {
+    const listing = await transaction.listing.findFirst({
+      where: { id: params.listingId, status: 'active', deletedAt: null },
+      include: {
+        farmerProfile: { select: { userId: true } },
+      },
+    });
+
+    if (!listing) {
+      throw new AppError(404, 'NOT_FOUND', 'Listing not found');
+    }
+
+    const reserved = await transaction.listing.updateMany({
+      where: {
+        id: listing.id,
+        status: 'active',
+        deletedAt: null,
+        quantity: { gte: quantity },
+      },
+      data: {
+        quantity: { decrement: quantity },
+        interestCount: { increment: 1 },
+      },
+    });
+    if (reserved.count === 0) {
+      throw new AppError(409, 'CONFLICT', 'Insufficient remaining quantity');
+    }
+
+    const remaining = listing.quantity.minus(quantity);
+    const nextStatus = listingStatusAfterQuantity(
+      remaining,
+      listing.minimumOrderQuantity,
+      listing.status,
+    );
+    if (nextStatus !== listing.status) {
+      await transaction.listing.update({
+        where: { id: listing.id },
+        data: { status: nextStatus },
+      });
+    }
+
+    const order = await transaction.order.create({
+      data: {
+        listingId: listing.id,
+        buyerId: params.buyerId,
+        farmerId: params.farmerId,
+        quantity,
+        unit: listing.unit,
+        pricePerUnit,
+        priceTotal: roundMoney(quantity.mul(pricePerUnit)),
+        deliveryMode: params.deliveryMode ?? 'pickup',
+        notes: params.notes ?? null,
+      },
+      include: orderInclude,
+    });
+
+    await createNotification(
+      {
+        userId: params.buyerId,
+        type: 'ORDER_PLACED',
+        title: 'Bid accepted — Order created',
+        body: `Your bid on ${listing.crop} was accepted! An order has been created.`,
+        params: {
+          qty: quantityString(quantity),
+          unit: listing.unit,
+          crop: listing.crop,
+        },
+        relatedEntityType: 'Order',
+        relatedEntityId: order.id,
+      },
+      transaction,
+    );
+
+    return order;
+  });
+
+  return serializeOrder(created);
+}
+
 export async function listOrders(actor: AuthenticatedActor, query: ListOrdersQuery) {
   const where: Prisma.OrderWhereInput = {};
   if (actor.role === 'BUYER') {

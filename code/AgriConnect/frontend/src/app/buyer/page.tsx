@@ -9,6 +9,7 @@ import { getMyReport } from '@/lib/api/reports';
 import { listOrders } from '@/lib/api/orders';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
+import { BuyerBidsList } from '@/features/bids/BuyerBidsList';
 import type { BuyerReport } from '@/lib/api/types';
 
 function BuyerHome() {
@@ -157,6 +158,19 @@ function BuyerHome() {
             <span>{formatMoney(report.totalSpend, locale)}</span>
           </div>
         </Card>
+      </div>
+
+      {/* Bids & Offers Workspace */}
+      <div className="space-y-4 pt-4 border-t border-forest/10">
+        <div>
+          <h2 className="font-display text-2xl font-bold text-forest">
+            {t('bid.buyerSectionTitle')}
+          </h2>
+          <p className="text-sm text-ink/75 mt-0.5">
+            {t('bid.buyerSectionSubtitle')}
+          </p>
+        </div>
+        <BuyerBidsList />
       </div>
     </div>
   );

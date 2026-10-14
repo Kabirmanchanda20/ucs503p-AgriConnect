@@ -197,3 +197,65 @@ export interface ActivityLog {
   metadata: Record<string, unknown> | null;
   createdAt: string;
 }
+
+export type BidStatus = 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn';
+
+export interface Bid {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  farmerId: string;
+  pricePerUnit: string;
+  quantity: string;
+  unit: Unit;
+  priceTotal: string;
+  status: BidStatus;
+  counterPrice: string | null;
+  notes: string | null;
+  rejectionReason: string | null;
+  orderId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  listing?: {
+    id: string;
+    crop: string;
+    variety: string | null;
+    unit: Unit;
+    pricePerUnit: string;
+    quantity: string;
+    minimumOrderQuantity: string;
+    status: ListingStatus;
+    state: string;
+    district: string;
+    photo: string | null;
+  };
+  buyer?: {
+    id: string;
+    name: string;
+    businessName: string | null;
+    ratingAvg: number | null;
+  };
+  farmer?: {
+    id: string;
+    name: string;
+    farmName: string | null;
+    ratingAvg: number | null;
+  };
+}
+
+export interface CreateBidInput {
+  listingId: string;
+  pricePerUnit: string;
+  quantity: string;
+  notes?: string;
+}
+
+export interface CounterBidInput {
+  counterPrice: string;
+  notes?: string;
+}
+
+export interface RejectBidInput {
+  rejectionReason?: string;
+}
+

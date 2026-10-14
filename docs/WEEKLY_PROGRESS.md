@@ -6,9 +6,9 @@ Monday → Monday (IST). **Newest week on top.** On Monday close, move the finis
 |---|---|
 | **Team** | Kabir Manchanda, Manbhav Kumar Terry |
 | **Course** | UCS503P |
-| **Current week** | **Week 4** — Mon 5 Oct → Mon 12 Oct 2026 |
-| **Updated** | Sat 10 Oct 2026 |
-| **Status** | **Green** — Farm-authentic UI refresh across all surfaces; 13-locale parity; Mandi & DB pooler concurrency overhaul |
+| **Current week** | **Weeks 5–6** — Mon 12 Oct → Mon 26 Oct 2026 |
+| **Updated** | Wed 14 Oct 2026 |
+| **Status** | **Green** — Capstone B2B bidding, counter-offer negotiation & dynamic price discovery shipped; 13-locale parity; 157 backend / 128 frontend tests passing |
 
 ## Project phase snapshot
 
@@ -18,15 +18,52 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 |---|---|---|---|
 | **Lab** | Functional CRUD marketplace | Complete (Week 1) | Auth/RBAC, listings, orders, admin, notifications, reports — see Archive |
 | **Prototype** | Real-time, production-shaped system | Complete (Week 2–3) | Chat, calls, mandi, logistics, escrow payments + webhook, 13-locale UI, contact guard — see board |
-| **Capstone** | AI-assisted advisory platform | In progress | Grounded Kisan RAG + AGRONOMIST + profile weather + authentic farm UI refresh |
+| **Capstone** | AI advisory & B2B dynamic negotiation | In progress | Grounded Kisan RAG + UI refresh + B2B bidding & counter-offer engine |
 
-## Board — week 4
+## Board — weeks 5–6
 
-**Focus:** authentic farm UI/UX refresh (same routes & APIs) + concurrency/latency overhaul + faculty walkthrough; then Capstone scope.
+**Focus:** Capstone B2B bidding, counter-offer negotiation, Mandi benchmark fairness, atomic order conversion, and 13-locale parity; then faculty demo walkthrough.
 
 | | Task | Notes |
 |---|---|---|
-| **Working on** | Farm-authentic UI refresh walkthrough | Uncommitted UI refresh across public, auth, dashboards, and orders awaiting commit |
+| **Done** | Agricultural bidding value & architecture | Formulated senior engineering rationale for wholesale negotiation (lot quality variance, bulk volume tiers, APMC volatility parity, anti-lowballing guardrails) |
+| **Done** | Prisma schema & PostgreSQL DDL migration | Added `BidStatus` enum, `NotificationType` enum entries, `model Bid`, composite indexes; applied via pooler-safe migration `apply-bids-migration.ts` |
+| **Done** | Backend bids negotiation module | Zod validation schemas, `bids.service.ts` lifecycle state machine (submit, withdraw, counter, accept, reject) mounted at `/api/v1/bids` with RBAC |
+| **Done** | Concurrency-safe atomic order conversion | Implemented `createOrderFromBid` in `orders.service.ts` executing atomic inventory decrements (`quantity: { gte: quantity }`), status transitions, and bid-order linkage |
+| **Done** | Anti-disintermediation contact guard | Integrated `contactGuard` into bid notes and counter messages to block phone numbers and emails (HTTP 400 `CONTACT_INFO_BLOCKED`) |
+| **Done** | Post-login role-gated listing detail panel | Segmented tabs ("Buy at Asking Price" vs "Make an Offer / Bid") on `/listings/[id]`; guest view strictly hides bid forms with login prompt |
+| **Done** | Dynamic BidForm & Mandi Benchmark chip | Deal value calculator with live Mandi Benchmark fairness badges (`+X% above market`, `Competitive offer`, `-X% below local mandi modal rate`) |
+| **Done** | Farmer incoming bids & counter-offer manager | Integrated `FarmerBidsList` directly on `/listings/[id]` for listing owners with Accept, inline Counter-Offer, and Decline actions |
+| **Done** | Buyer desk negotiation workspace | Integrated `BuyerBidsList` under "My Bids & Negotiations" on `/buyer` with Accept Counter and Withdraw controls, unmount guards, and EmptyState fallback |
+| **Done** | 13-locale dictionary parity & native script | Modularized `bids-messages.ts` merged into `messages/index.ts`; 532 keys × 13 locales verified with 100% native script compliance and 0 hardcoded strings |
+| **Done** | Automated database demo seeding | Authored `seed-sample-bids.ts` activating demo produce lots and seeding multi-state negotiations for buyer Aman Singh |
+| **Working on** | Faculty milestone demonstration | Live evaluator walkthrough of buyer bid submission, Mandi fairness chip, farmer counter-offer, and order creation |
+| **Blocked** | — | None |
+| **Backlog** | Native-speaker pass on the ten new dictionaries | Machine-translated today |
+| **Backlog** | Capstone — ML price / crop CV | Still backlog after Grounded Kisan & Bidding |
+| **Backlog** | Farmer payouts / settlement | Escrow holds and refunds are done; paying the farmer out through Razorpay is not |
+| **Backlog** | TURN server for calls | Public STUN only today, so calls behind strict NATs may fail to connect |
+| **Backlog** | Contact blocking on review comments | Chat, order notes, listing copy, and bid notes are scanned; review comments are the last free-text field still unscanned |
+| **Backlog** | Razorpay webhook tunnel for local demos | Checkout works without it; webhook needs a public HTTPS URL |
+
+**Risks:** Locale dictionaries still need a native-speaker pass. Voice calls are single-process + public STUN (TURN still backlog).
+
+**Next week:** faculty walkthrough of Bidding & Grounded Kisan; review comments contact guard; optional TURN + farmer payouts.
+
+---
+
+## Archive
+
+### Week 4 — Mon 5 Oct → Mon 12 Oct 2026
+
+| | |
+|---|---|
+| **Milestone** | Capstone UI Authentic Farm Refresh & Concurrency Overhaul |
+| **Status** | **Green** — Farm-authentic UI refresh across all surfaces; 13-locale parity; Mandi & DB pooler concurrency overhaul |
+| **Closed** | Mon 12 Oct 2026 |
+
+| | Task | Notes |
+|---|---|---|
 | **Done** | Tokens & field surface texture | Soft field micro-dot grain background, tactile buttons, rich cards, PageHeader and StatCard tokens in `globals.css` and `ui.tsx` |
 | **Done** | App shell & navigation pills | Clearer active nav pills, tighter weather/lang/bell cluster, mobile second-row nav in `shell.tsx` |
 | **Done** | Split-brand auth screens | Responsive brand showcase + form on `/login` and `/register`; demo credentials quick-fill maintained |
@@ -42,21 +79,6 @@ _Phased growth model (PRD §5): **Lab → Prototype → Capstone** — not relea
 | **Done** | Database pooler concurrency optimization | Replaced read-only Prisma `$transaction` across 7 backend services with concurrent `Promise.all` to eliminate Supabase pooler lockups and P2028 timeouts |
 | **Done** | Trade widgets refresh | Enlarged Ask Kisan launcher & voice wave bars, payment method radio cards, compact phone bar, 5-day weather popover |
 | **Done** | 13-locale i18n & quality gates | 483 keys × 13 locales parity, AST zero hardcoded strings check, width budget tests, 128 frontend / 146 backend tests green |
-| **Blocked** | — | None |
-| **Backlog** | Native-speaker pass on the ten new dictionaries | Machine-translated today |
-| **Backlog** | Capstone — ML price / crop CV | Still backlog after Grounded Kisan |
-| **Backlog** | Farmer payouts / settlement | Escrow holds and refunds are done; paying the farmer out through Razorpay is not |
-| **Backlog** | TURN server for calls | Public STUN only today, so calls behind strict NATs may fail to connect |
-| **Backlog** | Contact blocking on review comments | Chat, order notes, and listing copy are scanned; review comments are the last free-text field still unscanned |
-| **Backlog** | Razorpay webhook tunnel for local demos | Checkout works without it; webhook needs a public HTTPS URL |
-
-**Risks:** Locale dictionaries still need a native-speaker pass. Voice calls are single-process + public STUN (TURN still backlog).
-
-**Next week:** faculty walkthrough of UI refresh + Grounded Kisan; optional TURN + farmer payouts.
-
----
-
-## Archive
 
 ### Week 3 — Mon 7 Sep → Mon 14 Sep 2026
 
